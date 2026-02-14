@@ -15,6 +15,7 @@ export interface FileBrowserProps {
   onRenameFile: (oldName: string, newName: string) => void;
   onMoveFile: (filename: string, fromPath: string[], toPath: string[]) => void;
   onToggleFolder: (path: string[]) => void;
+  onRestoreFromDeleted: (itemName: string) => void;
   getFolders: () => { name: string; path: string[] }[];
 }
 
@@ -76,6 +77,7 @@ export default function FileBrowser({
   onRenameFile,
   onMoveFile,
   onToggleFolder,
+  onRestoreFromDeleted,
   getFolders,
 }: FileBrowserProps) {
   const [focusPane, setFocusPane] = useState<FocusPane>('folders');
@@ -293,6 +295,17 @@ export default function FileBrowser({
             }
           }
           e.preventDefault();
+        } else if (e.key === 'u' || e.key === 'U') {
+          const folder = folderList[folderIndex];
+          if (folder && folder.path.length === 2 && folder.path[0] === 'Deleted') {
+            const itemName = folder.path[1];
+            if (confirm(`Restore "${itemName}" from Deleted?`)) {
+              onRestoreFromDeleted(itemName);
+              showStatus(`"${itemName}" restored`);
+              setFolderIndex(prev => Math.max(0, prev - 1));
+            }
+          }
+          e.preventDefault();
         }
         return;
       }
@@ -339,6 +352,18 @@ export default function FileBrowser({
             setMoveTargetIdx(0);
           }
           e.preventDefault();
+        } else if (e.key === 'u' || e.key === 'U') {
+          if (currentPath[0] === 'Deleted') {
+            const file = filteredFiles[fileIndex];
+            if (file) {
+              if (confirm(`Restore "${file.name}" from Deleted?`)) {
+                onRestoreFromDeleted(file.name);
+                showStatus(`"${file.name}" restored`);
+                setFileIndex(prev => Math.max(0, prev - 1));
+              }
+            }
+          }
+          e.preventDefault();
         }
         return;
       }
@@ -347,8 +372,8 @@ export default function FileBrowser({
     window.addEventListener('keydown', handler, true);
     return () => window.removeEventListener('keydown', handler, true);
   }, [visible, focusPane, folderIndex, fileIndex, inputMode, inputValue, searchQuery,
-    moveTargetIdx, folderList, filteredFiles, onClose, onOpenFile, onDeleteFile,
-    onRenameFile, onMoveFile, onToggleFolder, onNewFolder, getFolders, showStatus]);
+    moveTargetIdx, folderList, filteredFiles, currentPath, onClose, onOpenFile, onDeleteFile,
+    onRenameFile, onMoveFile, onToggleFolder, onRestoreFromDeleted, onNewFolder, getFolders, showStatus]);
 
   if (!visible) return null;
 
@@ -706,6 +731,9 @@ export default function FileBrowser({
           </span>
           <span style={{ opacity: 0.7 }}>
             <kbd style={kbdStyle}>C</kbd> New File
+          </span>
+          <span style={{ opacity: 0.7 }}>
+            <kbd style={kbdStyle}>U</kbd> Restore
           </span>
           <span style={{ opacity: 0.7 }}>
             <kbd style={kbdStyle}>/</kbd> Search

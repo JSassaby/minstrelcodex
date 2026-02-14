@@ -365,9 +365,24 @@ export function useFileStructure() {
       .map(([name]) => name);
   }, [structure]);
 
+  const restoreFromDeleted = useCallback((itemName: string) => {
+    setStructure(prev => {
+      const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
+      const deleted = next.root.children?.['Deleted'];
+      if (!deleted?.children?.[itemName]) return prev;
+      const item = deleted.children[itemName];
+      delete deleted.children[itemName];
+      // Restore to root level
+      if (!next.root.children) next.root.children = {};
+      next.root.children[itemName] = item;
+      localStorage.setItem(FS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   return {
     structure, createFolder, addFileToTree, toggleFolder, moveFile, deleteFile, deleteFolder, renameFile, getFolders,
-    createNovelProject, saveVersion, saveSnapshot, findFilesInFolder, getNovelProjects, createFileInFolder,
+    createNovelProject, saveVersion, saveSnapshot, findFilesInFolder, getNovelProjects, createFileInFolder, restoreFromDeleted,
   };
 }
 
