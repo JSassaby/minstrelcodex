@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { t } from '@/lib/languages';
 import type { ModalType } from '@/lib/types';
 
@@ -10,6 +11,7 @@ interface MenuBarProps {
   wifiOn: boolean;
   bluetoothOn: boolean;
   onAction: (action: string) => void;
+  onMenuStateChange?: (open: boolean, menuIdx: number, subOpen: boolean, subIdx: number) => void;
 }
 
 const MENUS = ['file', 'edit', 'view', 'network', 'storage', 'power', 'language'] as const;
@@ -74,39 +76,88 @@ function getSubmenuItems(menu: string, language: string, wifiOn: boolean, blueto
 
 export default function MenuBar({
   language, visible, menuIndex, submenuOpen, submenuIndex,
-  wifiOn, bluetoothOn, onAction,
+  wifiOn, bluetoothOn, onAction, onMenuStateChange,
 }: MenuBarProps) {
-  if (!visible) return null;
+  const [hoverMenuIdx, setHoverMenuIdx] = useState<number | null>(null);
+  const [hoverSubIdx, setHoverSubIdx] = useState<number | null>(null);
+  const [mouseActive, setMouseActive] = useState(false);
+  const barRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!mouseActive) return;
+    const handler = (e: MouseEvent) => {
+      if (barRef.current && !barRef.current.contains(e.target as Node)) {
+        setHoverMenuIdx(null);
+        setHoverSubIdx(null);
+        setMouseActive(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [mouseActive]);
+
+  // Determine which state to show — mouse takes priority when active
+  const activeMenuIdx = mouseActive ? hoverMenuIdx : (visible ? menuIndex : null);
+  const activeSubOpen = mouseActive ? (hoverMenuIdx !== null) : (visible && submenuOpen);
+  const activeSubIdx = mouseActive ? (hoverSubIdx ?? 0) : submenuIndex;
 
   return (
     <div
+      ref={barRef}
       style={{
         backgroundColor: 'var(--terminal-bg)',
         borderBottom: '1px solid var(--terminal-text)',
-        padding: '8px 16px',
-        fontSize: '16px',
+        padding: '6px 16px',
+        fontSize: '15px',
         color: 'var(--terminal-text)',
+        position: 'relative',
+        zIndex: 200,
+        userSelect: 'none',
+        flexShrink: 0,
       }}
     >
-      <div style={{ display: 'flex', gap: '24px' }}>
+      <div style={{ display: 'flex', gap: '4px' }}>
         {MENUS.map((menu, i) => {
-          const isFocused = i === menuIndex;
+          const isFocused = i === activeMenuIdx;
           const items = getSubmenuItems(menu, language, wifiOn, bluetoothOn);
 
           return (
             <div
               key={menu}
               style={{
-                padding: '2px 8px',
+                padding: '4px 10px',
                 position: 'relative',
                 cursor: 'pointer',
                 background: isFocused ? 'var(--terminal-text)' : 'transparent',
                 color: isFocused ? 'var(--terminal-bg)' : 'var(--terminal-text)',
                 textShadow: isFocused ? 'none' : '0 0 5px var(--terminal-glow)',
+                transition: 'background 0.1s, color 0.1s',
+              }}
+              onMouseEnter={() => {
+                if (mouseActive || hoverMenuIdx !== null) {
+                  setHoverMenuIdx(i);
+                  setHoverSubIdx(null);
+                  setMouseActive(true);
+                }
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (mouseActive && hoverMenuIdx === i) {
+                  // Clicking same menu closes it
+                  setHoverMenuIdx(null);
+                  setMouseActive(false);
+                } else {
+                  setHoverMenuIdx(i);
+                  setHoverSubIdx(null);
+                  setMouseActive(true);
+                }
               }}
             >
               {t(language, `menu.${menu}`)}
-              {isFocused && submenuOpen && (
+
+              {/* Dropdown */}
+              {isFocused && activeSubOpen && (
                 <div
                   style={{
                     position: 'absolute',
@@ -114,32 +165,42 @@ export default function MenuBar({
                     left: 0,
                     background: 'var(--terminal-bg)',
                     border: '1px solid var(--terminal-text)',
-                    minWidth: '250px',
-                    zIndex: 100,
-                    marginTop: '4px',
+                    minWidth: '260px',
+                    zIndex: 300,
+                    marginTop: '2px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
                   }}
                 >
-                  {items.map((item, j) => (
-                    <div
-                      key={item.action}
-                      onClick={() => onAction(item.action)}
-                      style={{
-                        padding: '8px 16px',
-                        cursor: 'pointer',
-                        borderBottom: j < items.length - 1 ? '1px solid var(--terminal-text)' : 'none',
-                        opacity: j === submenuIndex ? 1 : 0.85,
-                        background: j === submenuIndex ? 'var(--terminal-text)' : 'transparent',
-                        color: j === submenuIndex ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      <span>{item.label}</span>
-                      {item.shortcut && (
-                        <span style={{ opacity: 0.6, marginLeft: '20px' }}>{item.shortcut}</span>
-                      )}
-                    </div>
-                  ))}
+                  {items.map((item, j) => {
+                    const isActive = j === activeSubIdx;
+                    return (
+                      <div
+                        key={item.action}
+                        onMouseEnter={() => setHoverSubIdx(j)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onAction(item.action);
+                          setHoverMenuIdx(null);
+                          setMouseActive(false);
+                        }}
+                        style={{
+                          padding: '8px 16px',
+                          cursor: 'pointer',
+                          borderBottom: j < items.length - 1 ? '1px solid rgba(var(--terminal-text-rgb, 51,255,51), 0.2)' : 'none',
+                          background: isActive ? 'var(--terminal-text)' : 'transparent',
+                          color: isActive ? 'var(--terminal-bg)' : 'var(--terminal-text)',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          transition: 'background 0.05s, color 0.05s',
+                        }}
+                      >
+                        <span>{item.label}</span>
+                        {item.shortcut && (
+                          <span style={{ opacity: 0.5, marginLeft: '20px', fontSize: '13px' }}>{item.shortcut}</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
