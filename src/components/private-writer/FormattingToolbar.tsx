@@ -1,9 +1,23 @@
-import { useCallback } from 'react';
 import type { Editor } from '@tiptap/react';
+
+const AVAILABLE_FONTS = [
+  { label: 'Courier Prime', value: "'Courier Prime', 'Courier New', monospace" },
+  { label: 'Courier New', value: "'Courier New', monospace" },
+  { label: 'VT323', value: "'VT323', monospace" },
+  { label: 'IBM Plex Mono', value: "'IBM Plex Mono', monospace" },
+  { label: 'Fira Code', value: "'Fira Code', monospace" },
+  { label: 'Source Code Pro', value: "'Source Code Pro', monospace" },
+  { label: 'JetBrains Mono', value: "'JetBrains Mono', monospace" },
+  { label: 'Roboto Mono', value: "'Roboto Mono', monospace" },
+];
 
 interface FormattingToolbarProps {
   editor: Editor;
   readOnly?: boolean;
+  fontSize: number;
+  fontFamily: string;
+  onChangeFontSize: (delta: number) => void;
+  onChangeFontFamily: (font: string) => void;
 }
 
 interface ToolbarButton {
@@ -13,7 +27,7 @@ interface ToolbarButton {
   isActive: boolean;
 }
 
-export default function FormattingToolbar({ editor, readOnly }: FormattingToolbarProps) {
+export default function FormattingToolbar({ editor, readOnly, fontSize, fontFamily, onChangeFontSize, onChangeFontFamily }: FormattingToolbarProps) {
   if (readOnly) return null;
 
   const buttons: ToolbarButton[] = [
@@ -75,6 +89,19 @@ export default function FormattingToolbar({ editor, readOnly }: FormattingToolba
     },
   ];
 
+  const btnStyle = (active: boolean): React.CSSProperties => ({
+    padding: '4px 10px',
+    background: active ? 'var(--terminal-text)' : 'transparent',
+    color: active ? 'var(--terminal-bg)' : 'var(--terminal-text)',
+    border: '1px solid var(--terminal-text)',
+    cursor: 'pointer',
+    fontFamily: "'Courier Prime', 'Courier New', monospace",
+    fontSize: '13px',
+    textShadow: active ? 'none' : '0 0 5px var(--terminal-glow)',
+    opacity: 0.9,
+    transition: 'all 0.1s',
+  });
+
   return (
     <div
       style={{
@@ -87,6 +114,57 @@ export default function FormattingToolbar({ editor, readOnly }: FormattingToolba
         alignItems: 'center',
       }}
     >
+      {/* Font dropdown */}
+      <select
+        value={fontFamily}
+        onChange={e => onChangeFontFamily(e.target.value)}
+        style={{
+          background: 'var(--terminal-bg)',
+          color: 'var(--terminal-text)',
+          border: '1px solid var(--terminal-text)',
+          padding: '4px 6px',
+          fontFamily: "'Courier Prime', monospace",
+          fontSize: '12px',
+          cursor: 'pointer',
+          outline: 'none',
+          maxWidth: '140px',
+          marginRight: '4px',
+        }}
+      >
+        {AVAILABLE_FONTS.map(f => (
+          <option key={f.value} value={f.value}>{f.label}</option>
+        ))}
+      </select>
+
+      {/* Text size controls */}
+      <button
+        onClick={() => onChangeFontSize(-2)}
+        title="Decrease text size (Ctrl+-)"
+        style={btnStyle(false)}
+      >
+        A−
+      </button>
+      <span style={{
+        padding: '4px 6px',
+        fontSize: '12px',
+        opacity: 0.7,
+        color: 'var(--terminal-text)',
+        fontFamily: "'Courier Prime', monospace",
+        minWidth: '32px',
+        textAlign: 'center',
+      }}>
+        {fontSize}
+      </span>
+      <button
+        onClick={() => onChangeFontSize(2)}
+        title="Increase text size (Ctrl++)"
+        style={btnStyle(false)}
+      >
+        A+
+      </button>
+
+      <span style={{ width: '1px', height: '20px', background: 'var(--terminal-text)', opacity: 0.3, margin: '0 6px' }} />
+
       {buttons.map((btn, idx) => {
         if (btn.label === '|') {
           return <span key={`sep-${idx}`} style={{ width: '1px', height: '20px', background: 'var(--terminal-text)', opacity: 0.3, margin: '0 4px' }} />;
@@ -98,19 +176,11 @@ export default function FormattingToolbar({ editor, readOnly }: FormattingToolba
             onClick={btn.action}
             title={btn.shortcut ? `${btn.label} (${btn.shortcut})` : btn.label}
             style={{
-              padding: '4px 10px',
-              background: btn.isActive ? 'var(--terminal-text)' : 'transparent',
-              color: btn.isActive ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-              border: '1px solid var(--terminal-text)',
-              cursor: 'pointer',
-              fontFamily: "'Courier Prime', 'Courier New', monospace",
+              ...btnStyle(btn.isActive),
               fontSize: isHeading ? '12px' : '13px',
               fontWeight: (btn.label === 'B' || isHeading) ? 'bold' : 'normal',
               fontStyle: btn.label === 'I' ? 'italic' : 'normal',
               textDecoration: btn.label === 'U' ? 'underline' : 'none',
-              textShadow: btn.isActive ? 'none' : '0 0 5px var(--terminal-glow)',
-              opacity: 0.9,
-              transition: 'all 0.1s',
             }}
             onMouseEnter={(e) => {
               if (!btn.isActive) {
@@ -129,15 +199,6 @@ export default function FormattingToolbar({ editor, readOnly }: FormattingToolba
           </button>
         );
       })}
-      <span style={{
-        marginLeft: 'auto',
-        fontSize: '11px',
-        opacity: 0.5,
-        color: 'var(--terminal-text)',
-        fontFamily: "'Courier Prime', monospace",
-      }}>
-        Ctrl+Alt+1-4 • Ctrl+B/I/U
-      </span>
     </div>
   );
 }

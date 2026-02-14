@@ -1,6 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { t } from '@/lib/languages';
-import type { ModalType } from '@/lib/types';
 
 interface MenuBarProps {
   language: string;
@@ -10,11 +9,12 @@ interface MenuBarProps {
   submenuIndex: number;
   wifiOn: boolean;
   bluetoothOn: boolean;
+  filename: string;
   onAction: (action: string) => void;
   onMenuStateChange?: (open: boolean, menuIdx: number, subOpen: boolean, subIdx: number) => void;
 }
 
-const MENUS = ['file', 'edit', 'view', 'network', 'storage', 'power', 'language'] as const;
+const MENUS = ['file', 'edit', 'network', 'settings'] as const;
 
 function getSubmenuItems(menu: string, language: string, wifiOn: boolean, bluetoothOn: boolean) {
   switch (menu) {
@@ -22,55 +22,33 @@ function getSubmenuItems(menu: string, language: string, wifiOn: boolean, blueto
       return [
         { action: 'new', label: t(language, 'file.new'), shortcut: 'Ctrl+N' },
         { action: 'newnovel', label: '📖 New Novel Project' },
+        { action: 'separator', label: '' },
         { action: 'open', label: t(language, 'file.open'), shortcut: 'Ctrl+O' },
         { action: 'recent', label: t(language, 'file.recent') },
+        { action: 'separator', label: '' },
         { action: 'save', label: t(language, 'file.save'), shortcut: 'Ctrl+S' },
         { action: 'saveas', label: t(language, 'file.saveas') },
         { action: 'saveversion', label: '📋 Save Version...' },
         { action: 'savesnapshot', label: '📸 Save Snapshot', shortcut: 'Ctrl+Shift+V' },
+        { action: 'separator', label: '' },
+        { action: 'togglesidebar', label: 'File Browser', shortcut: 'Ctrl+Shift+B' },
       ];
     case 'edit':
       return [
         { action: 'undo', label: t(language, 'edit.undo'), shortcut: 'Ctrl+Z' },
         { action: 'redo', label: t(language, 'edit.redo'), shortcut: 'Ctrl+R' },
+        { action: 'separator', label: '' },
         { action: 'copy', label: t(language, 'edit.copy'), shortcut: 'Ctrl+C' },
         { action: 'paste', label: t(language, 'edit.paste'), shortcut: 'Ctrl+V' },
-        { action: 'selectfont', label: t(language, 'edit.selectfont') },
-        { action: 'typingchallenge', label: 'Typing Challenge' },
-        { action: 'togglelivestats', label: 'Toggle Live Stats', shortcut: 'Ctrl+Shift+S' },
-      ];
-    case 'view':
-      return [
-        { action: 'increasetext', label: t(language, 'view.increase'), shortcut: 'Ctrl++' },
-        { action: 'decreasetext', label: t(language, 'view.decrease'), shortcut: 'Ctrl+-' },
-        { action: 'customizecolors', label: t(language, 'view.customise') },
-        { action: 'togglesidebar', label: 'File Browser', shortcut: 'Ctrl+Shift+B' },
-        { action: 'fullscreen', label: 'Toggle Fullscreen', shortcut: 'F11' },
       ];
     case 'network':
       return [
         { action: 'wifi', label: `${t(language, 'network.wifi')} ${wifiOn ? t(language, 'network.on') : t(language, 'network.off')}` },
         { action: 'bluetooth', label: `${t(language, 'network.bluetooth')} ${bluetoothOn ? t(language, 'network.on') : t(language, 'network.off')}` },
       ];
-    case 'storage':
+    case 'settings':
       return [
-        { action: 'local', label: t(language, 'storage.local') },
-        { action: 'usb', label: t(language, 'storage.usb') },
-        { action: 'dropbox', label: t(language, 'storage.dropbox') },
-        { action: 'gdrive', label: t(language, 'storage.gdrive') },
-        { action: 'icloud', label: t(language, 'storage.icloud') },
-      ];
-    case 'power':
-      return [
-        { action: 'pinsetup', label: '🔒 PIN Lock Setup' },
-        { action: 'update', label: t(language, 'power.update') },
-        { action: 'shutdown', label: t(language, 'power.shutdown') },
-      ];
-    case 'language':
-      return [
-        { action: 'lang-en-GB', label: t(language, 'language.englishGB') },
-        { action: 'lang-en-US', label: t(language, 'language.englishUS') },
-        { action: 'lang-af', label: t(language, 'language.afrikaans') },
+        { action: 'opensettings', label: '⚙ Open Settings Panel...', shortcut: '' },
       ];
     default:
       return [];
@@ -79,7 +57,7 @@ function getSubmenuItems(menu: string, language: string, wifiOn: boolean, blueto
 
 export default function MenuBar({
   language, visible, menuIndex, submenuOpen, submenuIndex,
-  wifiOn, bluetoothOn, onAction, onMenuStateChange,
+  wifiOn, bluetoothOn, filename, onAction, onMenuStateChange,
 }: MenuBarProps) {
   const [hoverMenuIdx, setHoverMenuIdx] = useState<number | null>(null);
   const [hoverSubIdx, setHoverSubIdx] = useState<number | null>(null);
@@ -105,6 +83,8 @@ export default function MenuBar({
   const activeSubOpen = mouseActive ? (hoverMenuIdx !== null) : (visible && submenuOpen);
   const activeSubIdx = mouseActive ? (hoverSubIdx ?? 0) : submenuIndex;
 
+  const displayName = filename || t(language, 'status.untitled');
+
   return (
     <div
       ref={barRef}
@@ -118,12 +98,17 @@ export default function MenuBar({
         zIndex: 200,
         userSelect: 'none',
         flexShrink: 0,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
       }}
     >
       <div style={{ display: 'flex', gap: '4px' }}>
         {MENUS.map((menu, i) => {
           const isFocused = i === activeMenuIdx;
           const items = getSubmenuItems(menu, language, wifiOn, bluetoothOn);
+          // Filter out separators for keyboard navigation indexing
+          const actionItems = items.filter(item => item.action !== 'separator');
 
           return (
             <div
@@ -147,7 +132,6 @@ export default function MenuBar({
               onClick={(e) => {
                 e.stopPropagation();
                 if (mouseActive && hoverMenuIdx === i) {
-                  // Clicking same menu closes it
                   setHoverMenuIdx(null);
                   setMouseActive(false);
                 } else {
@@ -175,6 +159,20 @@ export default function MenuBar({
                   }}
                 >
                   {items.map((item, j) => {
+                    if (item.action === 'separator') {
+                      return (
+                        <div
+                          key={`sep-${j}`}
+                          style={{
+                            height: '1px',
+                            background: 'var(--terminal-text)',
+                            opacity: 0.2,
+                            margin: '4px 8px',
+                          }}
+                        />
+                      );
+                    }
+                    // For hover tracking, use the visual index (j)
                     const isActive = j === activeSubIdx;
                     return (
                       <div
@@ -189,7 +187,6 @@ export default function MenuBar({
                         style={{
                           padding: '8px 16px',
                           cursor: 'pointer',
-                          borderBottom: j < items.length - 1 ? '1px solid rgba(var(--terminal-text-rgb, 51,255,51), 0.2)' : 'none',
                           background: isActive ? 'var(--terminal-text)' : 'transparent',
                           color: isActive ? 'var(--terminal-bg)' : 'var(--terminal-text)',
                           display: 'flex',
@@ -209,6 +206,23 @@ export default function MenuBar({
             </div>
           );
         })}
+      </div>
+
+      {/* Filename display - top right */}
+      <div
+        style={{
+          fontSize: '13px',
+          opacity: 0.7,
+          fontFamily: "'Courier Prime', 'Courier New', monospace",
+          textShadow: '0 0 5px var(--terminal-glow)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          maxWidth: '300px',
+        }}
+        title={displayName}
+      >
+        📄 {displayName}
       </div>
     </div>
   );
