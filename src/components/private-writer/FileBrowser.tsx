@@ -601,6 +601,10 @@ export default function FileBrowser({
                 setFileIndex(0);
                 setSearchQuery('');
                 setFocusPane('folders');
+                // Toggle collapse on click for non-root folders
+                if (folder.path.length > 0) {
+                  onToggleFolder(folder.path);
+                }
               }}
               style={{
                 padding: '5px 8px',
