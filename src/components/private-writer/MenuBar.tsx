@@ -126,7 +126,7 @@ export default function MenuBar({
                         padding: '8px 16px',
                         cursor: 'pointer',
                         borderBottom: j < items.length - 1 ? '1px solid var(--terminal-text)' : 'none',
-                        opacity: j === submenuIndex ? 1 : 0.4,
+                        opacity: j === submenuIndex ? 1 : 0.85,
                         background: j === submenuIndex ? 'var(--terminal-text)' : 'transparent',
                         color: j === submenuIndex ? 'var(--terminal-bg)' : 'var(--terminal-text)',
                         display: 'flex',
