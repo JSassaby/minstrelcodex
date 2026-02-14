@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import BootScreen from '@/components/private-writer/BootScreen';
 import Editor from '@/components/private-writer/Editor';
+import type { EditorHandle } from '@/components/private-writer/Editor';
 import MenuBar, { MENUS, getSubmenuItems } from '@/components/private-writer/MenuBar';
 import StatusBar from '@/components/private-writer/StatusBar';
 import FileBrowser from '@/components/private-writer/FileBrowser';
@@ -127,7 +128,7 @@ export default function PrivateWriter() {
   const docStorage = useDocumentStorage();
   const fileStructure = useFileStructure();
   const theme = useTerminalTheme();
-  const editorRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<EditorHandle>(null);
 
   // Content state managed locally for editor
   const [editorContent, setEditorContent] = useState('');
@@ -873,7 +874,7 @@ export default function PrivateWriter() {
         onChange={handleEditorChange}
         fontSize={theme.fontSize}
         placeholder={t(language, 'placeholder')}
-        editorRef={editorRef}
+        ref={editorRef}
         readOnly={fileBrowserOpen || !!activeModal || menuOpen}
       />
 
