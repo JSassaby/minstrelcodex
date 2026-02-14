@@ -323,7 +323,6 @@ export default function DNote() {
   // Central keyboard handler
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // PIN lock screen
       if (locked) {
         if (e.key >= '0' && e.key <= '9') {
           setPinInput(prev => {
@@ -487,8 +486,8 @@ export default function DNote() {
       }
     };
 
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    window.addEventListener('keydown', handler, true);
+    return () => window.removeEventListener('keydown', handler, true);
   }, [
     locked, pinInput, pinConfig, pinConfirm, pinLength, pinStep,
     activeModal, modalButtonIndex, menuOpen, menuIndex, submenuOpen, submenuIndex,
@@ -882,6 +881,7 @@ export default function DNote() {
         fontSize={theme.fontSize}
         placeholder={t(language, 'placeholder')}
         editorRef={editorRef}
+        readOnly={sidebarOpen || !!activeModal || menuOpen}
       />
 
       <HelpText
