@@ -736,7 +736,7 @@ export default function FileBrowser({
         </div>
       )}
 
-      {/* Compact action hints */}
+      {/* Clickable action buttons */}
       <div
         style={{
           borderTop: '2px solid var(--terminal-text)',
@@ -745,11 +745,33 @@ export default function FileBrowser({
           opacity: 0.8,
           flexShrink: 0,
           lineHeight: 1.6,
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '2px 6px',
         }}
       >
-        <kbd style={kbdStyle}>Enter</kbd>Open <kbd style={kbdStyle}>M</kbd>Move <kbd style={kbdStyle}>R</kbd>Rename <kbd style={kbdStyle}>D</kbd>Del
-        <br />
-        <kbd style={kbdStyle}>N</kbd>Folder <kbd style={kbdStyle}>C</kbd>File <kbd style={kbdStyle}>/</kbd>Search <kbd style={kbdStyle}>Tab</kbd>Pane
+        {[
+          { key: 'Enter', label: 'Open' },
+          { key: 'm', label: 'Move' },
+          { key: 'r', label: 'Rename' },
+          { key: 'd', label: 'Del' },
+          { key: 'n', label: 'Folder' },
+          { key: 'c', label: 'File' },
+          { key: '/', label: 'Search' },
+          { key: 'Tab', label: 'Pane' },
+        ].map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={(e) => {
+              e.stopPropagation();
+              window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+            }}
+            style={actionBtnStyle}
+            title={`${key} — ${label}`}
+          >
+            <span style={kbdStyle}>{key}</span>{label}
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -762,4 +784,16 @@ const kbdStyle: React.CSSProperties = {
   fontSize: '11px',
   marginRight: '4px',
   fontFamily: "'Courier Prime', monospace",
+};
+
+const actionBtnStyle: React.CSSProperties = {
+  background: 'transparent',
+  border: 'none',
+  color: 'inherit',
+  cursor: 'pointer',
+  padding: '2px 4px',
+  fontFamily: 'inherit',
+  fontSize: 'inherit',
+  display: 'inline-flex',
+  alignItems: 'center',
 };
