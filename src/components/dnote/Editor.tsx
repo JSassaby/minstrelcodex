@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useEffect } from 'react';
 
 interface EditorProps {
   content: string;
@@ -6,9 +6,10 @@ interface EditorProps {
   fontSize: number;
   placeholder: string;
   editorRef: React.RefObject<HTMLTextAreaElement | null>;
+  readOnly?: boolean;
 }
 
-export default function Editor({ content, onChange, fontSize, placeholder, editorRef }: EditorProps) {
+export default function Editor({ content, onChange, fontSize, placeholder, editorRef, readOnly }: EditorProps) {
   useEffect(() => {
     editorRef.current?.focus();
   }, []);
@@ -27,6 +28,7 @@ export default function Editor({ content, onChange, fontSize, placeholder, edito
         value={content}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
+        readOnly={readOnly}
         spellCheck={false}
         style={{
           width: '100%',
