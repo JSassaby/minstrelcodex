@@ -656,7 +656,7 @@ export default function PrivateWriter() {
         } else if (e.key === 'Enter') {
           if (filenames[modalButtonIndex]) {
             const content = docStorage.loadDocument(filenames[modalButtonIndex]);
-            if (content !== null) setEditorContent(content);
+            if (content !== null) { setEditorContent(content); editorRef.current?.setContent(content); }
             closeModal();
           }
           e.preventDefault();
@@ -1029,7 +1029,7 @@ export default function PrivateWriter() {
         }}
         onOpenFile={(filename) => {
           const content = docStorage.loadDocument(filename);
-          if (content !== null) setEditorContent(content);
+          if (content !== null) { setEditorContent(content); editorRef.current?.setContent(content); }
         }}
         onNewFile={() => executeAction('new')}
         onCreateFile={(filename, folderPath) => {
@@ -1078,7 +1078,7 @@ export default function PrivateWriter() {
               key={name}
               onClick={() => {
                 const content = docStorage.loadDocument(name);
-                if (content !== null) setEditorContent(content);
+                if (content !== null) { setEditorContent(content); editorRef.current?.setContent(content); }
                 closeModal();
               }}
               style={{
@@ -1111,7 +1111,7 @@ export default function PrivateWriter() {
               key={name}
               onClick={() => {
                 const content = docStorage.loadDocument(name);
-                if (content !== null) setEditorContent(content);
+                if (content !== null) { setEditorContent(content); editorRef.current?.setContent(content); }
                 closeModal();
               }}
               style={{
