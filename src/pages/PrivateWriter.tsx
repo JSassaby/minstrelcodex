@@ -468,13 +468,8 @@ export default function PrivateWriter() {
         return;
       }
 
-      // Settings panel handles its own ESC
+      // Settings panel has its own keyboard handler
       if (settingsPanelOpen) {
-        if (e.key === 'Escape') {
-          setSettingsPanelOpen(false);
-          setTimeout(() => editorRef.current?.focus(), 50);
-          e.preventDefault();
-        }
         return;
       }
 
@@ -571,22 +566,32 @@ export default function PrivateWriter() {
     } else if (e.key === 'ArrowDown') {
       if (!submenuOpen) {
         setSubmenuOpen(true);
-        setSubmenuIndex(0);
+        const items = getSubmenuItems(MENUS[menuIndex], language, wifiOn, bluetoothOn);
+        const firstAction = items.findIndex(i => i.action !== 'separator');
+        setSubmenuIndex(firstAction >= 0 ? firstAction : 0);
       } else {
         const items = getSubmenuItems(MENUS[menuIndex], language, wifiOn, bluetoothOn);
-        setSubmenuIndex(prev => (prev + 1) % items.length);
+        setSubmenuIndex(prev => {
+          let next = (prev + 1) % items.length;
+          while (items[next].action === 'separator') next = (next + 1) % items.length;
+          return next;
+        });
       }
       e.preventDefault();
     } else if (e.key === 'ArrowUp') {
       if (submenuOpen) {
         const items = getSubmenuItems(MENUS[menuIndex], language, wifiOn, bluetoothOn);
-        setSubmenuIndex(prev => (prev - 1 + items.length) % items.length);
+        setSubmenuIndex(prev => {
+          let next = (prev - 1 + items.length) % items.length;
+          while (items[next].action === 'separator') next = (next - 1 + items.length) % items.length;
+          return next;
+        });
       }
       e.preventDefault();
     } else if (e.key === 'Enter') {
       if (submenuOpen) {
         const items = getSubmenuItems(MENUS[menuIndex], language, wifiOn, bluetoothOn);
-        executeAction(items[submenuIndex].action);
+        if (items[submenuIndex].action !== 'separator') executeAction(items[submenuIndex].action);
         setMenuOpen(false);
         setSubmenuOpen(false);
       } else {
