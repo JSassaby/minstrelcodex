@@ -1,4 +1,4 @@
-import { useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -14,11 +14,14 @@ interface EditorProps {
   content: string;
   onChange: (content: string) => void;
   fontSize: number;
+  fontFamily: string;
   placeholder: string;
   readOnly?: boolean;
+  onChangeFontSize: (delta: number) => void;
+  onChangeFontFamily: (font: string) => void;
 }
 
-const Editor = forwardRef<EditorHandle, EditorProps>(({ content, onChange, fontSize, placeholder, readOnly }, ref) => {
+const Editor = forwardRef<EditorHandle, EditorProps>(({ content, onChange, fontSize, fontFamily, placeholder, readOnly, onChangeFontSize, onChangeFontFamily }, ref) => {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -40,14 +43,12 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({ content, onChange, fontS
     },
   });
 
-  // Sync readOnly
   useEffect(() => {
     if (editor) {
       editor.setEditable(!readOnly);
     }
   }, [editor, readOnly]);
 
-  // Sync content from outside (e.g. loading a document)
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
       editor.commands.setContent(content || '', { emitUpdate: false });
@@ -60,7 +61,6 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({ content, onChange, fontS
     setContent: (html: string) => editor?.commands.setContent(html || '', { emitUpdate: false }),
   }), [editor]);
 
-  // Focus on mount
   useEffect(() => {
     if (editor) {
       setTimeout(() => editor.commands.focus(), 100);
@@ -79,7 +79,14 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({ content, onChange, fontS
         position: 'relative',
       }}
     >
-      <FormattingToolbar editor={editor} readOnly={readOnly} />
+      <FormattingToolbar
+        editor={editor}
+        readOnly={readOnly}
+        fontSize={fontSize}
+        fontFamily={fontFamily}
+        onChangeFontSize={onChangeFontSize}
+        onChangeFontFamily={onChangeFontFamily}
+      />
       <div
         style={{
           flex: 1,
@@ -91,7 +98,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({ content, onChange, fontS
           .terminal-editor {
             outline: none;
             color: var(--terminal-text);
-            font-family: 'Courier Prime', 'Courier New', monospace;
+            font-family: ${fontFamily};
             font-size: ${fontSize}px;
             line-height: 1.6;
             text-shadow: 0 0 5px var(--terminal-glow);

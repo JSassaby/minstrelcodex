@@ -9,6 +9,7 @@ import HelpText from '@/components/private-writer/HelpText';
 import LiveStats from '@/components/private-writer/LiveStats';
 import GoogleDriveModal from '@/components/private-writer/GoogleDriveModal';
 import ModalShell, { ModalButton, ModalInput } from '@/components/private-writer/ModalShell';
+import SettingsPanel from '@/components/private-writer/SettingsPanel';
 import { t } from '@/lib/languages';
 import { typingPassages } from '@/lib/typingPassages';
 import { useDocumentStorage } from '@/hooks/useDocumentStorage';
@@ -16,23 +17,7 @@ import { useFileStructure } from '@/hooks/useFileStructure';
 import { useTerminalTheme } from '@/hooks/useTerminalTheme';
 import type { ModalType, Language, Difficulty, PinConfig } from '@/lib/types';
 
-// Color presets
-const TEXT_PRESETS = ['#33ff33','#00ff00','#ffffff','#4db8ff','#00e5e5','#ffff00','#ffb000','#ff6b9d','#ff5555','#e6e6e6'];
-const BG_PRESETS = ['#000000','#ffffff','#0a0a0a','#1a1a1a','#001a33','#001a1a','#1a0033','#f5f5f5','#2c2c2c','#1a3300'];
-const COLOR_COMBOS = [
-  { text: '#33ff33', bg: '#000000', name: 'Classic Terminal' },
-  { text: '#00ff00', bg: '#000000', name: 'Matrix Green' },
-  { text: '#ffb000', bg: '#000000', name: 'Warm Amber' },
-  { text: '#4db8ff', bg: '#000000', name: 'Cool Blue' },
-  { text: '#00e5e5', bg: '#000000', name: 'Cyberpunk Cyan' },
-  { text: '#ffffff', bg: '#000000', name: 'High Contrast' },
-  { text: '#000000', bg: '#ffffff', name: 'Light Mode' },
-  { text: '#ffffff', bg: '#001a33', name: 'Midnight Blue' },
-  { text: '#00ff00', bg: '#001a1a', name: 'Dark Teal' },
-  { text: '#ffff00', bg: '#000000', name: 'Yellow Alert' },
-  { text: '#e6e6e6', bg: '#1a1a1a', name: 'Soft Grey' },
-  { text: '#000000', bg: '#f5f5f5', name: 'Reduced Glare' },
-];
+
 
 export default function PrivateWriter() {
   // Core state
@@ -72,6 +57,7 @@ export default function PrivateWriter() {
 
   // File browser state (replaces old sidebar)
   const [fileBrowserOpen, setFileBrowserOpen] = useState(false);
+  const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
 
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -113,15 +99,10 @@ export default function PrivateWriter() {
   const [toastMessage, setToastMessage] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
 
-  // Color picker
-  const [textColorInput, setTextColorInput] = useState('#33FF33');
-  const [bgColorInput, setBgColorInput] = useState('#000000');
-  const [colorFocusSection, setColorFocusSection] = useState(0);
-  const [colorPresetIdx, setColorPresetIdx] = useState(0);
-  const [comboIdx, setComboIdx] = useState(0);
-  const [selectedTextIdx, setSelectedTextIdx] = useState(-1);
-  const [selectedBgIdx, setSelectedBgIdx] = useState(-1);
-  const [selectedComboIdx, setSelectedComboIdx] = useState(-1);
+  // Font family
+  const [fontFamily, setFontFamily] = useState(() => {
+    return localStorage.getItem('pw-font-family') || "'Courier Prime', 'Courier New', monospace";
+  });
 
   // Typing challenge
   const [typingDifficulty, setTypingDifficulty] = useState<Difficulty>('easy');
@@ -324,15 +305,10 @@ export default function PrivateWriter() {
         theme.changeFontSize(-2);
         break;
       case 'customizecolors':
-        setTextColorInput(theme.colors.text.toUpperCase());
-        setBgColorInput(theme.colors.background.toUpperCase());
-        setColorFocusSection(0);
-        setColorPresetIdx(0);
-        setComboIdx(0);
-        setSelectedTextIdx(-1);
-        setSelectedBgIdx(-1);
-        setSelectedComboIdx(-1);
-        setActiveModal('colors');
+        setSettingsPanelOpen(true);
+        break;
+      case 'opensettings':
+        setSettingsPanelOpen(true);
         break;
       case 'togglesidebar':
         setFileBrowserOpen(prev => !prev);
@@ -492,6 +468,16 @@ export default function PrivateWriter() {
         return;
       }
 
+      // Settings panel handles its own ESC
+      if (settingsPanelOpen) {
+        if (e.key === 'Escape') {
+          setSettingsPanelOpen(false);
+          setTimeout(() => editorRef.current?.focus(), 50);
+          e.preventDefault();
+        }
+        return;
+      }
+
       // File browser handles its own keys when open
       if (fileBrowserOpen) {
         return; // FileBrowser component has its own key handler
@@ -559,10 +545,9 @@ export default function PrivateWriter() {
   }, [
     locked, pinInput, pinConfig, pinConfirm, pinLength, pinStep,
     activeModal, modalButtonIndex, menuOpen, menuIndex, submenuOpen, submenuIndex,
-    fileBrowserOpen, language,
+    fileBrowserOpen, settingsPanelOpen, language,
     saveFilename, folderName, selectedFolderIdx,
-    colorFocusSection, colorPresetIdx, comboIdx,
-    textColorInput, bgColorInput,
+    typingPhase, typingBtnIdx, typingDifficulty,
     typingPhase, typingBtnIdx, typingDifficulty,
     docStorage, fileStructure, theme, editorContent, executeAction, closeModal,
   ]);
@@ -720,78 +705,7 @@ export default function PrivateWriter() {
         break;
       }
 
-      case 'colors':
-        if (e.key === 'Tab') {
-          const next = (colorFocusSection + (e.shiftKey ? 5 : 1)) % 6;
-          setColorFocusSection(next);
-          if (next === 1) setColorPresetIdx(selectedTextIdx >= 0 ? selectedTextIdx : 0);
-          else if (next === 3) setColorPresetIdx(selectedBgIdx >= 0 ? selectedBgIdx : 0);
-          else if (next === 4) setComboIdx(selectedComboIdx >= 0 ? selectedComboIdx : 0);
-          setTimeout(() => {
-            const sectionEl = document.querySelector(`[data-color-section="${next}"]`);
-            sectionEl?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-          }, 50);
-          e.preventDefault();
-        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-          const dir = e.key === 'ArrowLeft' ? -1 : 1;
-          if (colorFocusSection === 1) {
-            setColorPresetIdx(prev => (prev + dir + TEXT_PRESETS.length) % TEXT_PRESETS.length);
-            e.preventDefault();
-          } else if (colorFocusSection === 3) {
-            setColorPresetIdx(prev => (prev + dir + BG_PRESETS.length) % BG_PRESETS.length);
-            e.preventDefault();
-          } else if (colorFocusSection === 4) {
-            setComboIdx(prev => (prev + dir + COLOR_COMBOS.length) % COLOR_COMBOS.length);
-            e.preventDefault();
-          } else if (colorFocusSection === 5) {
-            setModalButtonIndex(prev => (prev + dir + 3) % 3);
-            e.preventDefault();
-          }
-        } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-          if (colorFocusSection === 4) {
-            const step = e.key === 'ArrowUp' ? -4 : 4;
-            setComboIdx(prev => (prev + step + COLOR_COMBOS.length) % COLOR_COMBOS.length);
-            e.preventDefault();
-          }
-        } else if (e.key === 'Enter' || e.key === ' ') {
-          if (colorFocusSection === 1) {
-            setTextColorInput(TEXT_PRESETS[colorPresetIdx].toUpperCase());
-            setSelectedTextIdx(colorPresetIdx);
-            setSelectedComboIdx(-1);
-            e.preventDefault();
-          } else if (colorFocusSection === 3) {
-            setBgColorInput(BG_PRESETS[colorPresetIdx].toUpperCase());
-            setSelectedBgIdx(colorPresetIdx);
-            setSelectedComboIdx(-1);
-            e.preventDefault();
-          } else if (colorFocusSection === 4) {
-            const combo = COLOR_COMBOS[comboIdx];
-            setTextColorInput(combo.text.toUpperCase());
-            setBgColorInput(combo.bg.toUpperCase());
-            setSelectedComboIdx(comboIdx);
-            setSelectedTextIdx(-1);
-            setSelectedBgIdx(-1);
-            e.preventDefault();
-          } else if (colorFocusSection === 5) {
-            if (modalButtonIndex === 0) {
-              if (/^#[0-9A-F]{6}$/i.test(textColorInput) && /^#[0-9A-F]{6}$/i.test(bgColorInput)) {
-                theme.updateColors({ text: textColorInput, background: bgColorInput });
-                closeModal();
-              }
-            } else if (modalButtonIndex === 1) {
-              theme.resetColors();
-              setTextColorInput('#33FF33');
-              setBgColorInput('#000000');
-              setSelectedTextIdx(-1);
-              setSelectedBgIdx(-1);
-              setSelectedComboIdx(-1);
-            } else {
-              closeModal();
-            }
-            e.preventDefault();
-          }
-        }
-        break;
+      // colors case removed — handled by SettingsPanel
 
       case 'typing':
         if (typingPhase === 'start') {
@@ -876,7 +790,6 @@ export default function PrivateWriter() {
     }
   }, [
     activeModal, modalButtonIndex, saveFilename, folderName, selectedFolderIdx,
-    colorFocusSection, colorPresetIdx, comboIdx, textColorInput, bgColorInput,
     typingPhase, typingBtnIdx, typingDifficulty,
     moveFileName, moveFilePath, novelTitle, versionName, selectedNovelIdx,
     docStorage, fileStructure, theme, editorContent, closeModal, showToast,
@@ -985,6 +898,7 @@ export default function PrivateWriter() {
         submenuIndex={submenuIndex}
         wifiOn={wifiOn}
         bluetoothOn={bluetoothOn}
+        filename={docStorage.currentDocument.filename}
         onAction={(action) => {
           executeAction(action);
           setMenuOpen(false);
@@ -996,9 +910,15 @@ export default function PrivateWriter() {
         content={editorContent}
         onChange={handleEditorChange}
         fontSize={theme.fontSize}
+        fontFamily={fontFamily}
         placeholder={t(language, 'placeholder')}
         ref={editorRef}
-        readOnly={fileBrowserOpen || !!activeModal || menuOpen}
+        readOnly={fileBrowserOpen || settingsPanelOpen || !!activeModal || menuOpen}
+        onChangeFontSize={(delta) => theme.changeFontSize(delta)}
+        onChangeFontFamily={(font) => {
+          setFontFamily(font);
+          localStorage.setItem('pw-font-family', font);
+        }}
       />
 
       <HelpText
@@ -1218,262 +1138,34 @@ export default function PrivateWriter() {
         </div>
       </ModalShell>
 
-      {/* Color Picker Modal */}
-      <ModalShell visible={activeModal === 'colors'} title={t(language, 'modals.colorsTitle')} onClose={closeModal}>
-        <div style={{ margin: '16px 0' }}>
-          {/* Live Preview */}
-          <div style={{
-            border: '2px solid var(--terminal-text)', padding: '16px', marginBottom: '20px',
-            background: bgColorInput, color: textColorInput, textAlign: 'center',
-            fontFamily: "'Courier Prime', monospace",
-          }}>
-            <div style={{ fontSize: '11px', opacity: 0.6, marginBottom: '4px', color: 'var(--terminal-text)' }}>LIVE PREVIEW</div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>The quick brown fox</div>
-            <div style={{ fontSize: '14px', marginTop: '4px' }}>jumps over the lazy dog</div>
-          </div>
-
-          {/* Section: Text Color Hex Input */}
-          <div data-color-section="0" style={{
-            padding: '8px', marginBottom: '4px',
-            border: colorFocusSection === 0 ? '1px dashed var(--terminal-text)' : '1px solid transparent',
-          }}>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
-              <div style={{ fontSize: '12px', opacity: 0.7, flex: 1 }}>
-                {t(language, 'modals.textColor')}
-                {colorFocusSection === 0 && <span style={{ marginLeft: '8px', opacity: 0.5 }}>[ Type hex value ]</span>}
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <div style={{ width: '32px', height: '32px', border: '2px solid var(--terminal-text)', background: textColorInput, flexShrink: 0 }} />
-              <input
-                value={textColorInput}
-                onChange={e => { setTextColorInput(e.target.value.toUpperCase()); setSelectedTextIdx(-1); setSelectedComboIdx(-1); }}
-                onFocus={() => setColorFocusSection(0)}
-                maxLength={7}
-                placeholder="#33FF33"
-                style={{
-                  flex: 1, background: 'var(--terminal-bg)', border: '1px solid var(--terminal-text)',
-                  color: 'var(--terminal-text)', padding: '8px',
-                  fontFamily: "'Courier Prime', monospace", fontSize: '14px', textTransform: 'uppercase',
-                  outline: colorFocusSection === 0 ? '2px solid var(--terminal-text)' : 'none',
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Section: Text Presets */}
-          <div data-color-section="1" style={{
-            padding: '8px', marginBottom: '4px',
-            border: colorFocusSection === 1 ? '1px dashed var(--terminal-text)' : '1px solid transparent',
-          }}>
-            <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '8px' }}>
-              {t(language, 'modals.textPresets')}
-              {colorFocusSection === 1 && <span style={{ marginLeft: '8px', opacity: 0.5 }}>[ ← → Navigate • Enter/Space Select ]</span>}
-            </div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {TEXT_PRESETS.map((color, i) => {
-                const isFocused = colorFocusSection === 1 && colorPresetIdx === i;
-                const isSelected = selectedTextIdx === i;
-                return (
-                  <div
-                    key={color}
-                    onClick={() => {
-                      setColorFocusSection(1);
-                      setColorPresetIdx(i);
-                      setTextColorInput(color.toUpperCase());
-                      setSelectedTextIdx(i);
-                      setSelectedComboIdx(-1);
-                    }}
-                    style={{
-                      width: '32px', height: '32px', background: color,
-                      border: isSelected ? '3px solid var(--terminal-text)' : '2px solid var(--terminal-text)',
-                      cursor: 'pointer',
-                      opacity: isFocused || isSelected ? 1 : 0.5,
-                      outline: isFocused ? '2px solid var(--terminal-text)' : 'none',
-                      outlineOffset: '3px',
-                      position: 'relative',
-                    }}
-                  >
-                    {isSelected && (
-                      <div style={{
-                        position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '18px', fontWeight: 'bold',
-                        color: color === '#ffffff' || color === '#ffff00' || color === '#e6e6e6' ? '#000' : '#fff',
-                        textShadow: '0 0 2px rgba(0,0,0,0.8)',
-                      }}>✓</div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Section: BG Color Hex Input */}
-          <div data-color-section="2" style={{
-            padding: '8px', marginTop: '16px', marginBottom: '4px',
-            border: colorFocusSection === 2 ? '1px dashed var(--terminal-text)' : '1px solid transparent',
-          }}>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
-              <div style={{ fontSize: '12px', opacity: 0.7, flex: 1 }}>
-                {t(language, 'modals.bgColor')}
-                {colorFocusSection === 2 && <span style={{ marginLeft: '8px', opacity: 0.5 }}>[ Type hex value ]</span>}
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <div style={{ width: '32px', height: '32px', border: '2px solid var(--terminal-text)', background: bgColorInput, flexShrink: 0 }} />
-              <input
-                value={bgColorInput}
-                onChange={e => { setBgColorInput(e.target.value.toUpperCase()); setSelectedBgIdx(-1); setSelectedComboIdx(-1); }}
-                onFocus={() => setColorFocusSection(2)}
-                maxLength={7}
-                placeholder="#000000"
-                style={{
-                  flex: 1, background: 'var(--terminal-bg)', border: '1px solid var(--terminal-text)',
-                  color: 'var(--terminal-text)', padding: '8px',
-                  fontFamily: "'Courier Prime', monospace", fontSize: '14px', textTransform: 'uppercase',
-                  outline: colorFocusSection === 2 ? '2px solid var(--terminal-text)' : 'none',
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Section: BG Presets */}
-          <div data-color-section="3" style={{
-            padding: '8px', marginBottom: '4px',
-            border: colorFocusSection === 3 ? '1px dashed var(--terminal-text)' : '1px solid transparent',
-          }}>
-            <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '8px' }}>
-              {t(language, 'modals.bgPresets')}
-              {colorFocusSection === 3 && <span style={{ marginLeft: '8px', opacity: 0.5 }}>[ ← → Navigate • Enter/Space Select ]</span>}
-            </div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {BG_PRESETS.map((color, i) => {
-                const isFocused = colorFocusSection === 3 && colorPresetIdx === i;
-                const isSelected = selectedBgIdx === i;
-                return (
-                  <div
-                    key={color}
-                    onClick={() => {
-                      setColorFocusSection(3);
-                      setColorPresetIdx(i);
-                      setBgColorInput(color.toUpperCase());
-                      setSelectedBgIdx(i);
-                      setSelectedComboIdx(-1);
-                    }}
-                    style={{
-                      width: '32px', height: '32px', background: color,
-                      border: isSelected
-                        ? `3px solid ${color === '#ffffff' || color === '#f5f5f5' ? '#666' : 'var(--terminal-text)'}`
-                        : `2px solid ${color === '#ffffff' || color === '#f5f5f5' ? '#666' : 'var(--terminal-text)'}`,
-                      cursor: 'pointer',
-                      opacity: isFocused || isSelected ? 1 : 0.5,
-                      outline: isFocused ? '2px solid var(--terminal-text)' : 'none',
-                      outlineOffset: '3px',
-                      position: 'relative',
-                    }}
-                  >
-                    {isSelected && (
-                      <div style={{
-                        position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '18px', fontWeight: 'bold',
-                        color: color === '#000000' || color === '#0a0a0a' || color === '#1a1a1a' || color === '#001a33' || color === '#001a1a' || color === '#1a0033' || color === '#2c2c2c' || color === '#1a3300' ? '#fff' : '#000',
-                        textShadow: '0 0 2px rgba(0,0,0,0.5)',
-                      }}>✓</div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Section: Combos */}
-          <div data-color-section="4" style={{
-            marginTop: '16px', padding: '8px', paddingTop: '16px',
-            borderTop: '1px solid var(--terminal-text)',
-            outline: colorFocusSection === 4 ? '1px dashed var(--terminal-text)' : 'none',
-          }}>
-            <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '8px' }}>
-              COLOUR COMBINATIONS (WCAG Compliant):
-              {colorFocusSection === 4 && <span style={{ marginLeft: '8px', opacity: 0.5 }}>[ ← → ↑ ↓ Navigate • Enter/Space Select ]</span>}
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
-              {COLOR_COMBOS.map((combo, i) => {
-                const isFocused = colorFocusSection === 4 && comboIdx === i;
-                const isSelected = selectedComboIdx === i;
-                return (
-                  <div
-                    key={combo.name}
-                    onClick={() => {
-                      setColorFocusSection(4);
-                      setComboIdx(i);
-                      setTextColorInput(combo.text.toUpperCase());
-                      setBgColorInput(combo.bg.toUpperCase());
-                      setSelectedComboIdx(i);
-                      setSelectedTextIdx(-1);
-                      setSelectedBgIdx(-1);
-                    }}
-                    style={{
-                      border: isSelected ? '3px solid var(--terminal-text)' : '1px solid var(--terminal-text)',
-                      padding: isSelected ? '6px' : '8px',
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      opacity: isFocused || isSelected ? 1 : 0.6,
-                      outline: isFocused && !isSelected ? '2px dashed var(--terminal-text)' : 'none',
-                      outlineOffset: '2px',
-                      position: 'relative',
-                      background: isSelected ? 'rgba(255,255,255,0.05)' : 'transparent',
-                    }}
-                  >
-                    {isSelected && (
-                      <div style={{
-                        position: 'absolute', top: '2px', right: '4px', fontSize: '14px',
-                        color: 'var(--terminal-text)',
-                      }}>✓</div>
-                    )}
-                    <div style={{
-                      background: combo.bg, color: combo.text, padding: '8px',
-                      fontWeight: 'bold', fontSize: '20px',
-                      fontFamily: "'Courier Prime', monospace", marginBottom: '8px',
-                      border: isFocused ? '1px solid var(--terminal-text)' : '1px solid transparent',
-                    }}>Aa</div>
-                    <div style={{ fontSize: '11px', opacity: 0.9 }}>{combo.name}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Keyboard hints bar */}
-        <div style={{
-          textAlign: 'center', fontSize: '11px', opacity: 0.6, margin: '12px 0', padding: '8px',
-          borderTop: '1px solid var(--terminal-text)', borderBottom: '1px solid var(--terminal-text)',
-        }}>
-          Tab/Shift+Tab: Section • ← → ↑ ↓: Browse • Enter/Space: Select • PgUp/PgDn: Scroll • Esc: Close
-        </div>
-
-        <div data-color-section="5" style={{
-          display: 'flex', gap: '12px', justifyContent: 'center',
-          padding: '8px',
-          border: colorFocusSection === 5 ? '1px dashed var(--terminal-text)' : '1px solid transparent',
-        }}>
-          <ModalButton label={t(language, 'modals.apply')} focused={colorFocusSection === 5 && modalButtonIndex === 0} onClick={() => {
-            if (/^#[0-9A-F]{6}$/i.test(textColorInput) && /^#[0-9A-F]{6}$/i.test(bgColorInput)) {
-              theme.updateColors({ text: textColorInput, background: bgColorInput });
-              closeModal();
-            }
-          }} />
-          <ModalButton label={t(language, 'modals.reset')} focused={colorFocusSection === 5 && modalButtonIndex === 1} onClick={() => {
-            theme.resetColors();
-            setTextColorInput('#33FF33');
-            setBgColorInput('#000000');
-            setSelectedTextIdx(-1);
-            setSelectedBgIdx(-1);
-            setSelectedComboIdx(-1);
-          }} />
-          <ModalButton label={t(language, 'modals.cancel')} focused={colorFocusSection === 5 && modalButtonIndex === 2} onClick={closeModal} />
-        </div>
-      </ModalShell>
+      {/* Settings Panel */}
+      <SettingsPanel
+        visible={settingsPanelOpen}
+        language={language}
+        colors={theme.colors}
+        wifiOn={wifiOn}
+        bluetoothOn={bluetoothOn}
+        pinConfig={pinConfig}
+        onClose={() => {
+          setSettingsPanelOpen(false);
+          setTimeout(() => editorRef.current?.focus(), 50);
+        }}
+        onAction={(action) => executeAction(action)}
+        onUpdateColors={(c) => theme.updateColors(c)}
+        onResetColors={() => theme.resetColors()}
+        onSetLanguage={(lang) => {
+          setLanguage(lang);
+          localStorage.setItem('pw-language', lang);
+        }}
+        onOpenPinSetup={() => {
+          setSettingsPanelOpen(false);
+          executeAction('pinsetup');
+        }}
+        onOpenTypingChallenge={() => {
+          setSettingsPanelOpen(false);
+          executeAction('typingchallenge');
+        }}
+      />
 
       {/* Typing Challenge Modal */}
       <ModalShell visible={activeModal === 'typing'} title="TYPING CHALLENGE" onClose={closeModal}>
