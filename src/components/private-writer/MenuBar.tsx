@@ -211,14 +211,17 @@ export default function MenuBar({
       {/* Filename display - top right */}
       <div
         style={{
-          fontSize: '13px',
-          opacity: 0.7,
+          position: 'absolute',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          fontSize: '15px',
           fontFamily: "'Courier Prime', 'Courier New', monospace",
           textShadow: '0 0 5px var(--terminal-glow)',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
-          maxWidth: '300px',
+          maxWidth: '400px',
+          pointerEvents: 'none',
         }}
         title={shortName}
       >
