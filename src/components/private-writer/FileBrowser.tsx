@@ -17,6 +17,7 @@ export interface FileBrowserProps {
   onMoveFile: (filename: string, fromPath: string[], toPath: string[]) => void;
   onToggleFolder: (path: string[]) => void;
   onRestoreFromDeleted: (itemName: string) => void;
+  onEmptyDeleted: () => void;
   onFocus: () => void;
   getFolders: () => { name: string; path: string[] }[];
 }
@@ -81,6 +82,7 @@ export default function FileBrowser({
   onMoveFile,
   onToggleFolder,
   onRestoreFromDeleted,
+  onEmptyDeleted,
   onFocus,
   getFolders,
 }: FileBrowserProps) {
@@ -307,6 +309,15 @@ export default function FileBrowser({
               onRestoreFromDeleted(itemName);
               showStatus(`"${itemName}" restored`);
               setFolderIndex(prev => Math.max(0, prev - 1));
+            }
+          }
+          e.preventDefault();
+        } else if (e.key === 'e' || e.key === 'E') {
+          const folder = folderList[folderIndex];
+          if (folder && folder.path.length === 1 && folder.path[0] === 'Deleted') {
+            if (confirm('Permanently empty the Deleted folder? This cannot be undone.')) {
+              onEmptyDeleted();
+              showStatus('Deleted folder emptied');
             }
           }
           e.preventDefault();
@@ -644,9 +655,26 @@ export default function FileBrowser({
           opacity: 1,
         }}
       >
-        <div style={{ padding: '2px 12px', fontSize: '10px', opacity: 0.7, letterSpacing: '2px' }}>
-          FILES ({filteredFiles.length})
-          {searchQuery && <span> — "{searchQuery}"</span>}
+        <div style={{ padding: '2px 12px', fontSize: '10px', opacity: 0.7, letterSpacing: '2px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>
+            FILES ({filteredFiles.length})
+            {searchQuery && <span> — "{searchQuery}"</span>}
+          </span>
+          {currentPath.length === 1 && currentPath[0] === 'Deleted' && filteredFiles.length > 0 && (
+            <span
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm('Permanently empty the Deleted folder? This cannot be undone.')) {
+                  onEmptyDeleted();
+                  showStatus('Deleted folder emptied');
+                }
+              }}
+              style={{ cursor: 'pointer', fontSize: '10px', opacity: 0.9, color: '#ff5555' }}
+              title="E to empty"
+            >
+              🗑 Empty
+            </span>
+          )}
         </div>
 
         {filteredFiles.length === 0 ? (
