@@ -53,6 +53,7 @@ function getSubmenuItems(menu: string, language: string, wifiOn: boolean, blueto
         { action: 'usb', label: t(language, 'storage.usb') },
         { action: 'dropbox', label: t(language, 'storage.dropbox') },
         { action: 'gdrive', label: t(language, 'storage.gdrive') },
+        { action: 'icloud', label: t(language, 'storage.icloud') },
       ];
     case 'power':
       return [

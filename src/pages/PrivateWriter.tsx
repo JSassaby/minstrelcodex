@@ -79,8 +79,9 @@ export default function PrivateWriter() {
   const [helpVisible, setHelpVisible] = useState(true);
 
   // Network simulation
-  const [wifiOn, setWifiOn] = useState(true);
+  const [wifiOn, setWifiOn] = useState(() => navigator.onLine);
   const [bluetoothOn, setBluetoothOn] = useState(false);
+  const [networkOverride, setNetworkOverride] = useState<boolean | null>(null);
   const [battery, setBattery] = useState(85);
 
   // Live stats
@@ -149,6 +150,15 @@ export default function PrivateWriter() {
     }, 30000);
     return () => clearInterval(interval);
   }, [editorContent, docStorage]);
+
+  // Sync WiFi with real navigator.onLine
+  useEffect(() => {
+    const onOnline = () => { if (networkOverride === null) setWifiOn(true); };
+    const onOffline = () => { if (networkOverride === null) setWifiOn(false); };
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+    return () => { window.removeEventListener('online', onOnline); window.removeEventListener('offline', onOffline); };
+  }, [networkOverride]);
 
   // Battery drain
   useEffect(() => {
@@ -257,6 +267,7 @@ export default function PrivateWriter() {
         } else {
           docStorage.createNew();
           setEditorContent('');
+          editorRef.current?.setContent('');
         }
         break;
       case 'open': {
@@ -325,7 +336,11 @@ export default function PrivateWriter() {
         });
         break;
       case 'wifi':
-        setWifiOn(prev => !prev);
+        setWifiOn(prev => {
+          const next = !prev;
+          setNetworkOverride(next);
+          return next;
+        });
         break;
       case 'bluetooth':
         setBluetoothOn(prev => !prev);
@@ -603,10 +618,12 @@ export default function PrivateWriter() {
             }
             docStorage.createNew();
             setEditorContent('');
+            editorRef.current?.setContent('');
             closeModal();
           } else if (modalButtonIndex === 1) { // Discard
             docStorage.createNew();
             setEditorContent('');
+            editorRef.current?.setContent('');
             closeModal();
           } else { // Cancel
             closeModal();
