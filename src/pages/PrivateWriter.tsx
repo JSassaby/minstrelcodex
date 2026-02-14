@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import BootScreen from '@/components/dnote/BootScreen';
-import Editor from '@/components/dnote/Editor';
-import MenuBar, { MENUS, getSubmenuItems } from '@/components/dnote/MenuBar';
-import StatusBar from '@/components/dnote/StatusBar';
-import FileBrowser from '@/components/dnote/FileBrowser';
-import HelpText from '@/components/dnote/HelpText';
-import LiveStats from '@/components/dnote/LiveStats';
-import ModalShell, { ModalButton, ModalInput } from '@/components/dnote/ModalShell';
+import BootScreen from '@/components/private-writer/BootScreen';
+import Editor from '@/components/private-writer/Editor';
+import MenuBar, { MENUS, getSubmenuItems } from '@/components/private-writer/MenuBar';
+import StatusBar from '@/components/private-writer/StatusBar';
+import FileBrowser from '@/components/private-writer/FileBrowser';
+import HelpText from '@/components/private-writer/HelpText';
+import LiveStats from '@/components/private-writer/LiveStats';
+import ModalShell, { ModalButton, ModalInput } from '@/components/private-writer/ModalShell';
 import { t } from '@/lib/languages';
 import { typingPassages } from '@/lib/typingPassages';
 import { useDocumentStorage } from '@/hooks/useDocumentStorage';
@@ -32,7 +32,7 @@ const COLOR_COMBOS = [
   { text: '#000000', bg: '#f5f5f5', name: 'Reduced Glare' },
 ];
 
-export default function DNote() {
+export default function PrivateWriter() {
   // Core state
   const [booted, setBooted] = useState(false);
   const [language, setLanguage] = useState<Language>(() => {
