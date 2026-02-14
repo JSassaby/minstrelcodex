@@ -105,6 +105,9 @@ export default function PrivateWriter() {
   const [colorFocusSection, setColorFocusSection] = useState(0);
   const [colorPresetIdx, setColorPresetIdx] = useState(0);
   const [comboIdx, setComboIdx] = useState(0);
+  const [selectedTextIdx, setSelectedTextIdx] = useState(-1);
+  const [selectedBgIdx, setSelectedBgIdx] = useState(-1);
+  const [selectedComboIdx, setSelectedComboIdx] = useState(-1);
 
   // Typing challenge
   const [typingDifficulty, setTypingDifficulty] = useState<Difficulty>('easy');
@@ -295,6 +298,9 @@ export default function PrivateWriter() {
         setColorFocusSection(0);
         setColorPresetIdx(0);
         setComboIdx(0);
+        setSelectedTextIdx(-1);
+        setSelectedBgIdx(-1);
+        setSelectedComboIdx(-1);
         setActiveModal('colors');
         break;
       case 'togglesidebar':
@@ -636,68 +642,68 @@ export default function PrivateWriter() {
         if (e.key === 'Tab') {
           const next = (colorFocusSection + (e.shiftKey ? 5 : 1)) % 6;
           setColorFocusSection(next);
-          setColorPresetIdx(0);
-          setComboIdx(0);
-          // Scroll the target section into view
+          if (next === 1) setColorPresetIdx(selectedTextIdx >= 0 ? selectedTextIdx : 0);
+          else if (next === 3) setColorPresetIdx(selectedBgIdx >= 0 ? selectedBgIdx : 0);
+          else if (next === 4) setComboIdx(selectedComboIdx >= 0 ? selectedComboIdx : 0);
           setTimeout(() => {
             const sectionEl = document.querySelector(`[data-color-section="${next}"]`);
             sectionEl?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
           }, 50);
           e.preventDefault();
         } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+          const dir = e.key === 'ArrowLeft' ? -1 : 1;
           if (colorFocusSection === 1) {
-            setColorPresetIdx(prev => {
-              if (e.key === 'ArrowLeft') return (prev - 1 + TEXT_PRESETS.length) % TEXT_PRESETS.length;
-              return (prev + 1) % TEXT_PRESETS.length;
-            });
+            setColorPresetIdx(prev => (prev + dir + TEXT_PRESETS.length) % TEXT_PRESETS.length);
             e.preventDefault();
           } else if (colorFocusSection === 3) {
-            setColorPresetIdx(prev => {
-              if (e.key === 'ArrowLeft') return (prev - 1 + BG_PRESETS.length) % BG_PRESETS.length;
-              return (prev + 1) % BG_PRESETS.length;
-            });
+            setColorPresetIdx(prev => (prev + dir + BG_PRESETS.length) % BG_PRESETS.length);
             e.preventDefault();
           } else if (colorFocusSection === 4) {
-            setComboIdx(prev => {
-              if (e.key === 'ArrowLeft') return (prev - 1 + COLOR_COMBOS.length) % COLOR_COMBOS.length;
-              return (prev + 1) % COLOR_COMBOS.length;
-            });
+            setComboIdx(prev => (prev + dir + COLOR_COMBOS.length) % COLOR_COMBOS.length);
             e.preventDefault();
           } else if (colorFocusSection === 5) {
-            setModalButtonIndex(prev => (prev + 1) % 3);
+            setModalButtonIndex(prev => (prev + dir + 3) % 3);
             e.preventDefault();
           }
         } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
           if (colorFocusSection === 4) {
-            setComboIdx(prev => {
-              if (e.key === 'ArrowUp') return (prev - 4 + COLOR_COMBOS.length) % COLOR_COMBOS.length;
-              return (prev + 4) % COLOR_COMBOS.length;
-            });
+            const step = e.key === 'ArrowUp' ? -4 : 4;
+            setComboIdx(prev => (prev + step + COLOR_COMBOS.length) % COLOR_COMBOS.length);
             e.preventDefault();
           }
-        } else if (e.key === 'Enter') {
+        } else if (e.key === 'Enter' || e.key === ' ') {
           if (colorFocusSection === 1) {
             setTextColorInput(TEXT_PRESETS[colorPresetIdx].toUpperCase());
+            setSelectedTextIdx(colorPresetIdx);
+            setSelectedComboIdx(-1);
             e.preventDefault();
           } else if (colorFocusSection === 3) {
             setBgColorInput(BG_PRESETS[colorPresetIdx].toUpperCase());
+            setSelectedBgIdx(colorPresetIdx);
+            setSelectedComboIdx(-1);
             e.preventDefault();
           } else if (colorFocusSection === 4) {
             const combo = COLOR_COMBOS[comboIdx];
             setTextColorInput(combo.text.toUpperCase());
             setBgColorInput(combo.bg.toUpperCase());
+            setSelectedComboIdx(comboIdx);
+            setSelectedTextIdx(-1);
+            setSelectedBgIdx(-1);
             e.preventDefault();
           } else if (colorFocusSection === 5) {
-            if (modalButtonIndex === 0) { // Apply
+            if (modalButtonIndex === 0) {
               if (/^#[0-9A-F]{6}$/i.test(textColorInput) && /^#[0-9A-F]{6}$/i.test(bgColorInput)) {
                 theme.updateColors({ text: textColorInput, background: bgColorInput });
                 closeModal();
               }
-            } else if (modalButtonIndex === 1) { // Reset
+            } else if (modalButtonIndex === 1) {
               theme.resetColors();
               setTextColorInput('#33FF33');
               setBgColorInput('#000000');
-            } else { // Cancel
+              setSelectedTextIdx(-1);
+              setSelectedBgIdx(-1);
+              setSelectedComboIdx(-1);
+            } else {
               closeModal();
             }
             e.preventDefault();
@@ -1086,15 +1092,34 @@ export default function PrivateWriter() {
       {/* Color Picker Modal */}
       <ModalShell visible={activeModal === 'colors'} title={t(language, 'modals.colorsTitle')} onClose={closeModal}>
         <div style={{ margin: '16px 0' }}>
-          {/* Text color */}
-          <div data-color-section="0"></div>
-          <div style={{ display: 'flex', gap: '16px', margin: '12px 0', alignItems: 'center' }}>
-            <div style={{ minWidth: '120px' }}>{t(language, 'modals.textColor')}</div>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flex: 1 }}>
-              <div style={{ width: '40px', height: '40px', border: '2px solid var(--terminal-text)', background: textColorInput }} />
+          {/* Live Preview */}
+          <div style={{
+            border: '2px solid var(--terminal-text)', padding: '16px', marginBottom: '20px',
+            background: bgColorInput, color: textColorInput, textAlign: 'center',
+            fontFamily: "'Courier Prime', monospace",
+          }}>
+            <div style={{ fontSize: '11px', opacity: 0.6, marginBottom: '4px', color: 'var(--terminal-text)' }}>LIVE PREVIEW</div>
+            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>The quick brown fox</div>
+            <div style={{ fontSize: '14px', marginTop: '4px' }}>jumps over the lazy dog</div>
+          </div>
+
+          {/* Section: Text Color Hex Input */}
+          <div data-color-section="0" style={{
+            padding: '8px', marginBottom: '4px',
+            border: colorFocusSection === 0 ? '1px dashed var(--terminal-text)' : '1px solid transparent',
+          }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
+              <div style={{ fontSize: '12px', opacity: 0.7, flex: 1 }}>
+                {t(language, 'modals.textColor')}
+                {colorFocusSection === 0 && <span style={{ marginLeft: '8px', opacity: 0.5 }}>[ Type hex value ]</span>}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div style={{ width: '32px', height: '32px', border: '2px solid var(--terminal-text)', background: textColorInput, flexShrink: 0 }} />
               <input
                 value={textColorInput}
-                onChange={e => setTextColorInput(e.target.value.toUpperCase())}
+                onChange={e => { setTextColorInput(e.target.value.toUpperCase()); setSelectedTextIdx(-1); setSelectedComboIdx(-1); }}
+                onFocus={() => setColorFocusSection(0)}
                 maxLength={7}
                 placeholder="#33FF33"
                 style={{
@@ -1106,32 +1131,71 @@ export default function PrivateWriter() {
               />
             </div>
           </div>
-          <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '8px' }}>{t(language, 'modals.textPresets')}</div>
-          <div data-color-section="1" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {TEXT_PRESETS.map((color, i) => (
-              <div
-                key={color}
-                onClick={() => setTextColorInput(color.toUpperCase())}
-                style={{
-                  width: '32px', height: '32px', background: color,
-                  border: '2px solid var(--terminal-text)', cursor: 'pointer',
-                  opacity: colorFocusSection === 1 && colorPresetIdx === i ? 1 : 0.6,
-                  outline: colorFocusSection === 1 && colorPresetIdx === i ? '2px solid var(--terminal-text)' : 'none',
-                  outlineOffset: '2px',
-                }}
-              />
-            ))}
+
+          {/* Section: Text Presets */}
+          <div data-color-section="1" style={{
+            padding: '8px', marginBottom: '4px',
+            border: colorFocusSection === 1 ? '1px dashed var(--terminal-text)' : '1px solid transparent',
+          }}>
+            <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '8px' }}>
+              {t(language, 'modals.textPresets')}
+              {colorFocusSection === 1 && <span style={{ marginLeft: '8px', opacity: 0.5 }}>[ ← → Navigate • Enter/Space Select ]</span>}
+            </div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {TEXT_PRESETS.map((color, i) => {
+                const isFocused = colorFocusSection === 1 && colorPresetIdx === i;
+                const isSelected = selectedTextIdx === i;
+                return (
+                  <div
+                    key={color}
+                    onClick={() => {
+                      setColorFocusSection(1);
+                      setColorPresetIdx(i);
+                      setTextColorInput(color.toUpperCase());
+                      setSelectedTextIdx(i);
+                      setSelectedComboIdx(-1);
+                    }}
+                    style={{
+                      width: '32px', height: '32px', background: color,
+                      border: isSelected ? '3px solid var(--terminal-text)' : '2px solid var(--terminal-text)',
+                      cursor: 'pointer',
+                      opacity: isFocused || isSelected ? 1 : 0.5,
+                      outline: isFocused ? '2px solid var(--terminal-text)' : 'none',
+                      outlineOffset: '3px',
+                      position: 'relative',
+                    }}
+                  >
+                    {isSelected && (
+                      <div style={{
+                        position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '18px', fontWeight: 'bold',
+                        color: color === '#ffffff' || color === '#ffff00' || color === '#e6e6e6' ? '#000' : '#fff',
+                        textShadow: '0 0 2px rgba(0,0,0,0.8)',
+                      }}>✓</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          {/* BG color */}
-          <div data-color-section="2"></div>
-          <div style={{ display: 'flex', gap: '16px', margin: '24px 0 12px', alignItems: 'center' }}>
-            <div style={{ minWidth: '120px' }}>{t(language, 'modals.bgColor')}</div>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flex: 1 }}>
-              <div style={{ width: '40px', height: '40px', border: '2px solid var(--terminal-text)', background: bgColorInput }} />
+          {/* Section: BG Color Hex Input */}
+          <div data-color-section="2" style={{
+            padding: '8px', marginTop: '16px', marginBottom: '4px',
+            border: colorFocusSection === 2 ? '1px dashed var(--terminal-text)' : '1px solid transparent',
+          }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
+              <div style={{ fontSize: '12px', opacity: 0.7, flex: 1 }}>
+                {t(language, 'modals.bgColor')}
+                {colorFocusSection === 2 && <span style={{ marginLeft: '8px', opacity: 0.5 }}>[ Type hex value ]</span>}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div style={{ width: '32px', height: '32px', border: '2px solid var(--terminal-text)', background: bgColorInput, flexShrink: 0 }} />
               <input
                 value={bgColorInput}
-                onChange={e => setBgColorInput(e.target.value.toUpperCase())}
+                onChange={e => { setBgColorInput(e.target.value.toUpperCase()); setSelectedBgIdx(-1); setSelectedComboIdx(-1); }}
+                onFocus={() => setColorFocusSection(2)}
                 maxLength={7}
                 placeholder="#000000"
                 style={{
@@ -1143,53 +1207,127 @@ export default function PrivateWriter() {
               />
             </div>
           </div>
-          <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '8px' }}>{t(language, 'modals.bgPresets')}</div>
-          <div data-color-section="3" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {BG_PRESETS.map((color, i) => (
-              <div
-                key={color}
-                onClick={() => setBgColorInput(color.toUpperCase())}
-                style={{
-                  width: '32px', height: '32px', background: color,
-                  border: `2px solid ${color === '#ffffff' || color === '#f5f5f5' ? '#666' : 'var(--terminal-text)'}`,
-                  cursor: 'pointer',
-                  opacity: colorFocusSection === 3 && colorPresetIdx === i ? 1 : 0.6,
-                  outline: colorFocusSection === 3 && colorPresetIdx === i ? '2px solid var(--terminal-text)' : 'none',
-                  outlineOffset: '2px',
-                }}
-              />
-            ))}
+
+          {/* Section: BG Presets */}
+          <div data-color-section="3" style={{
+            padding: '8px', marginBottom: '4px',
+            border: colorFocusSection === 3 ? '1px dashed var(--terminal-text)' : '1px solid transparent',
+          }}>
+            <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '8px' }}>
+              {t(language, 'modals.bgPresets')}
+              {colorFocusSection === 3 && <span style={{ marginLeft: '8px', opacity: 0.5 }}>[ ← → Navigate • Enter/Space Select ]</span>}
+            </div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {BG_PRESETS.map((color, i) => {
+                const isFocused = colorFocusSection === 3 && colorPresetIdx === i;
+                const isSelected = selectedBgIdx === i;
+                return (
+                  <div
+                    key={color}
+                    onClick={() => {
+                      setColorFocusSection(3);
+                      setColorPresetIdx(i);
+                      setBgColorInput(color.toUpperCase());
+                      setSelectedBgIdx(i);
+                      setSelectedComboIdx(-1);
+                    }}
+                    style={{
+                      width: '32px', height: '32px', background: color,
+                      border: isSelected
+                        ? `3px solid ${color === '#ffffff' || color === '#f5f5f5' ? '#666' : 'var(--terminal-text)'}`
+                        : `2px solid ${color === '#ffffff' || color === '#f5f5f5' ? '#666' : 'var(--terminal-text)'}`,
+                      cursor: 'pointer',
+                      opacity: isFocused || isSelected ? 1 : 0.5,
+                      outline: isFocused ? '2px solid var(--terminal-text)' : 'none',
+                      outlineOffset: '3px',
+                      position: 'relative',
+                    }}
+                  >
+                    {isSelected && (
+                      <div style={{
+                        position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '18px', fontWeight: 'bold',
+                        color: color === '#000000' || color === '#0a0a0a' || color === '#1a1a1a' || color === '#001a33' || color === '#001a1a' || color === '#1a0033' || color === '#2c2c2c' || color === '#1a3300' ? '#fff' : '#000',
+                        textShadow: '0 0 2px rgba(0,0,0,0.5)',
+                      }}>✓</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Combos */}
-          <div data-color-section="4" style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--terminal-text)' }}>
-            <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '8px' }}>COLOUR COMBINATIONS (WCAG Compliant):</div>
+          {/* Section: Combos */}
+          <div data-color-section="4" style={{
+            marginTop: '16px', padding: '8px', paddingTop: '16px',
+            borderTop: '1px solid var(--terminal-text)',
+            outline: colorFocusSection === 4 ? '1px dashed var(--terminal-text)' : 'none',
+          }}>
+            <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '8px' }}>
+              COLOUR COMBINATIONS (WCAG Compliant):
+              {colorFocusSection === 4 && <span style={{ marginLeft: '8px', opacity: 0.5 }}>[ ← → ↑ ↓ Navigate • Enter/Space Select ]</span>}
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
-              {COLOR_COMBOS.map((combo, i) => (
-                <div
-                  key={combo.name}
-                  onClick={() => {
-                    setTextColorInput(combo.text.toUpperCase());
-                    setBgColorInput(combo.bg.toUpperCase());
-                  }}
-                  style={{
-                    border: '1px solid var(--terminal-text)', padding: '8px', cursor: 'pointer',
-                    textAlign: 'center', opacity: colorFocusSection === 4 && comboIdx === i ? 1 : 0.7,
-                    outline: colorFocusSection === 4 && comboIdx === i ? '3px solid var(--terminal-text)' : 'none',
-                    outlineOffset: '2px',
-                  }}
-                >
-                  <div style={{ background: combo.bg, color: combo.text, padding: '8px', fontWeight: 'bold', fontSize: '20px', fontFamily: "'Courier Prime', monospace", marginBottom: '8px' }}>Aa</div>
-                  <div style={{ fontSize: '11px', opacity: 0.9 }}>{combo.name}</div>
-                </div>
-              ))}
+              {COLOR_COMBOS.map((combo, i) => {
+                const isFocused = colorFocusSection === 4 && comboIdx === i;
+                const isSelected = selectedComboIdx === i;
+                return (
+                  <div
+                    key={combo.name}
+                    onClick={() => {
+                      setColorFocusSection(4);
+                      setComboIdx(i);
+                      setTextColorInput(combo.text.toUpperCase());
+                      setBgColorInput(combo.bg.toUpperCase());
+                      setSelectedComboIdx(i);
+                      setSelectedTextIdx(-1);
+                      setSelectedBgIdx(-1);
+                    }}
+                    style={{
+                      border: isSelected ? '3px solid var(--terminal-text)' : '1px solid var(--terminal-text)',
+                      padding: isSelected ? '6px' : '8px',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      opacity: isFocused || isSelected ? 1 : 0.6,
+                      outline: isFocused && !isSelected ? '2px dashed var(--terminal-text)' : 'none',
+                      outlineOffset: '2px',
+                      position: 'relative',
+                      background: isSelected ? 'rgba(255,255,255,0.05)' : 'transparent',
+                    }}
+                  >
+                    {isSelected && (
+                      <div style={{
+                        position: 'absolute', top: '2px', right: '4px', fontSize: '14px',
+                        color: 'var(--terminal-text)',
+                      }}>✓</div>
+                    )}
+                    <div style={{
+                      background: combo.bg, color: combo.text, padding: '8px',
+                      fontWeight: 'bold', fontSize: '20px',
+                      fontFamily: "'Courier Prime', monospace", marginBottom: '8px',
+                      border: isFocused ? '1px solid var(--terminal-text)' : '1px solid transparent',
+                    }}>Aa</div>
+                    <div style={{ fontSize: '11px', opacity: 0.9 }}>{combo.name}</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
-        <div style={{ textAlign: 'center', fontSize: '11px', opacity: 0.6, margin: '8px 0' }}>
-          Use Page Up/Page Down to scroll • TAB to navigate sections
+
+        {/* Keyboard hints bar */}
+        <div style={{
+          textAlign: 'center', fontSize: '11px', opacity: 0.6, margin: '12px 0', padding: '8px',
+          borderTop: '1px solid var(--terminal-text)', borderBottom: '1px solid var(--terminal-text)',
+        }}>
+          Tab/Shift+Tab: Section • ← → ↑ ↓: Browse • Enter/Space: Select • PgUp/PgDn: Scroll • Esc: Close
         </div>
-        <div data-color-section="5" style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+
+        <div data-color-section="5" style={{
+          display: 'flex', gap: '12px', justifyContent: 'center',
+          padding: '8px',
+          border: colorFocusSection === 5 ? '1px dashed var(--terminal-text)' : '1px solid transparent',
+        }}>
           <ModalButton label={t(language, 'modals.apply')} focused={colorFocusSection === 5 && modalButtonIndex === 0} onClick={() => {
             if (/^#[0-9A-F]{6}$/i.test(textColorInput) && /^#[0-9A-F]{6}$/i.test(bgColorInput)) {
               theme.updateColors({ text: textColorInput, background: bgColorInput });
@@ -1200,6 +1338,9 @@ export default function PrivateWriter() {
             theme.resetColors();
             setTextColorInput('#33FF33');
             setBgColorInput('#000000');
+            setSelectedTextIdx(-1);
+            setSelectedBgIdx(-1);
+            setSelectedComboIdx(-1);
           }} />
           <ModalButton label={t(language, 'modals.cancel')} focused={colorFocusSection === 5 && modalButtonIndex === 2} onClick={closeModal} />
         </div>
