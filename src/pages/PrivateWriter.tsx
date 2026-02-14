@@ -7,6 +7,7 @@ import StatusBar from '@/components/private-writer/StatusBar';
 import FileBrowser from '@/components/private-writer/FileBrowser';
 import HelpText from '@/components/private-writer/HelpText';
 import LiveStats from '@/components/private-writer/LiveStats';
+import GoogleDriveModal from '@/components/private-writer/GoogleDriveModal';
 import ModalShell, { ModalButton, ModalInput } from '@/components/private-writer/ModalShell';
 import { t } from '@/lib/languages';
 import { typingPassages } from '@/lib/typingPassages';
@@ -349,6 +350,9 @@ export default function PrivateWriter() {
         if (confirm(t(language, 'shutdownConfirm'))) {
           location.reload();
         }
+        break;
+      case 'gdrive':
+        setActiveModal('gdrive');
         break;
       case 'pinsetup':
         setPinStep('choose');
@@ -1472,6 +1476,24 @@ export default function PrivateWriter() {
           </div>
         )}
       </ModalShell>
+
+      {/* Google Drive Modal */}
+      <GoogleDriveModal
+        visible={activeModal === 'gdrive'}
+        onClose={closeModal}
+        onLoadContent={(content, filename) => {
+          setEditorContent(content);
+          editorRef.current?.setContent(content);
+          docStorage.setCurrentDocument({
+            filename,
+            content,
+            saved: true,
+            lastModified: new Date().toISOString(),
+          });
+        }}
+        currentContent={editorContent}
+        currentFilename={docStorage.currentDocument.filename}
+      />
 
       {/* PIN Setup Modal */}
       <ModalShell visible={activeModal === 'pin-setup'} title={t(language, 'pin.setupTitle')} onClose={closeModal}>

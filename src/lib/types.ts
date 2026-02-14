@@ -42,6 +42,7 @@ export type ModalType =
   | 'typing'
   | 'pin-setup'
   | 'pin-lock'
+  | 'gdrive'
   | null;
 
 export type Language = 'en-GB' | 'en-US' | 'af';
