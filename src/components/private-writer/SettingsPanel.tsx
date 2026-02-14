@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { t } from '@/lib/languages';
 import { ModalButton } from './ModalShell';
 import type { AppColors, Language, PinConfig } from '@/lib/types';
@@ -39,31 +39,141 @@ interface SettingsPanelProps {
 
 type SettingsTab = 'colors' | 'language' | 'security' | 'storage' | 'system';
 
+const TABS: { id: SettingsTab; label: string }[] = [
+  { id: 'colors', label: '🎨 Colours' },
+  { id: 'language', label: '🌐 Language' },
+  { id: 'security', label: '🔒 Security' },
+  { id: 'storage', label: '💾 Storage' },
+  { id: 'system', label: '⚙ System' },
+];
+
 export default function SettingsPanel({
   visible, language, colors, wifiOn, bluetoothOn, pinConfig,
   onClose, onAction, onUpdateColors, onResetColors, onSetLanguage,
   onOpenPinSetup, onOpenTypingChallenge,
 }: SettingsPanelProps) {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('colors');
+  const [activeTabIdx, setActiveTabIdx] = useState(0);
+  const [focusedItemIdx, setFocusedItemIdx] = useState(0);
   const [textColorInput, setTextColorInput] = useState(colors.text.toUpperCase());
   const [bgColorInput, setBgColorInput] = useState(colors.background.toUpperCase());
   const [selectedTextIdx, setSelectedTextIdx] = useState(-1);
   const [selectedBgIdx, setSelectedBgIdx] = useState(-1);
   const [selectedComboIdx, setSelectedComboIdx] = useState(-1);
 
-  if (!visible) return null;
+  const activeTab = TABS[activeTabIdx].id;
 
-  const tabs: { id: SettingsTab; label: string }[] = [
-    { id: 'colors', label: '🎨 Colours' },
-    { id: 'language', label: '🌐 Language' },
-    { id: 'security', label: '🔒 Security' },
-    { id: 'storage', label: '💾 Storage' },
-    { id: 'system', label: '⚙ System' },
-  ];
+  // Reset focused item when tab changes
+  useEffect(() => { setFocusedItemIdx(0); }, [activeTabIdx]);
 
-  const sectionStyle: React.CSSProperties = {
-    padding: '16px',
-    marginBottom: '12px',
+  // Get the number of focusable items in the current tab
+  const getItemCount = useCallback((): number => {
+    switch (activeTab) {
+      case 'colors': return TEXT_PRESETS.length + BG_PRESETS.length + COLOR_COMBOS.length + 2; // +2 for Apply/Reset
+      case 'language': return 3;
+      case 'security': return 1;
+      case 'storage': return 5;
+      case 'system': return 3;
+      default: return 0;
+    }
+  }, [activeTab]);
+
+  // Keyboard handler
+  useEffect(() => {
+    if (!visible) return;
+
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+        e.preventDefault();
+        return;
+      }
+
+      // Tab/Shift+Tab to switch tabs
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          setActiveTabIdx(prev => (prev - 1 + TABS.length) % TABS.length);
+        } else {
+          setActiveTabIdx(prev => (prev + 1) % TABS.length);
+        }
+        return;
+      }
+
+      const itemCount = getItemCount();
+
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        setFocusedItemIdx(prev => (prev + 1) % itemCount);
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setFocusedItemIdx(prev => (prev - 1 + itemCount) % itemCount);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        handleEnter();
+      }
+    };
+
+    window.addEventListener('keydown', handler, true);
+    return () => window.removeEventListener('keydown', handler, true);
+  }, [visible, activeTab, activeTabIdx, focusedItemIdx, textColorInput, bgColorInput, getItemCount]);
+
+  const handleEnter = () => {
+    switch (activeTab) {
+      case 'colors': {
+        const textEnd = TEXT_PRESETS.length;
+        const bgEnd = textEnd + BG_PRESETS.length;
+        const comboEnd = bgEnd + COLOR_COMBOS.length;
+        if (focusedItemIdx < textEnd) {
+          const color = TEXT_PRESETS[focusedItemIdx];
+          setTextColorInput(color.toUpperCase());
+          setSelectedTextIdx(focusedItemIdx);
+          setSelectedComboIdx(-1);
+        } else if (focusedItemIdx < bgEnd) {
+          const i = focusedItemIdx - textEnd;
+          const color = BG_PRESETS[i];
+          setBgColorInput(color.toUpperCase());
+          setSelectedBgIdx(i);
+          setSelectedComboIdx(-1);
+        } else if (focusedItemIdx < comboEnd) {
+          const i = focusedItemIdx - bgEnd;
+          const combo = COLOR_COMBOS[i];
+          setTextColorInput(combo.text.toUpperCase());
+          setBgColorInput(combo.bg.toUpperCase());
+          setSelectedComboIdx(i);
+          setSelectedTextIdx(-1);
+          setSelectedBgIdx(-1);
+        } else if (focusedItemIdx === comboEnd) {
+          handleApplyColors();
+        } else {
+          onResetColors();
+          setTextColorInput('#33FF33');
+          setBgColorInput('#000000');
+          setSelectedTextIdx(-1);
+          setSelectedBgIdx(-1);
+          setSelectedComboIdx(-1);
+        }
+        break;
+      }
+      case 'language': {
+        const langs: Language[] = ['en-GB', 'en-US', 'af'];
+        if (focusedItemIdx < langs.length) onSetLanguage(langs[focusedItemIdx]);
+        break;
+      }
+      case 'security':
+        onOpenPinSetup();
+        break;
+      case 'storage': {
+        const actions = ['local', 'usb', 'dropbox', 'gdrive', 'icloud'];
+        if (focusedItemIdx < actions.length) onAction(actions[focusedItemIdx]);
+        break;
+      }
+      case 'system': {
+        if (focusedItemIdx === 0) onOpenTypingChallenge();
+        else if (focusedItemIdx === 1) onAction('update');
+        else if (focusedItemIdx === 2) onAction('shutdown');
+        break;
+      }
+    }
   };
 
   const handleApplyColors = () => {
@@ -71,6 +181,31 @@ export default function SettingsPanel({
       onUpdateColors({ text: textColorInput, background: bgColorInput });
     }
   };
+
+  if (!visible) return null;
+
+  const itemStyle = (focused: boolean, selected?: boolean): React.CSSProperties => ({
+    padding: '12px 16px',
+    margin: '4px 0',
+    border: selected ? '2px solid var(--terminal-text)' : '1px solid var(--terminal-text)',
+    cursor: 'pointer',
+    background: focused ? 'var(--terminal-text)' : 'transparent',
+    color: focused ? 'var(--terminal-bg)' : 'var(--terminal-text)',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    transition: 'background 0.05s, color 0.05s',
+    fontWeight: selected ? 'bold' : 'normal',
+  });
+
+  const sectionStyle: React.CSSProperties = { padding: '16px', marginBottom: '12px' };
+
+  // Helper: is a color swatch focused?
+  const isTextSwatchFocused = (i: number) => activeTab === 'colors' && focusedItemIdx === i;
+  const isBgSwatchFocused = (i: number) => activeTab === 'colors' && focusedItemIdx === TEXT_PRESETS.length + i;
+  const isComboFocused = (i: number) => activeTab === 'colors' && focusedItemIdx === TEXT_PRESETS.length + BG_PRESETS.length + i;
+  const applyFocused = activeTab === 'colors' && focusedItemIdx === TEXT_PRESETS.length + BG_PRESETS.length + COLOR_COMBOS.length;
+  const resetFocused = activeTab === 'colors' && focusedItemIdx === TEXT_PRESETS.length + BG_PRESETS.length + COLOR_COMBOS.length + 1;
 
   return (
     <div
@@ -118,15 +253,15 @@ export default function SettingsPanel({
         flexShrink: 0,
         overflowX: 'auto',
       }}>
-        {tabs.map(tab => (
+        {TABS.map((tab, i) => (
           <div
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => setActiveTabIdx(i)}
             style={{
               padding: '10px 16px',
               cursor: 'pointer',
-              background: activeTab === tab.id ? 'var(--terminal-text)' : 'transparent',
-              color: activeTab === tab.id ? 'var(--terminal-bg)' : 'var(--terminal-text)',
+              background: i === activeTabIdx ? 'var(--terminal-text)' : 'transparent',
+              color: i === activeTabIdx ? 'var(--terminal-bg)' : 'var(--terminal-text)',
               borderRight: '1px solid var(--terminal-text)',
               fontSize: '14px',
               whiteSpace: 'nowrap',
@@ -156,7 +291,7 @@ export default function SettingsPanel({
 
             {/* Text Color */}
             <div style={sectionStyle}>
-              <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '8px' }}>{t(language, 'modals.textColor')}</div>
+              <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '8px' }}>{t(language, 'modals.textColor')} (↑↓ Navigate • Enter Select)</div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
                 <div style={{ width: '32px', height: '32px', border: '2px solid var(--terminal-text)', background: textColorInput, flexShrink: 0 }} />
                 <input
@@ -164,6 +299,7 @@ export default function SettingsPanel({
                   onChange={e => { setTextColorInput(e.target.value.toUpperCase()); setSelectedTextIdx(-1); setSelectedComboIdx(-1); }}
                   maxLength={7}
                   placeholder="#33FF33"
+                  tabIndex={-1}
                   style={{
                     flex: 1, maxWidth: '200px', background: 'var(--terminal-bg)', border: '1px solid var(--terminal-text)',
                     color: 'var(--terminal-text)', padding: '8px',
@@ -172,21 +308,26 @@ export default function SettingsPanel({
                 />
               </div>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {TEXT_PRESETS.map((color, i) => (
-                  <div
-                    key={color}
-                    onClick={() => { setTextColorInput(color.toUpperCase()); setSelectedTextIdx(i); setSelectedComboIdx(-1); }}
-                    style={{
-                      width: '32px', height: '32px', background: color,
-                      border: selectedTextIdx === i ? '3px solid var(--terminal-text)' : '2px solid var(--terminal-text)',
-                      cursor: 'pointer', opacity: selectedTextIdx === i ? 1 : 0.6, position: 'relative',
-                    }}
-                  >
-                    {selectedTextIdx === i && (
-                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 'bold', color: color === '#ffffff' || color === '#ffff00' || color === '#e6e6e6' ? '#000' : '#fff' }}>✓</div>
-                    )}
-                  </div>
-                ))}
+                {TEXT_PRESETS.map((color, i) => {
+                  const focused = isTextSwatchFocused(i);
+                  return (
+                    <div
+                      key={color}
+                      onClick={() => { setTextColorInput(color.toUpperCase()); setSelectedTextIdx(i); setSelectedComboIdx(-1); setFocusedItemIdx(i); }}
+                      style={{
+                        width: '32px', height: '32px', background: color,
+                        border: (focused || selectedTextIdx === i) ? '3px solid var(--terminal-text)' : '2px solid var(--terminal-text)',
+                        cursor: 'pointer', opacity: (focused || selectedTextIdx === i) ? 1 : 0.6, position: 'relative',
+                        outline: focused ? '2px solid var(--terminal-glow)' : 'none',
+                        outlineOffset: '2px',
+                      }}
+                    >
+                      {selectedTextIdx === i && (
+                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 'bold', color: color === '#ffffff' || color === '#ffff00' || color === '#e6e6e6' ? '#000' : '#fff' }}>✓</div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -200,6 +341,7 @@ export default function SettingsPanel({
                   onChange={e => { setBgColorInput(e.target.value.toUpperCase()); setSelectedBgIdx(-1); setSelectedComboIdx(-1); }}
                   maxLength={7}
                   placeholder="#000000"
+                  tabIndex={-1}
                   style={{
                     flex: 1, maxWidth: '200px', background: 'var(--terminal-bg)', border: '1px solid var(--terminal-text)',
                     color: 'var(--terminal-text)', padding: '8px',
@@ -208,21 +350,26 @@ export default function SettingsPanel({
                 />
               </div>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {BG_PRESETS.map((color, i) => (
-                  <div
-                    key={color}
-                    onClick={() => { setBgColorInput(color.toUpperCase()); setSelectedBgIdx(i); setSelectedComboIdx(-1); }}
-                    style={{
-                      width: '32px', height: '32px', background: color,
-                      border: selectedBgIdx === i ? '3px solid var(--terminal-text)' : `2px solid ${color === '#ffffff' || color === '#f5f5f5' ? '#666' : 'var(--terminal-text)'}`,
-                      cursor: 'pointer', opacity: selectedBgIdx === i ? 1 : 0.6, position: 'relative',
-                    }}
-                  >
-                    {selectedBgIdx === i && (
-                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 'bold', color: color === '#000000' || color === '#0a0a0a' || color === '#1a1a1a' ? '#fff' : '#000' }}>✓</div>
-                    )}
-                  </div>
-                ))}
+                {BG_PRESETS.map((color, i) => {
+                  const focused = isBgSwatchFocused(i);
+                  return (
+                    <div
+                      key={color}
+                      onClick={() => { setBgColorInput(color.toUpperCase()); setSelectedBgIdx(i); setSelectedComboIdx(-1); setFocusedItemIdx(TEXT_PRESETS.length + i); }}
+                      style={{
+                        width: '32px', height: '32px', background: color,
+                        border: (focused || selectedBgIdx === i) ? '3px solid var(--terminal-text)' : `2px solid ${color === '#ffffff' || color === '#f5f5f5' ? '#666' : 'var(--terminal-text)'}`,
+                        cursor: 'pointer', opacity: (focused || selectedBgIdx === i) ? 1 : 0.6, position: 'relative',
+                        outline: focused ? '2px solid var(--terminal-glow)' : 'none',
+                        outlineOffset: '2px',
+                      }}
+                    >
+                      {selectedBgIdx === i && (
+                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 'bold', color: color === '#000000' || color === '#0a0a0a' || color === '#1a1a1a' ? '#fff' : '#000' }}>✓</div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -230,41 +377,47 @@ export default function SettingsPanel({
             <div style={{ ...sectionStyle, borderTop: '1px solid var(--terminal-text)', paddingTop: '16px' }}>
               <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '12px' }}>COLOUR COMBINATIONS (WCAG Compliant):</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
-                {COLOR_COMBOS.map((combo, i) => (
-                  <div
-                    key={combo.name}
-                    onClick={() => {
-                      setTextColorInput(combo.text.toUpperCase());
-                      setBgColorInput(combo.bg.toUpperCase());
-                      setSelectedComboIdx(i);
-                      setSelectedTextIdx(-1);
-                      setSelectedBgIdx(-1);
-                    }}
-                    style={{
-                      border: selectedComboIdx === i ? '3px solid var(--terminal-text)' : '1px solid var(--terminal-text)',
-                      padding: selectedComboIdx === i ? '6px' : '8px',
-                      cursor: 'pointer', textAlign: 'center',
-                      opacity: selectedComboIdx === i ? 1 : 0.6, position: 'relative',
-                    }}
-                  >
-                    {selectedComboIdx === i && (
-                      <div style={{ position: 'absolute', top: '2px', right: '4px', fontSize: '14px', color: 'var(--terminal-text)' }}>✓</div>
-                    )}
-                    <div style={{
-                      background: combo.bg, color: combo.text, padding: '8px',
-                      fontWeight: 'bold', fontSize: '20px',
-                      fontFamily: "'Courier Prime', monospace", marginBottom: '8px',
-                    }}>Aa</div>
-                    <div style={{ fontSize: '11px', opacity: 0.9 }}>{combo.name}</div>
-                  </div>
-                ))}
+                {COLOR_COMBOS.map((combo, i) => {
+                  const focused = isComboFocused(i);
+                  return (
+                    <div
+                      key={combo.name}
+                      onClick={() => {
+                        setTextColorInput(combo.text.toUpperCase());
+                        setBgColorInput(combo.bg.toUpperCase());
+                        setSelectedComboIdx(i);
+                        setSelectedTextIdx(-1);
+                        setSelectedBgIdx(-1);
+                        setFocusedItemIdx(TEXT_PRESETS.length + BG_PRESETS.length + i);
+                      }}
+                      style={{
+                        border: (focused || selectedComboIdx === i) ? '3px solid var(--terminal-text)' : '1px solid var(--terminal-text)',
+                        padding: (focused || selectedComboIdx === i) ? '6px' : '8px',
+                        cursor: 'pointer', textAlign: 'center',
+                        opacity: (focused || selectedComboIdx === i) ? 1 : 0.6, position: 'relative',
+                        outline: focused ? '2px solid var(--terminal-glow)' : 'none',
+                        outlineOffset: '2px',
+                      }}
+                    >
+                      {selectedComboIdx === i && (
+                        <div style={{ position: 'absolute', top: '2px', right: '4px', fontSize: '14px', color: 'var(--terminal-text)' }}>✓</div>
+                      )}
+                      <div style={{
+                        background: combo.bg, color: combo.text, padding: '8px',
+                        fontWeight: 'bold', fontSize: '20px',
+                        fontFamily: "'Courier Prime', monospace", marginBottom: '8px',
+                      }}>Aa</div>
+                      <div style={{ fontSize: '11px', opacity: 0.9 }}>{combo.name}</div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
             {/* Action buttons */}
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', padding: '16px 0' }}>
-              <ModalButton label={t(language, 'modals.apply')} focused={false} onClick={handleApplyColors} />
-              <ModalButton label={t(language, 'modals.reset')} focused={false} onClick={() => {
+              <ModalButton label={t(language, 'modals.apply')} focused={applyFocused} onClick={handleApplyColors} />
+              <ModalButton label={t(language, 'modals.reset')} focused={resetFocused} onClick={() => {
                 onResetColors();
                 setTextColorInput('#33FF33');
                 setBgColorInput('#000000');
@@ -286,21 +439,11 @@ export default function SettingsPanel({
               { code: 'en-GB' as Language, label: t(language, 'language.englishGB') },
               { code: 'en-US' as Language, label: t(language, 'language.englishUS') },
               { code: 'af' as Language, label: t(language, 'language.afrikaans') },
-            ]).map(lang => (
+            ]).map((lang, i) => (
               <div
                 key={lang.code}
-                onClick={() => onSetLanguage(lang.code)}
-                style={{
-                  padding: '12px 16px',
-                  margin: '4px 0',
-                  border: '1px solid var(--terminal-text)',
-                  cursor: 'pointer',
-                  background: language === lang.code ? 'var(--terminal-text)' : 'transparent',
-                  color: language === lang.code ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
+                onClick={() => { onSetLanguage(lang.code); setFocusedItemIdx(i); }}
+                style={itemStyle(focusedItemIdx === i, language === lang.code)}
               >
                 <span>{lang.label}</span>
                 {language === lang.code && <span>✓</span>}
@@ -313,19 +456,9 @@ export default function SettingsPanel({
         {activeTab === 'security' && (
           <div>
             <div style={{ fontSize: '16px', marginBottom: '16px', fontWeight: 'bold' }}>🔒 PIN Lock</div>
-            <div style={{
-              padding: '16px',
-              border: '1px solid var(--terminal-text)',
-              marginBottom: '16px',
-            }}>
-              <div style={{ marginBottom: '12px' }}>
-                Status: <strong>{pinConfig.enabled ? `Enabled (${pinConfig.length}-digit)` : 'Disabled'}</strong>
-              </div>
-              <ModalButton
-                label={pinConfig.enabled ? 'Change PIN' : 'Set Up PIN'}
-                focused={false}
-                onClick={onOpenPinSetup}
-              />
+            <div style={itemStyle(focusedItemIdx === 0)} onClick={onOpenPinSetup}>
+              <span>{pinConfig.enabled ? `Change PIN (${pinConfig.length}-digit enabled)` : 'Set Up PIN'}</span>
+              <span style={{ opacity: 0.5 }}>Enter</span>
             </div>
           </div>
         )}
@@ -340,19 +473,13 @@ export default function SettingsPanel({
               { action: 'dropbox', label: t(language, 'storage.dropbox') },
               { action: 'gdrive', label: t(language, 'storage.gdrive') },
               { action: 'icloud', label: t(language, 'storage.icloud') },
-            ].map(item => (
+            ].map((item, i) => (
               <div
                 key={item.action}
-                onClick={() => { onAction(item.action); }}
-                style={{
-                  padding: '12px 16px',
-                  margin: '4px 0',
-                  border: '1px solid var(--terminal-text)',
-                  cursor: 'pointer',
-                  opacity: 0.9,
-                }}
+                onClick={() => { onAction(item.action); setFocusedItemIdx(i); }}
+                style={itemStyle(focusedItemIdx === i)}
               >
-                {item.label}
+                <span>{item.label}</span>
               </div>
             ))}
           </div>
@@ -362,44 +489,25 @@ export default function SettingsPanel({
         {activeTab === 'system' && (
           <div>
             <div style={{ fontSize: '16px', marginBottom: '16px', fontWeight: 'bold' }}>⚙ System</div>
-            
-            <div
-              onClick={onOpenTypingChallenge}
-              style={{
-                padding: '12px 16px',
-                margin: '4px 0',
-                border: '1px solid var(--terminal-text)',
-                cursor: 'pointer',
-              }}
-            >
-              ⌨ Typing Challenge
+
+            <div onClick={() => { onOpenTypingChallenge(); setFocusedItemIdx(0); }} style={itemStyle(focusedItemIdx === 0)}>
+              <span>⌨ Typing Challenge</span>
+              <span style={{ opacity: 0.5 }}>Enter</span>
+            </div>
+
+            <div onClick={() => { onAction('update'); setFocusedItemIdx(1); }} style={itemStyle(focusedItemIdx === 1)}>
+              <span>{t(language, 'power.update')}</span>
             </div>
 
             <div
-              onClick={() => onAction('update')}
+              onClick={() => { onAction('shutdown'); setFocusedItemIdx(2); }}
               style={{
-                padding: '12px 16px',
-                margin: '4px 0',
-                border: '1px solid var(--terminal-text)',
-                cursor: 'pointer',
+                ...itemStyle(focusedItemIdx === 2),
+                borderColor: focusedItemIdx === 2 ? 'var(--terminal-text)' : '#ff5555',
+                color: focusedItemIdx === 2 ? 'var(--terminal-bg)' : '#ff5555',
               }}
             >
-              {t(language, 'power.update')}
-            </div>
-
-            <div
-              onClick={() => onAction('shutdown')}
-              style={{
-                padding: '12px 16px',
-                margin: '4px 0',
-                border: '1px solid var(--terminal-text)',
-                cursor: 'pointer',
-                marginTop: '20px',
-                borderColor: '#ff5555',
-                color: '#ff5555',
-              }}
-            >
-              {t(language, 'power.shutdown')}
+              <span>{t(language, 'power.shutdown')}</span>
             </div>
           </div>
         )}
@@ -414,7 +522,7 @@ export default function SettingsPanel({
         textAlign: 'center',
         flexShrink: 0,
       }}>
-        Press ESC to close settings
+        [ Tab Switch Section • ↑↓ Navigate • Enter Select • ESC Close ]
       </div>
     </div>
   );
