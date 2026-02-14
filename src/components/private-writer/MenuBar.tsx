@@ -39,7 +39,7 @@ function getSubmenuItems(menu: string, language: string, wifiOn: boolean, blueto
         { action: 'increasetext', label: t(language, 'view.increase'), shortcut: 'Ctrl++' },
         { action: 'decreasetext', label: t(language, 'view.decrease'), shortcut: 'Ctrl+-' },
         { action: 'customizecolors', label: t(language, 'view.customise') },
-        { action: 'togglesidebar', label: 'File Browser', shortcut: 'Ctrl+B' },
+        { action: 'togglesidebar', label: 'File Browser', shortcut: 'Ctrl+Shift+B' },
         { action: 'fullscreen', label: 'Toggle Fullscreen', shortcut: 'F11' },
       ];
     case 'network':
