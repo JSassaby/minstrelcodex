@@ -83,7 +83,7 @@ export default function MenuBar({
   const activeSubOpen = mouseActive ? (hoverMenuIdx !== null) : (visible && submenuOpen);
   const activeSubIdx = mouseActive ? (hoverSubIdx ?? 0) : submenuIndex;
 
-  const displayName = filename || t(language, 'status.untitled');
+  const shortName = filename ? filename.split('/').pop() || filename : t(language, 'status.untitled');
 
   return (
     <div
@@ -220,9 +220,9 @@ export default function MenuBar({
           whiteSpace: 'nowrap',
           maxWidth: '300px',
         }}
-        title={displayName}
+        title={shortName}
       >
-        📄 {displayName}
+        📄 {shortName}
       </div>
     </div>
   );
