@@ -570,7 +570,7 @@ export default function FileBrowser({
       )}
 
       {/* Breadcrumb */}
-      <div style={{ padding: '4px 12px', fontSize: '11px', opacity: 0.5, borderBottom: '1px solid var(--terminal-text)', flexShrink: 0 }}>
+      <div style={{ padding: '4px 12px', fontSize: '11px', opacity: 0.8, borderBottom: '1px solid var(--terminal-text)', flexShrink: 0 }}>
         📂 {breadcrumb}
       </div>
 
@@ -579,13 +579,13 @@ export default function FileBrowser({
         style={{
           overflowY: 'auto',
           padding: '4px 0',
-          opacity: focusPane === 'folders' ? 1 : 0.5,
+          opacity: 1,
           borderBottom: '1px solid var(--terminal-text)',
           maxHeight: '35%',
           flexShrink: 0,
         }}
       >
-        <div style={{ padding: '2px 12px', fontSize: '10px', opacity: 0.5, letterSpacing: '2px' }}>
+        <div style={{ padding: '2px 12px', fontSize: '10px', opacity: 0.7, letterSpacing: '2px' }}>
           FOLDERS
         </div>
         {folderList.map((folder, i) => {
@@ -637,16 +637,16 @@ export default function FileBrowser({
           flex: 1,
           overflowY: 'auto',
           padding: '4px 0',
-          opacity: focusPane === 'files' ? 1 : 0.6,
+          opacity: 1,
         }}
       >
-        <div style={{ padding: '2px 12px', fontSize: '10px', opacity: 0.5, letterSpacing: '2px' }}>
+        <div style={{ padding: '2px 12px', fontSize: '10px', opacity: 0.7, letterSpacing: '2px' }}>
           FILES ({filteredFiles.length})
           {searchQuery && <span> — "{searchQuery}"</span>}
         </div>
 
         {filteredFiles.length === 0 ? (
-          <div style={{ padding: '20px 12px', textAlign: 'center', opacity: 0.4, fontSize: '12px' }}>
+          <div style={{ padding: '20px 12px', textAlign: 'center', opacity: 0.7, fontSize: '12px' }}>
             {searchQuery ? 'No matches' : 'Empty folder'}
             <div style={{ marginTop: '4px', fontSize: '11px' }}>
               N New Folder • C New File
@@ -681,7 +681,7 @@ export default function FileBrowser({
                   <span style={{ fontSize: '12px' }}>📄</span>
                   <span style={{ fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
                 </div>
-                <div style={{ fontSize: '10px', opacity: 0.5, marginTop: '1px', paddingLeft: '20px' }}>
+                <div style={{ fontSize: '10px', opacity: 0.7, marginTop: '1px', paddingLeft: '20px' }}>
                   {words} words
                 </div>
               </div>
@@ -710,7 +710,7 @@ export default function FileBrowser({
           borderTop: '2px solid var(--terminal-text)',
           padding: '6px 8px',
           fontSize: '10px',
-          opacity: 0.5,
+          opacity: 0.8,
           flexShrink: 0,
           lineHeight: 1.6,
         }}
