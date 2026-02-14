@@ -465,11 +465,18 @@ export default function PrivateWriter() {
         return;
       }
 
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'B') {
+        e.preventDefault();
+        executeAction('togglesidebar');
+        return;
+      }
+
       if (e.ctrlKey || e.metaKey) {
+        // Ctrl+B/I/U are reserved for text formatting (TipTap handles them)
+        if (e.key === 'b' || e.key === 'i' || e.key === 'u') return;
         if (e.key === 's') { e.preventDefault(); executeAction('save'); }
         else if (e.key === 'n') { e.preventDefault(); executeAction('new'); }
         else if (e.key === 'o') { e.preventDefault(); executeAction('open'); }
-        else if (e.key === 'b') { e.preventDefault(); executeAction('togglesidebar'); }
         else if (e.key === '=') { e.preventDefault(); executeAction('increasetext'); }
         else if (e.key === '-') { e.preventDefault(); executeAction('decreasetext'); }
       }
