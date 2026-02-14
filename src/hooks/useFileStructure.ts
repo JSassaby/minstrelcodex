@@ -380,9 +380,31 @@ export function useFileStructure() {
     });
   }, []);
 
+  const emptyDeleted = useCallback(() => {
+    setStructure(prev => {
+      const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
+      const deleted = next.root.children?.['Deleted'];
+      if (!deleted?.children) return prev;
+      // Remove associated documents from localStorage
+      const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
+      const collectFileNames = (node: FileNode) => {
+        if (!node.children) return;
+        for (const [, item] of Object.entries(node.children)) {
+          if (item.type === 'file') delete docs[item.name];
+          if (item.type === 'folder') collectFileNames(item);
+        }
+      };
+      collectFileNames(deleted);
+      localStorage.setItem('pw-documents', JSON.stringify(docs));
+      deleted.children = {};
+      localStorage.setItem(FS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   return {
     structure, createFolder, addFileToTree, toggleFolder, moveFile, deleteFile, deleteFolder, renameFile, getFolders,
-    createNovelProject, saveVersion, saveSnapshot, findFilesInFolder, getNovelProjects, createFileInFolder, restoreFromDeleted,
+    createNovelProject, saveVersion, saveSnapshot, findFilesInFolder, getNovelProjects, createFileInFolder, restoreFromDeleted, emptyDeleted,
   };
 }
 

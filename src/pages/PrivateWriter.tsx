@@ -945,6 +945,7 @@ export default function PrivateWriter() {
           onMoveFile={(filename, fromPath, toPath) => fileStructure.moveFile(filename, fromPath, toPath)}
           onToggleFolder={(path) => fileStructure.toggleFolder(path)}
           onRestoreFromDeleted={(itemName) => fileStructure.restoreFromDeleted(itemName)}
+          onEmptyDeleted={() => fileStructure.emptyDeleted()}
           onFocus={() => setFileBrowserFocused(true)}
           getFolders={() => fileStructure.getFolders()}
         />
