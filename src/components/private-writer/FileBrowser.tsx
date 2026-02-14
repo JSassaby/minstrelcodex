@@ -3,6 +3,7 @@ import type { FileNode, DocumentData } from '@/lib/types';
 
 export interface FileBrowserProps {
   visible: boolean;
+  focused: boolean;
   rootNode: FileNode;
   allDocuments: Record<string, DocumentData>;
   onClose: () => void;
@@ -16,6 +17,7 @@ export interface FileBrowserProps {
   onMoveFile: (filename: string, fromPath: string[], toPath: string[]) => void;
   onToggleFolder: (path: string[]) => void;
   onRestoreFromDeleted: (itemName: string) => void;
+  onFocus: () => void;
   getFolders: () => { name: string; path: string[] }[];
 }
 
@@ -65,6 +67,7 @@ function getFilesInFolder(node: FileNode, path: string[]): { name: string; path:
 
 export default function FileBrowser({
   visible,
+  focused,
   rootNode,
   allDocuments,
   onClose,
@@ -78,6 +81,7 @@ export default function FileBrowser({
   onMoveFile,
   onToggleFolder,
   onRestoreFromDeleted,
+  onFocus,
   getFolders,
 }: FileBrowserProps) {
   const [focusPane, setFocusPane] = useState<FocusPane>('folders');
@@ -126,7 +130,7 @@ export default function FileBrowser({
 
   // Keyboard handler
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || !focused) return;
 
     const handler = (e: KeyboardEvent) => {
       // Input mode handling
@@ -371,7 +375,7 @@ export default function FileBrowser({
 
     window.addEventListener('keydown', handler, true);
     return () => window.removeEventListener('keydown', handler, true);
-  }, [visible, focusPane, folderIndex, fileIndex, inputMode, inputValue, searchQuery,
+  }, [visible, focused, focusPane, folderIndex, fileIndex, inputMode, inputValue, searchQuery,
     moveTargetIdx, folderList, filteredFiles, currentPath, onClose, onOpenFile, onDeleteFile,
     onRenameFile, onMoveFile, onToggleFolder, onRestoreFromDeleted, onNewFolder, getFolders, showStatus]);
 
@@ -387,36 +391,39 @@ export default function FileBrowser({
 
   return (
     <div
+      onClick={onFocus}
       style={{
-        position: 'fixed',
-        inset: 0,
+        width: '320px',
+        minWidth: '320px',
         background: 'var(--terminal-bg)',
-        zIndex: 2000,
+        borderRight: focused ? '2px solid var(--terminal-text)' : '1px solid var(--terminal-text)',
         display: 'flex',
         flexDirection: 'column',
+        overflow: 'hidden',
         ...termStyle,
       }}
     >
-      {/* Header with breadcrumb */}
+      {/* Header */}
       <div
         style={{
           borderBottom: '2px solid var(--terminal-text)',
-          padding: '12px 20px',
+          padding: '8px 12px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          flexShrink: 0,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <span style={{ fontSize: '20px', fontWeight: 'bold', textShadow: '0 0 10px var(--terminal-glow)' }}>
-            FILE BROWSER
-          </span>
-          <span style={{ opacity: 0.6, fontSize: '14px' }}>│</span>
-          <span style={{ fontSize: '14px', opacity: 0.8 }}>
-            📂 {breadcrumb}
-          </span>
-        </div>
-        <span style={{ fontSize: '12px', opacity: 0.5 }}>ESC to close</span>
+        <span style={{ fontSize: '13px', fontWeight: 'bold', textShadow: '0 0 10px var(--terminal-glow)' }}>
+          📂 FILES
+        </span>
+        <span
+          onClick={onClose}
+          style={{ fontSize: '11px', opacity: 0.5, cursor: 'pointer' }}
+          title="Ctrl+Shift+B or ESC"
+        >
+          ✕
+        </span>
       </div>
 
       {/* Search bar (when active) */}
@@ -562,194 +569,155 @@ export default function FileBrowser({
         </div>
       )}
 
-      {/* Main content: split pane */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        {/* Left pane: Folders */}
-        <div
-          style={{
-            width: '280px',
-            borderRight: '2px solid var(--terminal-text)',
-            overflowY: 'auto',
-            padding: '8px 0',
-            opacity: focusPane === 'folders' ? 1 : 0.5,
-          }}
-        >
-          <div style={{ padding: '4px 12px', fontSize: '11px', opacity: 0.5, marginBottom: '4px', letterSpacing: '2px' }}>
-            FOLDERS
+      {/* Breadcrumb */}
+      <div style={{ padding: '4px 12px', fontSize: '11px', opacity: 0.5, borderBottom: '1px solid var(--terminal-text)', flexShrink: 0 }}>
+        📂 {breadcrumb}
+      </div>
+
+      {/* Folders section */}
+      <div
+        style={{
+          overflowY: 'auto',
+          padding: '4px 0',
+          opacity: focusPane === 'folders' ? 1 : 0.5,
+          borderBottom: '1px solid var(--terminal-text)',
+          maxHeight: '35%',
+          flexShrink: 0,
+        }}
+      >
+        <div style={{ padding: '2px 12px', fontSize: '10px', opacity: 0.5, letterSpacing: '2px' }}>
+          FOLDERS
+        </div>
+        {folderList.map((folder, i) => {
+          const isFocused = focusPane === 'folders' && folderIndex === i;
+          const isSelected = JSON.stringify(folder.path) === JSON.stringify(currentPath);
+
+          return (
+            <div
+              key={folder.path.join('/') || 'root'}
+              onClick={() => {
+                setFolderIndex(i);
+                setCurrentPath(folder.path);
+                setFileIndex(0);
+                setSearchQuery('');
+                setFocusPane('folders');
+              }}
+              style={{
+                padding: '5px 8px',
+                paddingLeft: `${8 + folder.depth * 14}px`,
+                cursor: 'pointer',
+                background: isFocused
+                  ? 'var(--terminal-text)'
+                  : isSelected
+                    ? 'rgba(51, 255, 51, 0.1)'
+                    : 'transparent',
+                color: isFocused ? 'var(--terminal-bg)' : 'var(--terminal-text)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '13px',
+                borderLeft: isSelected && !isFocused ? '3px solid var(--terminal-text)' : '3px solid transparent',
+              }}
+            >
+              {folder.depth > 0 && (
+                <span style={{ fontSize: '9px', userSelect: 'none' }}>
+                  {folder.collapsed ? '▶' : '▼'}
+                </span>
+              )}
+              <span style={{ fontSize: '12px' }}>{folder.depth === 0 ? '🖥️' : '📁'}</span>
+              <span style={{ fontWeight: isSelected ? 'bold' : 'normal', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{folder.name}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Files section */}
+      <div
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '4px 0',
+          opacity: focusPane === 'files' ? 1 : 0.6,
+        }}
+      >
+        <div style={{ padding: '2px 12px', fontSize: '10px', opacity: 0.5, letterSpacing: '2px' }}>
+          FILES ({filteredFiles.length})
+          {searchQuery && <span> — "{searchQuery}"</span>}
+        </div>
+
+        {filteredFiles.length === 0 ? (
+          <div style={{ padding: '20px 12px', textAlign: 'center', opacity: 0.4, fontSize: '12px' }}>
+            {searchQuery ? 'No matches' : 'Empty folder'}
+            <div style={{ marginTop: '4px', fontSize: '11px' }}>
+              N New Folder • C New File
+            </div>
           </div>
-          {folderList.map((folder, i) => {
-            const isFocused = focusPane === 'folders' && folderIndex === i;
-            const isSelected = JSON.stringify(folder.path) === JSON.stringify(currentPath);
+        ) : (
+          filteredFiles.map((file, i) => {
+            const isFocused = focusPane === 'files' && fileIndex === i;
+            const doc = allDocuments[file.name];
+            const words = doc?.content ? doc.content.split(/\s+/).filter(Boolean).length : 0;
 
             return (
               <div
-                key={folder.path.join('/') || 'root'}
+                key={file.name}
                 onClick={() => {
-                  setFolderIndex(i);
-                  setCurrentPath(folder.path);
-                  setFileIndex(0);
-                  setSearchQuery('');
-                  setFocusPane('folders');
+                  setFileIndex(i);
+                  setFocusPane('files');
+                }}
+                onDoubleClick={() => {
+                  onOpenFile(file.name);
                 }}
                 style={{
-                  padding: '8px 12px',
-                  paddingLeft: `${12 + folder.depth * 16}px`,
+                  padding: '6px 12px',
                   cursor: 'pointer',
-                  background: isFocused
-                    ? 'var(--terminal-text)'
-                    : isSelected
-                      ? 'rgba(51, 255, 51, 0.1)'
-                      : 'transparent',
+                  background: isFocused ? 'var(--terminal-text)' : 'transparent',
                   color: isFocused ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  borderLeft: isSelected && !isFocused ? '3px solid var(--terminal-text)' : '3px solid transparent',
+                  borderBottom: '1px solid rgba(51,255,51,0.1)',
+                  fontSize: '13px',
                 }}
               >
-                {folder.depth > 0 && (
-                  <span style={{ fontSize: '10px', userSelect: 'none' }}>
-                    {folder.collapsed ? '▶' : '▼'}
-                  </span>
-                )}
-                <span>{folder.depth === 0 ? '🖥️' : '📁'}</span>
-                <span style={{ fontWeight: isSelected ? 'bold' : 'normal' }}>{folder.name}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '12px' }}>📄</span>
+                  <span style={{ fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                </div>
+                <div style={{ fontSize: '10px', opacity: 0.5, marginTop: '1px', paddingLeft: '20px' }}>
+                  {words} words
+                </div>
               </div>
             );
-          })}
-        </div>
-
-        {/* Right pane: Files */}
-        <div
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: '8px 0',
-            opacity: focusPane === 'files' ? 1 : 0.6,
-          }}
-        >
-          <div style={{ padding: '4px 16px', fontSize: '11px', opacity: 0.5, marginBottom: '4px', letterSpacing: '2px' }}>
-            FILES IN {breadcrumb.toUpperCase()} ({filteredFiles.length})
-            {searchQuery && <span> — searching "{searchQuery}"</span>}
-          </div>
-
-          {filteredFiles.length === 0 ? (
-            <div style={{ padding: '40px 16px', textAlign: 'center', opacity: 0.4 }}>
-              {searchQuery ? 'No files match your search' : 'No files in this folder'}
-              <div style={{ marginTop: '8px', fontSize: '12px' }}>
-                Press N to create a new folder • Ctrl+N for a new file
-              </div>
-            </div>
-          ) : (
-            filteredFiles.map((file, i) => {
-              const isFocused = focusPane === 'files' && fileIndex === i;
-              const doc = allDocuments[file.name];
-              const modified = doc?.lastModified ? new Date(doc.lastModified).toLocaleString() : 'Unknown';
-              const size = doc?.content ? `${doc.content.length} chars` : '0 chars';
-              const words = doc?.content ? doc.content.split(/\s+/).filter(Boolean).length : 0;
-
-              return (
-                <div
-                  key={file.name}
-                  onClick={() => {
-                    setFileIndex(i);
-                    setFocusPane('files');
-                  }}
-                  onDoubleClick={() => {
-                    onOpenFile(file.name);
-                    onClose();
-                  }}
-                  style={{
-                    padding: '10px 16px',
-                    cursor: 'pointer',
-                    background: isFocused ? 'var(--terminal-text)' : 'transparent',
-                    color: isFocused ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-                    borderBottom: '1px solid rgba(51,255,51,0.15)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '16px' }}>📄</span>
-                    <div>
-                      <div style={{ fontWeight: 'bold' }}>{file.name}</div>
-                      <div style={{ fontSize: '11px', opacity: 0.6, marginTop: '2px' }}>
-                        {words} words • {size}
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ fontSize: '11px', opacity: 0.5, textAlign: 'right' }}>
-                    {modified}
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
+          })
+        )}
       </div>
 
       {/* Status message */}
       {statusMessage && (
         <div style={{
-          padding: '6px 20px',
+          padding: '4px 12px',
           borderTop: '1px solid var(--terminal-text)',
           background: 'rgba(51,255,51,0.1)',
-          fontSize: '13px',
+          fontSize: '11px',
           textAlign: 'center',
+          flexShrink: 0,
         }}>
           ✓ {statusMessage}
         </div>
       )}
 
-      {/* Action bar */}
+      {/* Compact action hints */}
       <div
         style={{
           borderTop: '2px solid var(--terminal-text)',
-          padding: '10px 20px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          fontSize: '12px',
+          padding: '6px 8px',
+          fontSize: '10px',
+          opacity: 0.5,
+          flexShrink: 0,
+          lineHeight: 1.6,
         }}
       >
-        <div style={{ display: 'flex', gap: '20px' }}>
-          <span style={{ opacity: 0.7 }}>
-            <kbd style={kbdStyle}>Enter</kbd> Open
-          </span>
-          <span style={{ opacity: 0.7 }}>
-            <kbd style={kbdStyle}>M</kbd> Move
-          </span>
-          <span style={{ opacity: 0.7 }}>
-            <kbd style={kbdStyle}>R</kbd> Rename
-          </span>
-          <span style={{ opacity: 0.7 }}>
-            <kbd style={kbdStyle}>D</kbd> Delete
-          </span>
-          <span style={{ opacity: 0.7 }}>
-            <kbd style={kbdStyle}>N</kbd> New Folder
-          </span>
-          <span style={{ opacity: 0.7 }}>
-            <kbd style={kbdStyle}>C</kbd> New File
-          </span>
-          <span style={{ opacity: 0.7 }}>
-            <kbd style={kbdStyle}>U</kbd> Restore
-          </span>
-          <span style={{ opacity: 0.7 }}>
-            <kbd style={kbdStyle}>/</kbd> Search
-          </span>
-        </div>
-        <div style={{ display: 'flex', gap: '16px' }}>
-          <span style={{ opacity: 0.5 }}>
-            <kbd style={kbdStyle}>Tab</kbd> Switch Pane
-          </span>
-          <span style={{ opacity: 0.5 }}>
-            <kbd style={kbdStyle}>Space</kbd> Expand/Collapse
-          </span>
-          <span style={{ opacity: 0.5 }}>
-            <kbd style={kbdStyle}>Esc</kbd> Close
-          </span>
-        </div>
+        <kbd style={kbdStyle}>Enter</kbd>Open <kbd style={kbdStyle}>M</kbd>Move <kbd style={kbdStyle}>R</kbd>Rename <kbd style={kbdStyle}>D</kbd>Del
+        <br />
+        <kbd style={kbdStyle}>N</kbd>Folder <kbd style={kbdStyle}>C</kbd>File <kbd style={kbdStyle}>/</kbd>Search <kbd style={kbdStyle}>Tab</kbd>Pane
       </div>
     </div>
   );

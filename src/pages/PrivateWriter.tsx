@@ -55,8 +55,9 @@ export default function PrivateWriter() {
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [modalButtonIndex, setModalButtonIndex] = useState(0);
 
-  // File browser state (replaces old sidebar)
+  // File browser state
   const [fileBrowserOpen, setFileBrowserOpen] = useState(false);
+  const [fileBrowserFocused, setFileBrowserFocused] = useState(false);
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
 
   // Fullscreen state
@@ -311,7 +312,12 @@ export default function PrivateWriter() {
         setSettingsPanelOpen(true);
         break;
       case 'togglesidebar':
-        setFileBrowserOpen(prev => !prev);
+        setFileBrowserOpen(prev => {
+          const next = !prev;
+          setFileBrowserFocused(next);
+          if (!next) setTimeout(() => editorRef.current?.focus(), 50);
+          return next;
+        });
         break;
       case 'fullscreen':
         toggleFullscreen();
@@ -473,10 +479,8 @@ export default function PrivateWriter() {
         return;
       }
 
-      // File browser handles its own keys when open
-      if (fileBrowserOpen) {
-        return; // FileBrowser component has its own key handler
-      }
+      // File browser sidebar handles its own keys when focused
+      // Don't block other keys when sidebar is open but not focused
 
       // Modal keys
       if (activeModal) {
@@ -514,7 +518,12 @@ export default function PrivateWriter() {
 
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'B') {
         e.preventDefault();
-        executeAction('togglesidebar');
+        setFileBrowserOpen(prev => {
+          const next = !prev;
+          setFileBrowserFocused(next);
+          if (!next) setTimeout(() => editorRef.current?.focus(), 50);
+          return next;
+        });
         return;
       }
 
@@ -911,20 +920,52 @@ export default function PrivateWriter() {
         }}
       />
 
-      <Editor
-        content={editorContent}
-        onChange={handleEditorChange}
-        fontSize={theme.fontSize}
-        fontFamily={fontFamily}
-        placeholder={t(language, 'placeholder')}
-        ref={editorRef}
-        readOnly={fileBrowserOpen || settingsPanelOpen || !!activeModal || menuOpen}
-        onChangeFontSize={(delta) => theme.changeFontSize(delta)}
-        onChangeFontFamily={(font) => {
-          setFontFamily(font);
-          localStorage.setItem('pw-font-family', font);
-        }}
-      />
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        <FileBrowser
+          visible={fileBrowserOpen}
+          focused={fileBrowserFocused}
+          rootNode={fileStructure.structure.root}
+          allDocuments={allDocs}
+          onClose={() => {
+            setFileBrowserOpen(false);
+            setTimeout(() => editorRef.current?.focus(), 50);
+          }}
+          onOpenFile={(filename) => {
+            const content = docStorage.loadDocument(filename);
+            if (content !== null) { setEditorContent(content); editorRef.current?.setContent(content); }
+          }}
+          onNewFile={() => executeAction('new')}
+          onCreateFile={(filename, folderPath) => {
+            fileStructure.createFileInFolder(filename, folderPath);
+          }}
+          onNewFolder={(name) => fileStructure.createFolder(name)}
+          onDeleteFile={(filename) => fileStructure.deleteFile(filename)}
+          onDeleteFolder={(folderPath) => fileStructure.deleteFolder(folderPath)}
+          onRenameFile={(oldName, newName) => fileStructure.renameFile(oldName, newName)}
+          onMoveFile={(filename, fromPath, toPath) => fileStructure.moveFile(filename, fromPath, toPath)}
+          onToggleFolder={(path) => fileStructure.toggleFolder(path)}
+          onRestoreFromDeleted={(itemName) => fileStructure.restoreFromDeleted(itemName)}
+          onFocus={() => setFileBrowserFocused(true)}
+          getFolders={() => fileStructure.getFolders()}
+        />
+
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={() => setFileBrowserFocused(false)}>
+          <Editor
+            content={editorContent}
+            onChange={handleEditorChange}
+            fontSize={theme.fontSize}
+            fontFamily={fontFamily}
+            placeholder={t(language, 'placeholder')}
+            ref={editorRef}
+            readOnly={settingsPanelOpen || !!activeModal || menuOpen}
+            onChangeFontSize={(delta) => theme.changeFontSize(delta)}
+            onChangeFontFamily={(font) => {
+              setFontFamily(font);
+              localStorage.setItem('pw-font-family', font);
+            }}
+          />
+        </div>
+      </div>
 
       <HelpText
         visible={helpVisible}
@@ -944,31 +985,6 @@ export default function PrivateWriter() {
         wifiOn={wifiOn}
       />
 
-      <FileBrowser
-        visible={fileBrowserOpen}
-        rootNode={fileStructure.structure.root}
-        allDocuments={allDocs}
-        onClose={() => {
-          setFileBrowserOpen(false);
-          setTimeout(() => editorRef.current?.focus(), 50);
-        }}
-        onOpenFile={(filename) => {
-          const content = docStorage.loadDocument(filename);
-          if (content !== null) { setEditorContent(content); editorRef.current?.setContent(content); }
-        }}
-        onNewFile={() => executeAction('new')}
-        onCreateFile={(filename, folderPath) => {
-          fileStructure.createFileInFolder(filename, folderPath);
-        }}
-        onNewFolder={(name) => fileStructure.createFolder(name)}
-        onDeleteFile={(filename) => fileStructure.deleteFile(filename)}
-        onDeleteFolder={(folderPath) => fileStructure.deleteFolder(folderPath)}
-        onRenameFile={(oldName, newName) => fileStructure.renameFile(oldName, newName)}
-        onMoveFile={(filename, fromPath, toPath) => fileStructure.moveFile(filename, fromPath, toPath)}
-        onToggleFolder={(path) => fileStructure.toggleFolder(path)}
-        onRestoreFromDeleted={(itemName) => fileStructure.restoreFromDeleted(itemName)}
-        getFolders={() => fileStructure.getFolders()}
-      />
 
       <LiveStats visible={liveStatsEnabled} wpm={liveWpm} chars={liveChars} />
 
