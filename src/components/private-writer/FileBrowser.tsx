@@ -8,6 +8,7 @@ export interface FileBrowserProps {
   onClose: () => void;
   onOpenFile: (filename: string) => void;
   onNewFile: () => void;
+  onCreateFile: (filename: string, folderPath: string[]) => void;
   onNewFolder: (name: string) => void;
   onDeleteFile: (filename: string) => void;
   onRenameFile: (oldName: string, newName: string) => void;
@@ -17,7 +18,7 @@ export interface FileBrowserProps {
 }
 
 type FocusPane = 'folders' | 'files' | 'action-bar';
-type InputMode = 'none' | 'search' | 'rename' | 'new-folder' | 'move';
+type InputMode = 'none' | 'search' | 'rename' | 'new-folder' | 'new-file' | 'move';
 
 interface FlatItem {
   name: string;
@@ -67,6 +68,7 @@ export default function FileBrowser({
   onClose,
   onOpenFile,
   onNewFile,
+  onCreateFile,
   onNewFolder,
   onDeleteFile,
   onRenameFile,
@@ -170,6 +172,21 @@ export default function FileBrowser({
         return;
       }
 
+      if (inputMode === 'new-file') {
+        if (e.key === 'Escape') {
+          setInputMode('none');
+          e.preventDefault();
+        } else if (e.key === 'Enter') {
+          if (inputValue.trim()) {
+            onCreateFile(inputValue.trim(), currentPath);
+            showStatus(`File "${inputValue.trim()}" created`);
+          }
+          setInputMode('none');
+          e.preventDefault();
+        }
+        return;
+      }
+
       if (inputMode === 'move') {
         const folders = getFolders();
         if (e.key === 'Escape') {
@@ -218,6 +235,13 @@ export default function FileBrowser({
 
       if (e.key === 'n' || e.key === 'N') {
         setInputMode('new-folder');
+        setInputValue('');
+        e.preventDefault();
+        return;
+      }
+
+      if (e.key === 'c' || e.key === 'C') {
+        setInputMode('new-file');
         setInputValue('');
         e.preventDefault();
         return;
@@ -434,6 +458,36 @@ export default function FileBrowser({
         </div>
       )}
 
+      {/* New file input */}
+      {inputMode === 'new-file' && (
+        <div style={{ padding: '8px 20px', borderBottom: '1px solid var(--terminal-text)', background: 'rgba(51,255,51,0.05)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>NEW FILE:</span>
+            <input
+              ref={inputRef}
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              autoFocus
+              placeholder="filename.txt"
+              style={{
+                flex: 1,
+                background: 'var(--terminal-bg)',
+                border: '1px solid var(--terminal-text)',
+                color: 'var(--terminal-text)',
+                padding: '6px 8px',
+                ...termStyle,
+                fontSize: '14px',
+                outline: 'none',
+              }}
+            />
+            <span style={{ fontSize: '11px', opacity: 0.5 }}>Enter to create • Esc to cancel</span>
+          </div>
+          <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '4px' }}>
+            Creating in: 📂 {['root', ...currentPath].join(' / ')}
+          </div>
+        </div>
+      )}
+
       {/* Move to folder picker */}
       {inputMode === 'move' && (
         <div style={{ padding: '8px 20px', borderBottom: '1px solid var(--terminal-text)', background: 'rgba(51,255,51,0.05)' }}>
@@ -637,6 +691,9 @@ export default function FileBrowser({
           </span>
           <span style={{ opacity: 0.7 }}>
             <kbd style={kbdStyle}>N</kbd> New Folder
+          </span>
+          <span style={{ opacity: 0.7 }}>
+            <kbd style={kbdStyle}>C</kbd> New File
           </span>
           <span style={{ opacity: 0.7 }}>
             <kbd style={kbdStyle}>/</kbd> Search

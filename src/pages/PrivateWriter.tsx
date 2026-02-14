@@ -1032,6 +1032,9 @@ export default function PrivateWriter() {
           if (content !== null) setEditorContent(content);
         }}
         onNewFile={() => executeAction('new')}
+        onCreateFile={(filename, folderPath) => {
+          fileStructure.createFileInFolder(filename, folderPath);
+        }}
         onNewFolder={(name) => fileStructure.createFolder(name)}
         onDeleteFile={(filename) => fileStructure.deleteFile(filename)}
         onRenameFile={(oldName, newName) => fileStructure.renameFile(oldName, newName)}

@@ -131,6 +131,28 @@ export function useFileStructure() {
     return result;
   }, [structure]);
 
+  const createFileInFolder = useCallback((filename: string, folderPath: string[]) => {
+    setStructure(prev => {
+      const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
+      let current: FileNode = next.root;
+      for (const p of folderPath) {
+        if (!current.children || !current.children[p]) return prev;
+        current = current.children[p];
+      }
+      if (!current.children) current.children = {};
+      // Build a unique key based on path
+      const fileKey = folderPath.length > 0 ? `${folderPath.join('/')}/${filename}` : filename;
+      if (current.children[fileKey]) return prev;
+      current.children[fileKey] = { type: 'file', name: fileKey };
+      // Create empty doc
+      const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
+      docs[fileKey] = { content: '', lastModified: new Date().toISOString() };
+      localStorage.setItem('pw-documents', JSON.stringify(docs));
+      localStorage.setItem(FS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   const createNovelProject = useCallback((title: string) => {
     setStructure(prev => {
       const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
@@ -148,6 +170,14 @@ export function useFileStructure() {
         `${title}/Active/Bible/Setting.txt`,
         `${title}/Active/Notes/Ideas.txt`,
       ];
+      // Chapter files 1-10
+      const chapterFiles: Record<string, { type: 'file'; name: string }> = {};
+      for (let i = 1; i <= 10; i++) {
+        const chNum = String(i).padStart(2, '0');
+        const chKey = `${title}/Active/Chapters/Chapter ${chNum}.txt`;
+        docs[chKey] = { content: '', lastModified: new Date().toISOString() };
+        chapterFiles[chKey] = { type: 'file', name: chKey };
+      }
       starterFiles.forEach(f => { docs[f] = { content: '', lastModified: new Date().toISOString() }; });
       docs[`${title}/Version History.txt`] = { content: versionHistoryContent, lastModified: new Date().toISOString() };
       localStorage.setItem('pw-documents', JSON.stringify(docs));
@@ -158,7 +188,7 @@ export function useFileStructure() {
           'Active': {
             type: 'folder', name: 'Active', collapsed: false,
             children: {
-              'Chapters': { type: 'folder', name: 'Chapters', collapsed: false, children: {} },
+              'Chapters': { type: 'folder', name: 'Chapters', collapsed: false, children: chapterFiles },
               'Bible': {
                 type: 'folder', name: 'Bible', collapsed: false,
                 children: {
@@ -305,7 +335,7 @@ export function useFileStructure() {
 
   return {
     structure, createFolder, addFileToTree, toggleFolder, moveFile, deleteFile, renameFile, getFolders,
-    createNovelProject, saveVersion, saveSnapshot, findFilesInFolder, getNovelProjects,
+    createNovelProject, saveVersion, saveSnapshot, findFilesInFolder, getNovelProjects, createFileInFolder,
   };
 }
 
