@@ -8,6 +8,8 @@ import FileBrowser from '@/components/private-writer/FileBrowser';
 import HelpText from '@/components/private-writer/HelpText';
 import LiveStats from '@/components/private-writer/LiveStats';
 import GoogleDriveModal from '@/components/private-writer/GoogleDriveModal';
+import NovelProjectWizard from '@/components/private-writer/NovelProjectWizard';
+import type { NovelProjectConfig, StorageLocation } from '@/components/private-writer/NovelProjectWizard';
 import ModalShell, { ModalButton, ModalInput } from '@/components/private-writer/ModalShell';
 import SettingsPanel from '@/components/private-writer/SettingsPanel';
 import { t } from '@/lib/languages';
@@ -91,6 +93,7 @@ export default function PrivateWriter() {
 
   // Novel project wizard
   const [novelTitle, setNovelTitle] = useState('');
+  const [novelWizardOpen, setNovelWizardOpen] = useState(false);
 
   // Save version
   const [versionName, setVersionName] = useState('');
@@ -364,9 +367,7 @@ export default function PrivateWriter() {
         setModalButtonIndex(0);
         break;
       case 'newnovel':
-        setNovelTitle('');
-        setActiveModal('new-novel');
-        setModalButtonIndex(0);
+        setNovelWizardOpen(true);
         break;
       case 'saveversion': {
         const novels = fileStructure.getNovelProjects();
@@ -760,20 +761,7 @@ export default function PrivateWriter() {
         // During game, let typing happen naturally
         break;
 
-      case 'new-novel':
-        if (e.key === 'Enter') {
-          if (novelTitle.trim()) {
-            fileStructure.createNovelProject(novelTitle.trim());
-            showToast(`Novel project "${novelTitle.trim()}" created!`);
-            setFileBrowserOpen(true);
-            closeModal();
-          }
-          e.preventDefault();
-        } else if (e.key === 'Tab') {
-          setModalButtonIndex(prev => (prev + 1) % 2);
-          e.preventDefault();
-        }
-        break;
+      // new-novel is now handled by full-screen wizard, not modal
 
       case 'save-version': {
         const novels = fileStructure.getNovelProjects();
@@ -1376,47 +1364,25 @@ export default function PrivateWriter() {
         </div>
       </ModalShell>
 
-      {/* New Novel Project Modal */}
-      <ModalShell visible={activeModal === 'new-novel'} title="📖 NEW NOVEL PROJECT" onClose={closeModal}>
-        <div style={{ margin: '16px 0' }}>
-          <p style={{ marginBottom: '16px', textAlign: 'center' }}>
-            Create a structured novel project with chapters, bible, notes, and version management.
-          </p>
-          <div style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '4px' }}>NOVEL TITLE:</div>
-            <ModalInput
-              value={novelTitle}
-              onChange={setNovelTitle}
-              placeholder="Enter your novel title..."
-              autoFocus
-            />
-          </div>
-          <div style={{ padding: '12px', border: '1px solid var(--terminal-text)', opacity: 0.7, fontSize: '13px' }}>
-            <div style={{ marginBottom: '8px', fontWeight: 'bold' }}>This will create:</div>
-            <div style={{ fontFamily: "'Courier Prime', monospace", lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
-              📁 {novelTitle || '[Title]'}/{'\n'}
-              ├─ 📁 Active/{'\n'}
-              │  ├─ 📁 Chapters/{'\n'}
-              │  ├─ 📁 Bible/ (Characters, Outline, Setting){'\n'}
-              │  └─ 📁 Notes/ (Ideas){'\n'}
-              ├─ 📁 Versions/{'\n'}
-              ├─ 📁 Snapshots/{'\n'}
-              └─ 📄 Version History.txt
-            </div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-          <ModalButton label="CREATE PROJECT" focused={modalButtonIndex === 0} onClick={() => {
-            if (novelTitle.trim()) {
-              fileStructure.createNovelProject(novelTitle.trim());
-              showToast(`Novel project "${novelTitle.trim()}" created!`);
-              setFileBrowserOpen(true);
-              closeModal();
-            }
-          }} />
-          <ModalButton label="CANCEL" focused={modalButtonIndex === 1} onClick={closeModal} />
-        </div>
-      </ModalShell>
+      {/* New Novel Project Wizard */}
+      <NovelProjectWizard
+        visible={novelWizardOpen}
+        onClose={() => setNovelWizardOpen(false)}
+        onCreate={(config) => {
+          fileStructure.createNovelProject(config);
+          showToast(`Novel project "${config.title}" created!`);
+          setFileBrowserOpen(true);
+          setNovelWizardOpen(false);
+        }}
+        onLinkStorage={(location) => {
+          if (location === 'google-drive') {
+            setNovelWizardOpen(false);
+            setActiveModal('gdrive');
+          } else {
+            showToast(`${location} integration coming soon.`);
+          }
+        }}
+      />
 
       {/* Save Version Modal */}
       <ModalShell visible={activeModal === 'save-version'} title="📋 SAVE VERSION" onClose={closeModal}>
