@@ -101,6 +101,33 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({ content, onChange, fontS
           .terminal-editor p {
             margin: 0 0 0.5em 0;
           }
+          .terminal-editor h1 {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 0.5em 0 0.3em;
+            text-shadow: 0 0 10px var(--terminal-glow);
+            border-bottom: 1px solid var(--terminal-text);
+            padding-bottom: 0.2em;
+          }
+          .terminal-editor h2 {
+            font-size: 1.6em;
+            font-weight: bold;
+            margin: 0.4em 0 0.3em;
+            text-shadow: 0 0 8px var(--terminal-glow);
+          }
+          .terminal-editor h3 {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin: 0.3em 0 0.2em;
+            text-shadow: 0 0 6px var(--terminal-glow);
+          }
+          .terminal-editor h4 {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin: 0.3em 0 0.2em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
           .terminal-editor p.is-editor-empty:first-child::before {
             content: '${placeholder.replace(/'/g, "\\'")}';
             color: var(--terminal-text);
