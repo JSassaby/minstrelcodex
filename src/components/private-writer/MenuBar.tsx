@@ -21,10 +21,13 @@ function getSubmenuItems(menu: string, language: string, wifiOn: boolean, blueto
     case 'file':
       return [
         { action: 'new', label: t(language, 'file.new'), shortcut: 'Ctrl+N' },
+        { action: 'newnovel', label: '📖 New Novel Project' },
         { action: 'open', label: t(language, 'file.open'), shortcut: 'Ctrl+O' },
         { action: 'recent', label: t(language, 'file.recent') },
         { action: 'save', label: t(language, 'file.save'), shortcut: 'Ctrl+S' },
         { action: 'saveas', label: t(language, 'file.saveas') },
+        { action: 'saveversion', label: '📋 Save Version...' },
+        { action: 'savesnapshot', label: '📸 Save Snapshot', shortcut: 'Ctrl+Shift+V' },
       ];
     case 'edit':
       return [

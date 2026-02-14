@@ -43,6 +43,8 @@ export type ModalType =
   | 'pin-setup'
   | 'pin-lock'
   | 'gdrive'
+  | 'new-novel'
+  | 'save-version'
   | null;
 
 export type Language = 'en-GB' | 'en-US' | 'af';

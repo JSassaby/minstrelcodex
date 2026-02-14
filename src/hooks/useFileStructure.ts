@@ -131,7 +131,182 @@ export function useFileStructure() {
     return result;
   }, [structure]);
 
-  return { structure, createFolder, addFileToTree, toggleFolder, moveFile, deleteFile, renameFile, getFolders };
+  const createNovelProject = useCallback((title: string) => {
+    setStructure(prev => {
+      const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
+      if (!next.root.children) next.root.children = {};
+      if (next.root.children[title]) return prev; // Already exists
+
+      const now = new Date().toLocaleDateString();
+      const versionHistoryContent = `VERSION HISTORY - ${title}\nCreated: ${now}\n\nAdd notes about each version here.\n`;
+
+      // Create starter files in localStorage
+      const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
+      const starterFiles = [
+        `${title}/Active/Bible/Characters.txt`,
+        `${title}/Active/Bible/Outline.txt`,
+        `${title}/Active/Bible/Setting.txt`,
+        `${title}/Active/Notes/Ideas.txt`,
+      ];
+      starterFiles.forEach(f => { docs[f] = { content: '', lastModified: new Date().toISOString() }; });
+      docs[`${title}/Version History.txt`] = { content: versionHistoryContent, lastModified: new Date().toISOString() };
+      localStorage.setItem('pw-documents', JSON.stringify(docs));
+
+      next.root.children[title] = {
+        type: 'folder', name: title, collapsed: false,
+        children: {
+          'Active': {
+            type: 'folder', name: 'Active', collapsed: false,
+            children: {
+              'Chapters': { type: 'folder', name: 'Chapters', collapsed: false, children: {} },
+              'Bible': {
+                type: 'folder', name: 'Bible', collapsed: false,
+                children: {
+                  [`${title}/Active/Bible/Characters.txt`]: { type: 'file', name: `${title}/Active/Bible/Characters.txt` },
+                  [`${title}/Active/Bible/Outline.txt`]: { type: 'file', name: `${title}/Active/Bible/Outline.txt` },
+                  [`${title}/Active/Bible/Setting.txt`]: { type: 'file', name: `${title}/Active/Bible/Setting.txt` },
+                },
+              },
+              'Notes': {
+                type: 'folder', name: 'Notes', collapsed: false,
+                children: {
+                  [`${title}/Active/Notes/Ideas.txt`]: { type: 'file', name: `${title}/Active/Notes/Ideas.txt` },
+                },
+              },
+            },
+          },
+          'Versions': { type: 'folder', name: 'Versions', collapsed: false, children: {} },
+          'Snapshots': { type: 'folder', name: 'Snapshots', collapsed: false, children: {} },
+          [`${title}/Version History.txt`]: { type: 'file', name: `${title}/Version History.txt` },
+        },
+      };
+
+      localStorage.setItem(FS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const findFilesInFolder = useCallback((node: FileNode, folderPath: string[]): string[] => {
+    let current = node;
+    for (const p of folderPath) {
+      if (!current.children || !current.children[p]) return [];
+      current = current.children[p];
+    }
+    const result: string[] = [];
+    const collectFiles = (n: FileNode) => {
+      if (!n.children) return;
+      for (const [, item] of Object.entries(n.children)) {
+        if (item.type === 'file') result.push(item.name);
+        if (item.type === 'folder') collectFiles(item);
+      }
+    };
+    collectFiles(current);
+    return result;
+  }, []);
+
+  const saveVersion = useCallback((novelTitle: string, versionName: string) => {
+    setStructure(prev => {
+      const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
+      const novel = next.root.children?.[novelTitle];
+      if (!novel || !novel.children) return prev;
+
+      // Ensure Versions folder exists
+      if (!novel.children['Versions']) {
+        novel.children['Versions'] = { type: 'folder', name: 'Versions', collapsed: false, children: {} };
+      }
+
+      // Find all files in Active/Chapters/
+      const chaptersFolder = novel.children['Active']?.children?.['Chapters'];
+      const chapterFiles: Record<string, FileNode> = {};
+      const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
+
+      if (chaptersFolder?.children) {
+        for (const [key, item] of Object.entries(chaptersFolder.children)) {
+          if (item.type === 'file') {
+            // Copy file data
+            const copyName = `${novelTitle}/Versions/${versionName}/${item.name.split('/').pop()}`;
+            if (docs[item.name]) {
+              docs[copyName] = { ...docs[item.name], lastModified: new Date().toISOString() };
+            }
+            chapterFiles[copyName] = { type: 'file', name: copyName };
+          }
+        }
+      }
+
+      novel.children['Versions'].children![versionName] = {
+        type: 'folder', name: versionName, collapsed: true,
+        children: chapterFiles,
+      };
+
+      // Update Version History
+      const historyKey = `${novelTitle}/Version History.txt`;
+      const historyEntry = `${versionName} (${new Date().toLocaleDateString()})\n- \n\n`;
+      if (docs[historyKey]) {
+        const lines = docs[historyKey].content.split('\n');
+        // Insert after header (first 3 lines)
+        const headerEnd = Math.min(3, lines.length);
+        lines.splice(headerEnd, 0, historyEntry);
+        docs[historyKey].content = lines.join('\n');
+        docs[historyKey].lastModified = new Date().toISOString();
+      }
+
+      localStorage.setItem('pw-documents', JSON.stringify(docs));
+      localStorage.setItem(FS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const saveSnapshot = useCallback((filename: string) => {
+    if (!filename) return false;
+
+    setStructure(prev => {
+      const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
+      if (!next.root.children) next.root.children = {};
+
+      // Ensure Snapshots folder exists at root
+      if (!next.root.children['Snapshots']) {
+        next.root.children['Snapshots'] = { type: 'folder', name: 'Snapshots', collapsed: false, children: {} };
+      }
+
+      const dateStr = new Date().toISOString().split('T')[0];
+      const shortName = filename.split('/').pop() || filename;
+      const snapshotFolderName = `${dateStr} - ${shortName}`;
+      const snapshotFileName = `Snapshots/${snapshotFolderName}/${shortName}`;
+
+      // Copy file data
+      const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
+      if (docs[filename]) {
+        docs[snapshotFileName] = { ...docs[filename], lastModified: new Date().toISOString() };
+        localStorage.setItem('pw-documents', JSON.stringify(docs));
+      }
+
+      next.root.children['Snapshots'].children![snapshotFolderName] = {
+        type: 'folder', name: snapshotFolderName, collapsed: true,
+        children: {
+          [snapshotFileName]: { type: 'file', name: snapshotFileName },
+        },
+      };
+
+      localStorage.setItem(FS_KEY, JSON.stringify(next));
+      return next;
+    });
+    return true;
+  }, []);
+
+  const getNovelProjects = useCallback((): string[] => {
+    const children = structure.root.children || {};
+    return Object.entries(children)
+      .filter(([, item]) => {
+        if (item.type !== 'folder' || !item.children) return false;
+        return !!item.children['Active'] && !!item.children['Versions'];
+      })
+      .map(([name]) => name);
+  }, [structure]);
+
+  return {
+    structure, createFolder, addFileToTree, toggleFolder, moveFile, deleteFile, renameFile, getFolders,
+    createNovelProject, saveVersion, saveSnapshot, findFilesInFolder, getNovelProjects,
+  };
 }
 
 function findFile(node: FileNode, filename: string): boolean {
