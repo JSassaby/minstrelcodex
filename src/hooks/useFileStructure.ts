@@ -89,6 +89,35 @@ export function useFileStructure() {
     });
   }, []);
 
+  const deleteFile = useCallback((filename: string) => {
+    setStructure(prev => {
+      const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
+      removeFromTree(next.root, filename);
+      localStorage.setItem(FS_KEY, JSON.stringify(next));
+      return next;
+    });
+    // Also remove from documents storage
+    const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
+    delete docs[filename];
+    localStorage.setItem('pw-documents', JSON.stringify(docs));
+  }, []);
+
+  const renameFile = useCallback((oldName: string, newName: string) => {
+    setStructure(prev => {
+      const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
+      renameInTree(next.root, oldName, newName);
+      localStorage.setItem(FS_KEY, JSON.stringify(next));
+      return next;
+    });
+    // Also rename in documents storage
+    const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
+    if (docs[oldName]) {
+      docs[newName] = docs[oldName];
+      delete docs[oldName];
+      localStorage.setItem('pw-documents', JSON.stringify(docs));
+    }
+  }, []);
+
   const getFolders = useCallback((node: FileNode = structure.root, path: string[] = []): { name: string; path: string[] }[] => {
     const result: { name: string; path: string[] }[] = [];
     const children = node.children || {};
@@ -102,7 +131,7 @@ export function useFileStructure() {
     return result;
   }, [structure]);
 
-  return { structure, createFolder, addFileToTree, toggleFolder, moveFile, getFolders };
+  return { structure, createFolder, addFileToTree, toggleFolder, moveFile, deleteFile, renameFile, getFolders };
 }
 
 function findFile(node: FileNode, filename: string): boolean {
@@ -110,6 +139,33 @@ function findFile(node: FileNode, filename: string): boolean {
   for (const [name, item] of Object.entries(node.children)) {
     if (item.type === 'file' && name === filename) return true;
     if (item.type === 'folder' && findFile(item, filename)) return true;
+  }
+  return false;
+}
+
+function removeFromTree(node: FileNode, filename: string): boolean {
+  if (!node.children) return false;
+  if (node.children[filename] && node.children[filename].type === 'file') {
+    delete node.children[filename];
+    return true;
+  }
+  for (const item of Object.values(node.children)) {
+    if (item.type === 'folder' && removeFromTree(item, filename)) return true;
+  }
+  return false;
+}
+
+function renameInTree(node: FileNode, oldName: string, newName: string): boolean {
+  if (!node.children) return false;
+  if (node.children[oldName] && node.children[oldName].type === 'file') {
+    const data = node.children[oldName];
+    delete node.children[oldName];
+    data.name = newName;
+    node.children[newName] = data;
+    return true;
+  }
+  for (const item of Object.values(node.children)) {
+    if (item.type === 'folder' && renameInTree(item, oldName, newName)) return true;
   }
   return false;
 }

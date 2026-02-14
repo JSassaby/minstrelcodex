@@ -3,7 +3,7 @@ import BootScreen from '@/components/dnote/BootScreen';
 import Editor from '@/components/dnote/Editor';
 import MenuBar, { MENUS, getSubmenuItems } from '@/components/dnote/MenuBar';
 import StatusBar from '@/components/dnote/StatusBar';
-import FileSidebar, { flattenTree } from '@/components/dnote/FileSidebar';
+import FileBrowser from '@/components/dnote/FileBrowser';
 import HelpText from '@/components/dnote/HelpText';
 import LiveStats from '@/components/dnote/LiveStats';
 import ModalShell, { ModalButton, ModalInput } from '@/components/dnote/ModalShell';
@@ -68,9 +68,11 @@ export default function DNote() {
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [modalButtonIndex, setModalButtonIndex] = useState(0);
 
-  // Sidebar state
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarFocusIndex, setSidebarFocusIndex] = useState(1);
+  // File browser state (replaces old sidebar)
+  const [fileBrowserOpen, setFileBrowserOpen] = useState(false);
+
+  // Fullscreen state
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Help text
   const [helpVisible, setHelpVisible] = useState(true);
@@ -218,6 +220,22 @@ export default function DNote() {
     setTimeout(() => editorRef.current?.focus(), 50);
   }, []);
 
+  // Fullscreen toggle
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
+    } else {
+      document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
+    }
+  }, []);
+
+  // Sync fullscreen state with actual fullscreen changes
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, []);
+
   // Execute menu action
   const executeAction = useCallback((action: string) => {
     if (action.startsWith('lang-')) {
@@ -280,8 +298,10 @@ export default function DNote() {
         setActiveModal('colors');
         break;
       case 'togglesidebar':
-        setSidebarOpen(prev => !prev);
-        setSidebarFocusIndex(1);
+        setFileBrowserOpen(prev => !prev);
+        break;
+      case 'fullscreen':
+        toggleFullscreen();
         break;
       case 'typingchallenge':
         setTypingPhase('start');
@@ -318,7 +338,7 @@ export default function DNote() {
         setModalButtonIndex(0);
         break;
     }
-  }, [docStorage, editorContent, fileStructure, theme, language, pinConfig]);
+  }, [docStorage, editorContent, fileStructure, theme, language, pinConfig, toggleFullscreen]);
 
   // Central keyboard handler
   useEffect(() => {
@@ -399,53 +419,9 @@ export default function DNote() {
         return;
       }
 
-      // Sidebar keys (highest priority when open)
-      if (sidebarOpen && !activeModal) {
-        const flatItems = flattenTree(fileStructure.structure.root);
-        const totalItems = 3 + flatItems.length;
-
-        if (e.key === 'ArrowDown') {
-          setSidebarFocusIndex(prev => (prev + 1) % totalItems);
-          e.preventDefault(); return;
-        } else if (e.key === 'ArrowUp') {
-          setSidebarFocusIndex(prev => (prev - 1 + totalItems) % totalItems);
-          e.preventDefault(); return;
-        } else if (e.key === 'Enter') {
-          if (sidebarFocusIndex === 0) { setSidebarOpen(false); }
-          else if (sidebarFocusIndex === 1) {
-            setFolderName('');
-            setActiveModal('new-folder');
-            setModalButtonIndex(0);
-          }
-          else if (sidebarFocusIndex === 2) { executeAction('new'); }
-          else {
-            const item = flatItems[sidebarFocusIndex - 3];
-            if (item) {
-              if (item.type === 'file') {
-                const content = docStorage.loadDocument(item.name);
-                if (content !== null) setEditorContent(content);
-              } else {
-                fileStructure.toggleFolder(item.path);
-              }
-            }
-          }
-          e.preventDefault(); return;
-        } else if (e.key === 'm' || e.key === 'M') {
-          if (sidebarFocusIndex >= 3) {
-            const item = flatItems[sidebarFocusIndex - 3];
-            if (item && item.type === 'file') {
-              setMoveFileName(item.name);
-              setMoveFilePath(item.path);
-              setSelectedFolderIdx(-1);
-              setActiveModal('move-to-folder');
-              setModalButtonIndex(0);
-            }
-          }
-          e.preventDefault(); return;
-        } else if (e.key === 'Escape') {
-          setSidebarOpen(false);
-          e.preventDefault(); return;
-        }
+      // File browser handles its own keys when open
+      if (fileBrowserOpen) {
+        return; // FileBrowser component has its own key handler
       }
 
       // Modal keys
@@ -470,6 +446,12 @@ export default function DNote() {
         return;
       }
 
+      if (e.key === 'F11') {
+        e.preventDefault();
+        executeAction('fullscreen');
+        return;
+      }
+
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'S') {
         e.preventDefault();
         executeAction('togglelivestats');
@@ -491,7 +473,7 @@ export default function DNote() {
   }, [
     locked, pinInput, pinConfig, pinConfirm, pinLength, pinStep,
     activeModal, modalButtonIndex, menuOpen, menuIndex, submenuOpen, submenuIndex,
-    sidebarOpen, sidebarFocusIndex, language,
+    fileBrowserOpen, language,
     saveFilename, folderName, selectedFolderIdx,
     colorFocusSection, colorPresetIdx, comboIdx,
     textColorInput, bgColorInput,
@@ -856,7 +838,6 @@ export default function DNote() {
   const recentFiles = docStorage.getRecentFiles();
   const recentDocs = recentFiles.filter(f => allDocs[f]);
   const folders = fileStructure.getFolders();
-  const flatItems = flattenTree(fileStructure.structure.root);
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
@@ -881,7 +862,7 @@ export default function DNote() {
         fontSize={theme.fontSize}
         placeholder={t(language, 'placeholder')}
         editorRef={editorRef}
-        readOnly={sidebarOpen || !!activeModal || menuOpen}
+        readOnly={fileBrowserOpen || !!activeModal || menuOpen}
       />
 
       <HelpText
@@ -902,27 +883,25 @@ export default function DNote() {
         wifiOn={wifiOn}
       />
 
-      <FileSidebar
-        visible={sidebarOpen}
-        structure={fileStructure.structure.root}
-        focusIndex={sidebarFocusIndex}
-        onClose={() => setSidebarOpen(false)}
-        onNewFolder={() => {
-          setFolderName('');
-          setActiveModal('new-folder');
+      <FileBrowser
+        visible={fileBrowserOpen}
+        rootNode={fileStructure.structure.root}
+        allDocuments={allDocs}
+        onClose={() => {
+          setFileBrowserOpen(false);
+          setTimeout(() => editorRef.current?.focus(), 50);
         }}
-        onNewFile={() => executeAction('new')}
-        onFileClick={(path) => {
-          const content = docStorage.loadDocument(path[path.length - 1]);
+        onOpenFile={(filename) => {
+          const content = docStorage.loadDocument(filename);
           if (content !== null) setEditorContent(content);
         }}
-        onFolderToggle={(path) => fileStructure.toggleFolder(path)}
-        onMoveFile={(name, path) => {
-          setMoveFileName(name);
-          setMoveFilePath(path);
-          setSelectedFolderIdx(-1);
-          setActiveModal('move-to-folder');
-        }}
+        onNewFile={() => executeAction('new')}
+        onNewFolder={(name) => fileStructure.createFolder(name)}
+        onDeleteFile={(filename) => fileStructure.deleteFile(filename)}
+        onRenameFile={(oldName, newName) => fileStructure.renameFile(oldName, newName)}
+        onMoveFile={(filename, fromPath, toPath) => fileStructure.moveFile(filename, fromPath, toPath)}
+        onToggleFolder={(path) => fileStructure.toggleFolder(path)}
+        getFolders={() => fileStructure.getFolders()}
       />
 
       <LiveStats visible={liveStatsEnabled} wpm={liveWpm} chars={liveChars} />
