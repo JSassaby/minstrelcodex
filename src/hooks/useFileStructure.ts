@@ -185,64 +185,119 @@ export function useFileStructure() {
     });
   }, []);
 
-  const createNovelProject = useCallback((title: string) => {
+  const createNovelProject = useCallback((config: {
+    title: string;
+    abbreviation: string;
+    chapterCount: number;
+    namingFormat: 'ch-abr' | 'abr-ch' | 'abr_ch';
+    includeBible: boolean;
+    includeNotes: boolean;
+    includeResearch: boolean;
+    includeWorldbuilding: boolean;
+    includeFrontMatter: boolean;
+    targetWordCount?: number;
+    pov?: string;
+    tense?: string;
+    styleNotes?: string;
+  }) => {
+    const { title, abbreviation: abr, chapterCount, namingFormat, includeBible, includeNotes, includeResearch, includeWorldbuilding, includeFrontMatter } = config;
+
+    const formatChapter = (num: number): string => {
+      const ch = String(num).padStart(2, '0');
+      switch (namingFormat) {
+        case 'ch-abr': return `Chapter ${ch} - ${abr}.txt`;
+        case 'abr-ch': return `${abr} - Chapter ${ch}.txt`;
+        case 'abr_ch': return `${abr}_Ch${ch}.txt`;
+      }
+    };
+
     setStructure(prev => {
       const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
       if (!next.root.children) next.root.children = {};
-      if (next.root.children[title]) return prev; // Already exists
+      if (next.root.children[title]) return prev;
 
       const now = new Date().toLocaleDateString();
-      const versionHistoryContent = `VERSION HISTORY - ${title}\nCreated: ${now}\n\nAdd notes about each version here.\n`;
-
-      // Create starter files in localStorage
       const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
-      const starterFiles = [
-        `${title}/Active/Bible/Characters.txt`,
-        `${title}/Active/Bible/Outline.txt`,
-        `${title}/Active/Bible/Setting.txt`,
-        `${title}/Active/Notes/Ideas.txt`,
-      ];
-      // Chapter files 1-10
+
+      // Chapter files
       const chapterFiles: Record<string, { type: 'file'; name: string }> = {};
-      for (let i = 1; i <= 10; i++) {
-        const chNum = String(i).padStart(2, '0');
-        const chKey = `${title}/Active/Chapters/Chapter ${chNum}.txt`;
+      for (let i = 1; i <= chapterCount; i++) {
+        const chName = formatChapter(i);
+        const chKey = `${title}/Active/Chapters/${chName}`;
         docs[chKey] = { content: '', lastModified: new Date().toISOString() };
         chapterFiles[chKey] = { type: 'file', name: chKey };
       }
-      starterFiles.forEach(f => { docs[f] = { content: '', lastModified: new Date().toISOString() }; });
-      docs[`${title}/Version History.txt`] = { content: versionHistoryContent, lastModified: new Date().toISOString() };
-      localStorage.setItem('pw-documents', JSON.stringify(docs));
 
-      next.root.children[title] = {
-        type: 'folder', name: title, collapsed: false,
-        children: {
-          'Active': {
-            type: 'folder', name: 'Active', collapsed: false,
-            children: {
-              'Chapters': { type: 'folder', name: 'Chapters', collapsed: false, children: chapterFiles },
-              'Bible': {
-                type: 'folder', name: 'Bible', collapsed: false,
-                children: {
-                  [`${title}/Active/Bible/Characters.txt`]: { type: 'file', name: `${title}/Active/Bible/Characters.txt` },
-                  [`${title}/Active/Bible/Outline.txt`]: { type: 'file', name: `${title}/Active/Bible/Outline.txt` },
-                  [`${title}/Active/Bible/Setting.txt`]: { type: 'file', name: `${title}/Active/Bible/Setting.txt` },
-                },
-              },
-              'Notes': {
-                type: 'folder', name: 'Notes', collapsed: false,
-                children: {
-                  [`${title}/Active/Notes/Ideas.txt`]: { type: 'file', name: `${title}/Active/Notes/Ideas.txt` },
-                },
-              },
-            },
-          },
-          'Versions': { type: 'folder', name: 'Versions', collapsed: false, children: {} },
-          'Snapshots': { type: 'folder', name: 'Snapshots', collapsed: false, children: {} },
-          [`${title}/Version History.txt`]: { type: 'file', name: `${title}/Version History.txt` },
-        },
+      // Active children
+      const activeChildren: Record<string, FileNode> = {
+        'Chapters': { type: 'folder', name: 'Chapters', collapsed: false, children: chapterFiles },
       };
 
+      if (includeBible) {
+        const bibleFiles: Record<string, FileNode> = {};
+        ['Characters', 'Outline', 'Setting'].forEach(f => {
+          const key = `${title}/Active/Bible/${f} - ${abr}.txt`;
+          docs[key] = { content: '', lastModified: new Date().toISOString() };
+          bibleFiles[key] = { type: 'file', name: key };
+        });
+        // Add style notes if provided
+        if (config.pov || config.tense || config.styleNotes) {
+          const styleKey = `${title}/Active/Bible/Style Guide - ${abr}.txt`;
+          let styleContent = `STYLE GUIDE - ${title}\n${'='.repeat(40)}\n\n`;
+          if (config.pov) styleContent += `Point of View: ${config.pov}\n`;
+          if (config.tense) styleContent += `Tense: ${config.tense}\n`;
+          if (config.targetWordCount) styleContent += `Target Word Count: ${config.targetWordCount.toLocaleString()}\n`;
+          if (config.styleNotes) styleContent += `\nNotes:\n${config.styleNotes}\n`;
+          docs[styleKey] = { content: styleContent, lastModified: new Date().toISOString() };
+          bibleFiles[styleKey] = { type: 'file', name: styleKey };
+        }
+        activeChildren['Bible'] = { type: 'folder', name: 'Bible', collapsed: false, children: bibleFiles };
+      }
+
+      if (includeNotes) {
+        const key = `${title}/Active/Notes/Ideas - ${abr}.txt`;
+        docs[key] = { content: '', lastModified: new Date().toISOString() };
+        activeChildren['Notes'] = { type: 'folder', name: 'Notes', collapsed: false, children: { [key]: { type: 'file', name: key } } };
+      }
+
+      if (includeResearch) {
+        const key = `${title}/Active/Research/Research Notes - ${abr}.txt`;
+        docs[key] = { content: '', lastModified: new Date().toISOString() };
+        activeChildren['Research'] = { type: 'folder', name: 'Research', collapsed: false, children: { [key]: { type: 'file', name: key } } };
+      }
+
+      if (includeWorldbuilding) {
+        const key = `${title}/Active/Worldbuilding/World Notes - ${abr}.txt`;
+        docs[key] = { content: '', lastModified: new Date().toISOString() };
+        activeChildren['Worldbuilding'] = { type: 'folder', name: 'Worldbuilding', collapsed: false, children: { [key]: { type: 'file', name: key } } };
+      }
+
+      // Root project children
+      const projectChildren: Record<string, FileNode> = {
+        'Active': { type: 'folder', name: 'Active', collapsed: false, children: activeChildren },
+      };
+
+      if (includeFrontMatter) {
+        const fmChildren: Record<string, FileNode> = {};
+        ['Dedication', 'Epigraph', 'Prologue'].forEach(f => {
+          const key = `${title}/Front Matter/${f} - ${abr}.txt`;
+          docs[key] = { content: '', lastModified: new Date().toISOString() };
+          fmChildren[key] = { type: 'file', name: key };
+        });
+        projectChildren['Front Matter'] = { type: 'folder', name: 'Front Matter', collapsed: false, children: fmChildren };
+      }
+
+      projectChildren['Versions'] = { type: 'folder', name: 'Versions', collapsed: false, children: {} };
+      projectChildren['Snapshots'] = { type: 'folder', name: 'Snapshots', collapsed: false, children: {} };
+
+      const vhKey = `${title}/Version History - ${abr}.txt`;
+      const vhContent = `VERSION HISTORY - ${title}\nAbbreviation: ${abr}\nCreated: ${now}\n\nAdd notes about each version here.\n`;
+      docs[vhKey] = { content: vhContent, lastModified: new Date().toISOString() };
+      projectChildren[vhKey] = { type: 'file', name: vhKey };
+
+      next.root.children[title] = { type: 'folder', name: title, collapsed: false, children: projectChildren };
+
+      localStorage.setItem('pw-documents', JSON.stringify(docs));
       localStorage.setItem(FS_KEY, JSON.stringify(next));
       return next;
     });
