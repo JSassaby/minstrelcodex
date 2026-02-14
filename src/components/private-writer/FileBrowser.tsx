@@ -11,6 +11,7 @@ export interface FileBrowserProps {
   onCreateFile: (filename: string, folderPath: string[]) => void;
   onNewFolder: (name: string) => void;
   onDeleteFile: (filename: string) => void;
+  onDeleteFolder: (folderPath: string[]) => void;
   onRenameFile: (oldName: string, newName: string) => void;
   onMoveFile: (filename: string, fromPath: string[], toPath: string[]) => void;
   onToggleFolder: (path: string[]) => void;
@@ -71,6 +72,7 @@ export default function FileBrowser({
   onCreateFile,
   onNewFolder,
   onDeleteFile,
+  onDeleteFolder,
   onRenameFile,
   onMoveFile,
   onToggleFolder,
@@ -281,6 +283,16 @@ export default function FileBrowser({
             onToggleFolder(folder.path);
           }
           e.preventDefault();
+        } else if (e.key === 'd' || e.key === 'D') {
+          const folder = folderList[folderIndex];
+          if (folder && folder.path.length > 0 && folder.path[0] !== 'Deleted') {
+            if (confirm(`Delete folder "${folder.path[folder.path.length - 1]}"? It will be moved to Deleted.`)) {
+              onDeleteFolder(folder.path);
+              showStatus(`Folder moved to Deleted`);
+              setFolderIndex(prev => Math.max(0, prev - 1));
+            }
+          }
+          e.preventDefault();
         }
         return;
       }
@@ -306,9 +318,9 @@ export default function FileBrowser({
         } else if (e.key === 'd' || e.key === 'D') {
           const file = filteredFiles[fileIndex];
           if (file) {
-            if (confirm(`Delete "${file.name}"?`)) {
+            if (confirm(`Move "${file.name}" to Deleted folder?`)) {
               onDeleteFile(file.name);
-              showStatus(`Deleted "${file.name}"`);
+              showStatus(`Moved to Deleted`);
               setFileIndex(prev => Math.max(0, prev - 1));
             }
           }

@@ -92,14 +92,46 @@ export function useFileStructure() {
   const deleteFile = useCallback((filename: string) => {
     setStructure(prev => {
       const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
+      // Find the node before removing
+      const node = findFile(next.root, filename);
+      if (!node) return prev;
+      const nodeCopy = JSON.parse(JSON.stringify(node));
       removeFromTree(next.root, filename);
+      // Ensure Deleted folder exists
+      if (!next.root.children) next.root.children = {};
+      if (!next.root.children['Deleted']) {
+        next.root.children['Deleted'] = { type: 'folder', name: 'Deleted', children: {}, collapsed: true };
+      }
+      next.root.children['Deleted'].children![filename] = nodeCopy;
       localStorage.setItem(FS_KEY, JSON.stringify(next));
       return next;
     });
-    // Also remove from documents storage
-    const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
-    delete docs[filename];
-    localStorage.setItem('pw-documents', JSON.stringify(docs));
+  }, []);
+
+  const deleteFolder = useCallback((folderPath: string[]) => {
+    if (folderPath.length === 0) return;
+    const folderName = folderPath[folderPath.length - 1];
+    setStructure(prev => {
+      const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
+      // Navigate to parent
+      let parent: FileNode = next.root;
+      for (let i = 0; i < folderPath.length - 1; i++) {
+        if (!parent.children || !parent.children[folderPath[i]]) return prev;
+        parent = parent.children[folderPath[i]];
+      }
+      if (!parent.children || !parent.children[folderName]) return prev;
+      const folderCopy = JSON.parse(JSON.stringify(parent.children[folderName]));
+      delete parent.children[folderName];
+      // Move to Deleted
+      if (!next.root.children) next.root.children = {};
+      if (!next.root.children['Deleted']) {
+        next.root.children['Deleted'] = { type: 'folder', name: 'Deleted', children: {}, collapsed: true };
+      }
+      const key = folderPath.join('/');
+      next.root.children['Deleted'].children![key] = folderCopy;
+      localStorage.setItem(FS_KEY, JSON.stringify(next));
+      return next;
+    });
   }, []);
 
   const renameFile = useCallback((oldName: string, newName: string) => {
@@ -334,18 +366,21 @@ export function useFileStructure() {
   }, [structure]);
 
   return {
-    structure, createFolder, addFileToTree, toggleFolder, moveFile, deleteFile, renameFile, getFolders,
+    structure, createFolder, addFileToTree, toggleFolder, moveFile, deleteFile, deleteFolder, renameFile, getFolders,
     createNovelProject, saveVersion, saveSnapshot, findFilesInFolder, getNovelProjects, createFileInFolder,
   };
 }
 
-function findFile(node: FileNode, filename: string): boolean {
-  if (!node.children) return false;
+function findFile(node: FileNode, filename: string): FileNode | null {
+  if (!node.children) return null;
   for (const [name, item] of Object.entries(node.children)) {
-    if (item.type === 'file' && name === filename) return true;
-    if (item.type === 'folder' && findFile(item, filename)) return true;
+    if (name === filename) return item;
+    if (item.type === 'folder') {
+      const found = findFile(item, filename);
+      if (found) return found;
+    }
   }
-  return false;
+  return null;
 }
 
 function removeFromTree(node: FileNode, filename: string): boolean {
