@@ -689,6 +689,9 @@ export default function FileBrowser({
             const isFocused = focusPane === 'files' && fileIndex === i;
             const doc = allDocuments[file.name];
             const words = doc?.content ? doc.content.split(/\s+/).filter(Boolean).length : 0;
+            const displayName = file.name.includes('/') ? file.name.split('/').pop() || file.name : file.name;
+            const lastMod = doc?.lastModified ? new Date(doc.lastModified) : null;
+            const dateStr = lastMod ? lastMod.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 
             return (
               <div
@@ -711,10 +714,11 @@ export default function FileBrowser({
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span style={{ fontSize: '12px' }}>📄</span>
-                  <span style={{ fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                  <span style={{ fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
                 </div>
-                <div style={{ fontSize: '10px', opacity: 0.7, marginTop: '1px', paddingLeft: '20px' }}>
-                  {words} words
+                <div style={{ fontSize: '10px', marginTop: '1px', paddingLeft: '20px', display: 'flex', gap: '10px' }}>
+                  <span>{words} words</span>
+                  {dateStr && <span>{dateStr}</span>}
                 </div>
               </div>
             );
