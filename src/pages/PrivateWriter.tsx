@@ -634,9 +634,15 @@ export default function PrivateWriter() {
 
       case 'colors':
         if (e.key === 'Tab') {
-          setColorFocusSection(prev => (prev + (e.shiftKey ? 5 : 1)) % 6);
+          const next = (colorFocusSection + (e.shiftKey ? 5 : 1)) % 6;
+          setColorFocusSection(next);
           setColorPresetIdx(0);
           setComboIdx(0);
+          // Scroll the target section into view
+          setTimeout(() => {
+            const sectionEl = document.querySelector(`[data-color-section="${next}"]`);
+            sectionEl?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }, 50);
           e.preventDefault();
         } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
           if (colorFocusSection === 1) {
@@ -1081,6 +1087,7 @@ export default function PrivateWriter() {
       <ModalShell visible={activeModal === 'colors'} title={t(language, 'modals.colorsTitle')} onClose={closeModal}>
         <div style={{ margin: '16px 0' }}>
           {/* Text color */}
+          <div data-color-section="0"></div>
           <div style={{ display: 'flex', gap: '16px', margin: '12px 0', alignItems: 'center' }}>
             <div style={{ minWidth: '120px' }}>{t(language, 'modals.textColor')}</div>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flex: 1 }}>
@@ -1100,7 +1107,7 @@ export default function PrivateWriter() {
             </div>
           </div>
           <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '8px' }}>{t(language, 'modals.textPresets')}</div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div data-color-section="1" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {TEXT_PRESETS.map((color, i) => (
               <div
                 key={color}
@@ -1117,6 +1124,7 @@ export default function PrivateWriter() {
           </div>
 
           {/* BG color */}
+          <div data-color-section="2"></div>
           <div style={{ display: 'flex', gap: '16px', margin: '24px 0 12px', alignItems: 'center' }}>
             <div style={{ minWidth: '120px' }}>{t(language, 'modals.bgColor')}</div>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flex: 1 }}>
@@ -1136,7 +1144,7 @@ export default function PrivateWriter() {
             </div>
           </div>
           <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '8px' }}>{t(language, 'modals.bgPresets')}</div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div data-color-section="3" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {BG_PRESETS.map((color, i) => (
               <div
                 key={color}
@@ -1154,7 +1162,7 @@ export default function PrivateWriter() {
           </div>
 
           {/* Combos */}
-          <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--terminal-text)' }}>
+          <div data-color-section="4" style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--terminal-text)' }}>
             <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '8px' }}>COLOUR COMBINATIONS (WCAG Compliant):</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
               {COLOR_COMBOS.map((combo, i) => (
@@ -1181,7 +1189,7 @@ export default function PrivateWriter() {
         <div style={{ textAlign: 'center', fontSize: '11px', opacity: 0.6, margin: '8px 0' }}>
           Use Page Up/Page Down to scroll • TAB to navigate sections
         </div>
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+        <div data-color-section="5" style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
           <ModalButton label={t(language, 'modals.apply')} focused={colorFocusSection === 5 && modalButtonIndex === 0} onClick={() => {
             if (/^#[0-9A-F]{6}$/i.test(textColorInput) && /^#[0-9A-F]{6}$/i.test(bgColorInput)) {
               theme.updateColors({ text: textColorInput, background: bgColorInput });

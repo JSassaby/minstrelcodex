@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useRef } from 'react';
 
 interface ModalShellProps {
   visible: boolean;
@@ -8,6 +8,15 @@ interface ModalShellProps {
 }
 
 export default function ModalShell({ visible, title, children, onClose }: ModalShellProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (visible) {
+      // Focus the modal container so PageUp/PageDown scroll natively
+      setTimeout(() => containerRef.current?.focus(), 50);
+    }
+  }, [visible]);
+
   if (!visible) return null;
 
   return (
@@ -24,6 +33,8 @@ export default function ModalShell({ visible, title, children, onClose }: ModalS
       />
       {/* Modal */}
       <div
+        ref={containerRef}
+        tabIndex={-1}
         style={{
           position: 'fixed',
           top: '50%',
@@ -40,6 +51,7 @@ export default function ModalShell({ visible, title, children, onClose }: ModalS
           boxShadow: '0 0 30px var(--terminal-glow)',
           color: 'var(--terminal-text)',
           fontFamily: "'Courier Prime', 'Courier New', monospace",
+          outline: 'none',
         }}
       >
         <div
@@ -67,8 +79,17 @@ interface ModalButtonProps {
 }
 
 export function ModalButton({ label, focused, onClick, selected }: ModalButtonProps) {
+  const ref = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (focused) {
+      ref.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [focused]);
+
   return (
     <button
+      ref={ref}
       onClick={onClick}
       style={{
         padding: '8px 24px',
