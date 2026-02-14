@@ -102,6 +102,17 @@ export default function PrivateWriter() {
   const [moveFilePath, setMoveFilePath] = useState<string[]>([]);
   const [selectedFolderIdx, setSelectedFolderIdx] = useState(-1);
 
+  // Novel project wizard
+  const [novelTitle, setNovelTitle] = useState('');
+
+  // Save version
+  const [versionName, setVersionName] = useState('');
+  const [selectedNovelIdx, setSelectedNovelIdx] = useState(0);
+
+  // Toast notification
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastVisible, setToastVisible] = useState(false);
+
   // Color picker
   const [textColorInput, setTextColorInput] = useState('#33FF33');
   const [bgColorInput, setBgColorInput] = useState('#000000');
@@ -251,6 +262,13 @@ export default function PrivateWriter() {
     return () => document.removeEventListener('fullscreenchange', handler);
   }, []);
 
+  // Toast helper
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+    setToastVisible(true);
+    setTimeout(() => setToastVisible(false), 2500);
+  }, []);
+
   // Execute menu action
   const executeAction = useCallback((action: string) => {
     if (action.startsWith('lang-')) {
@@ -363,8 +381,37 @@ export default function PrivateWriter() {
         setActiveModal('pin-setup');
         setModalButtonIndex(0);
         break;
+      case 'newnovel':
+        setNovelTitle('');
+        setActiveModal('new-novel');
+        setModalButtonIndex(0);
+        break;
+      case 'saveversion': {
+        const novels = fileStructure.getNovelProjects();
+        if (novels.length === 0) {
+          showToast('No novel projects found. Create one first via FILE → New Novel Project.');
+          break;
+        }
+        setSelectedNovelIdx(0);
+        setVersionName('v1.0 - ');
+        setActiveModal('save-version');
+        setModalButtonIndex(0);
+        break;
+      }
+      case 'savesnapshot': {
+        if (!docStorage.currentDocument.filename) {
+          showToast('No file open to snapshot.');
+          break;
+        }
+        fileStructure.saveSnapshot(docStorage.currentDocument.filename);
+        const shortName = docStorage.currentDocument.filename.split('/').pop() || docStorage.currentDocument.filename;
+        const dateStr = new Date().toISOString().split('T')[0];
+        showToast(`Snapshot saved: ${dateStr} - ${shortName}`);
+        break;
+      }
     }
   }, [docStorage, editorContent, fileStructure, theme, language, pinConfig, toggleFullscreen]);
+
 
   // Central keyboard handler
   useEffect(() => {
@@ -487,6 +534,12 @@ export default function PrivateWriter() {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'B') {
         e.preventDefault();
         executeAction('togglesidebar');
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'V' || e.key === 'v')) {
+        e.preventDefault();
+        executeAction('savesnapshot');
         return;
       }
 
@@ -778,13 +831,55 @@ export default function PrivateWriter() {
         }
         // During game, let typing happen naturally
         break;
+
+      case 'new-novel':
+        if (e.key === 'Enter') {
+          if (novelTitle.trim()) {
+            fileStructure.createNovelProject(novelTitle.trim());
+            showToast(`Novel project "${novelTitle.trim()}" created!`);
+            setFileBrowserOpen(true);
+            closeModal();
+          }
+          e.preventDefault();
+        } else if (e.key === 'Tab') {
+          setModalButtonIndex(prev => (prev + 1) % 2);
+          e.preventDefault();
+        }
+        break;
+
+      case 'save-version': {
+        const novels = fileStructure.getNovelProjects();
+        if (e.key === 'Tab') {
+          setModalButtonIndex(prev => (prev + 1) % 3);
+          e.preventDefault();
+        } else if (e.key === 'ArrowUp' && modalButtonIndex === 0) {
+          setSelectedNovelIdx(prev => Math.max(prev - 1, 0));
+          e.preventDefault();
+        } else if (e.key === 'ArrowDown' && modalButtonIndex === 0) {
+          setSelectedNovelIdx(prev => Math.min(prev + 1, novels.length - 1));
+          e.preventDefault();
+        } else if (e.key === 'Enter') {
+          if (modalButtonIndex === 1 || (modalButtonIndex === 2 && false)) {
+            // Save button
+            if (versionName.trim() && novels[selectedNovelIdx]) {
+              fileStructure.saveVersion(novels[selectedNovelIdx], versionName.trim());
+              showToast(`Version saved: ${versionName.trim()}`);
+              closeModal();
+            }
+          } else if (modalButtonIndex === 2) {
+            closeModal();
+          }
+          e.preventDefault();
+        }
+        break;
+      }
     }
   }, [
     activeModal, modalButtonIndex, saveFilename, folderName, selectedFolderIdx,
     colorFocusSection, colorPresetIdx, comboIdx, textColorInput, bgColorInput,
     typingPhase, typingBtnIdx, typingDifficulty,
-    moveFileName, moveFilePath,
-    docStorage, fileStructure, theme, editorContent, closeModal,
+    moveFileName, moveFilePath, novelTitle, versionName, selectedNovelIdx,
+    docStorage, fileStructure, theme, editorContent, closeModal, showToast,
   ]);
 
   // Typing input handler
@@ -1561,6 +1656,132 @@ export default function PrivateWriter() {
           )}
         </div>
       </ModalShell>
+
+      {/* New Novel Project Modal */}
+      <ModalShell visible={activeModal === 'new-novel'} title="📖 NEW NOVEL PROJECT" onClose={closeModal}>
+        <div style={{ margin: '16px 0' }}>
+          <p style={{ marginBottom: '16px', textAlign: 'center' }}>
+            Create a structured novel project with chapters, bible, notes, and version management.
+          </p>
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '4px' }}>NOVEL TITLE:</div>
+            <ModalInput
+              value={novelTitle}
+              onChange={setNovelTitle}
+              placeholder="Enter your novel title..."
+              autoFocus
+            />
+          </div>
+          <div style={{ padding: '12px', border: '1px solid var(--terminal-text)', opacity: 0.7, fontSize: '13px' }}>
+            <div style={{ marginBottom: '8px', fontWeight: 'bold' }}>This will create:</div>
+            <div style={{ fontFamily: "'Courier Prime', monospace", lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+              📁 {novelTitle || '[Title]'}/{'\n'}
+              ├─ 📁 Active/{'\n'}
+              │  ├─ 📁 Chapters/{'\n'}
+              │  ├─ 📁 Bible/ (Characters, Outline, Setting){'\n'}
+              │  └─ 📁 Notes/ (Ideas){'\n'}
+              ├─ 📁 Versions/{'\n'}
+              ├─ 📁 Snapshots/{'\n'}
+              └─ 📄 Version History.txt
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+          <ModalButton label="CREATE PROJECT" focused={modalButtonIndex === 0} onClick={() => {
+            if (novelTitle.trim()) {
+              fileStructure.createNovelProject(novelTitle.trim());
+              showToast(`Novel project "${novelTitle.trim()}" created!`);
+              setFileBrowserOpen(true);
+              closeModal();
+            }
+          }} />
+          <ModalButton label="CANCEL" focused={modalButtonIndex === 1} onClick={closeModal} />
+        </div>
+      </ModalShell>
+
+      {/* Save Version Modal */}
+      <ModalShell visible={activeModal === 'save-version'} title="📋 SAVE VERSION" onClose={closeModal}>
+        <div style={{ margin: '16px 0' }}>
+          {(() => {
+            const novels = fileStructure.getNovelProjects();
+            return (
+              <>
+                <p style={{ marginBottom: '16px', textAlign: 'center' }}>
+                  Copy all files from Active/Chapters/ to a new version folder.
+                </p>
+                {novels.length > 1 && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '4px' }}>SELECT NOVEL:</div>
+                    {novels.map((name, i) => (
+                      <div
+                        key={name}
+                        onClick={() => setSelectedNovelIdx(i)}
+                        style={{
+                          padding: '8px 12px',
+                          margin: '4px 0',
+                          border: '1px solid var(--terminal-text)',
+                          background: i === selectedNovelIdx ? 'var(--terminal-text)' : 'transparent',
+                          color: i === selectedNovelIdx ? 'var(--terminal-bg)' : 'var(--terminal-text)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        📖 {name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {novels.length === 1 && (
+                  <div style={{ marginBottom: '16px', textAlign: 'center', opacity: 0.8 }}>
+                    Novel: <strong>{novels[0]}</strong>
+                  </div>
+                )}
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '4px' }}>VERSION NAME:</div>
+                  <ModalInput
+                    value={versionName}
+                    onChange={setVersionName}
+                    placeholder="e.g. v1.0 - First Draft Complete"
+                    autoFocus
+                  />
+                </div>
+              </>
+            );
+          })()}
+        </div>
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+          <ModalButton label="SAVE VERSION" focused={modalButtonIndex === 1} onClick={() => {
+            const novels = fileStructure.getNovelProjects();
+            if (versionName.trim() && novels[selectedNovelIdx]) {
+              fileStructure.saveVersion(novels[selectedNovelIdx], versionName.trim());
+              showToast(`Version saved: ${versionName.trim()}`);
+              closeModal();
+            }
+          }} />
+          <ModalButton label="CANCEL" focused={modalButtonIndex === 2} onClick={closeModal} />
+        </div>
+      </ModalShell>
+
+      {/* Toast Notification */}
+      {toastVisible && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '80px',
+            right: '20px',
+            background: 'var(--terminal-bg)',
+            border: '2px solid var(--terminal-text)',
+            padding: '12px 16px',
+            fontFamily: "'Courier Prime', 'Courier New', monospace",
+            color: 'var(--terminal-text)',
+            zIndex: 10000,
+            boxShadow: '0 0 20px var(--terminal-glow)',
+            animation: 'fadeIn 0.3s ease',
+            maxWidth: '400px',
+          }}
+        >
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
 }
