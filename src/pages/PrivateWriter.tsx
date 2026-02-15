@@ -10,6 +10,7 @@ import LiveStats from '@/components/private-writer/LiveStats';
 import GoogleDriveModal from '@/components/private-writer/GoogleDriveModal';
 import AppleSignInModal from '@/components/private-writer/AppleSignInModal';
 import NovelProjectWizard from '@/components/private-writer/NovelProjectWizard';
+import StorageMenu from '@/components/private-writer/StorageMenu';
 import type { NovelProjectConfig, StorageLocation } from '@/components/private-writer/NovelProjectWizard';
 import ModalShell, { ModalButton, ModalInput } from '@/components/private-writer/ModalShell';
 import SettingsPanel from '@/components/private-writer/SettingsPanel';
@@ -18,6 +19,7 @@ import { typingPassages } from '@/lib/typingPassages';
 import { useDocumentStorage } from '@/hooks/useDocumentStorage';
 import { useFileStructure } from '@/hooks/useFileStructure';
 import { useTerminalTheme } from '@/hooks/useTerminalTheme';
+import { useGoogleToken } from '@/hooks/useGoogleToken';
 import type { ModalType, Language, Difficulty, PinConfig } from '@/lib/types';
 
 
@@ -127,7 +129,12 @@ export default function PrivateWriter() {
   const docStorage = useDocumentStorage();
   const fileStructure = useFileStructure();
   const theme = useTerminalTheme();
+  const { googleToken, isConnected: googleConnected, clearToken: clearGoogleToken } = useGoogleToken();
   const editorRef = useRef<EditorHandle>(null);
+
+  // Storage menu state
+  const [storageMenuOpen, setStorageMenuOpen] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(() => localStorage.getItem('pw-last-sync'));
 
   // Content state managed locally for editor
   const [editorContent, setEditorContent] = useState('');
@@ -255,6 +262,58 @@ export default function PrivateWriter() {
     setTimeout(() => setToastVisible(false), 2500);
   }, []);
 
+  // Google Drive sync helper
+  const syncToGoogleDrive = useCallback(async () => {
+    if (!googleToken) {
+      showToast('Connect Google Drive first (STORAGE menu)');
+      return;
+    }
+    const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-drive`;
+    const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
+    const entries = Object.entries(docs);
+    if (entries.length === 0) {
+      showToast('No files to sync.');
+      return;
+    }
+    showToast(`Syncing ${entries.length} files to Google Drive...`);
+    let uploaded = 0;
+    let failed = 0;
+    for (const [filePath, fileData] of entries) {
+      try {
+        const content = (fileData as any).content || ' ';
+        const fileName = filePath.replace(/\//g, ' - ');
+        const res = await fetch(FUNCTION_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'upload', googleToken, fileName, content, mimeType: 'text/plain' }),
+        });
+        if (res.ok) uploaded++;
+        else failed++;
+      } catch { failed++; }
+    }
+    const now = new Date().toLocaleTimeString();
+    setLastSyncTime(now);
+    localStorage.setItem('pw-last-sync', now);
+    showToast(failed > 0 ? `${uploaded} synced, ${failed} failed.` : `✓ ${uploaded} files synced to Google Drive`);
+  }, [googleToken, showToast]);
+  // Connect to Google Drive via OAuth
+  const connectGoogle = useCallback(async () => {
+    showToast('Connecting to Google Drive...');
+    const { lovable } = await import('@/integrations/lovable/index');
+    const { error } = await lovable.auth.signInWithOAuth('google', {
+      redirect_uri: window.location.origin,
+      extraParams: {
+        scope: 'https://www.googleapis.com/auth/drive.file',
+        access_type: 'offline',
+        prompt: 'consent',
+      },
+    });
+    if (error) {
+      showToast(`Google sign-in failed: ${(error as any).message || error}`);
+    }
+    // Page will redirect on success; useGoogleToken hook captures the token on return
+  }, [showToast]);
+
   // Execute menu action
   const executeAction = useCallback((action: string) => {
     if (action.startsWith('lang-')) {
@@ -357,6 +416,9 @@ export default function PrivateWriter() {
         break;
       case 'gdrive':
         setActiveModal('gdrive');
+        break;
+      case 'open-storage-menu':
+        setStorageMenuOpen(prev => !prev);
         break;
       case 'apple-signin':
         setActiveModal('apple-signin');
@@ -912,6 +974,21 @@ export default function PrivateWriter() {
         }}
       />
 
+      {/* Storage Menu - dedicated dropdown */}
+      <StorageMenu
+        visible={storageMenuOpen}
+        googleConnected={googleConnected}
+        appleConnected={false}
+        lastSyncTime={lastSyncTime}
+        onSyncGoogleDrive={() => { setStorageMenuOpen(false); syncToGoogleDrive(); }}
+        onSyncICloud={() => { setStorageMenuOpen(false); showToast('iCloud sync requires Apple CloudKit — coming soon.'); }}
+        onConnectGoogle={() => { setStorageMenuOpen(false); connectGoogle(); }}
+        onConnectApple={() => { setStorageMenuOpen(false); executeAction('apple-signin'); }}
+        onDisconnectGoogle={() => { setStorageMenuOpen(false); clearGoogleToken(); showToast('Google Drive disconnected.'); }}
+        onOpenDriveFiles={() => { setStorageMenuOpen(false); executeAction('gdrive'); }}
+        onClose={() => setStorageMenuOpen(false)}
+      />
+
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         <FileBrowser
           visible={fileBrowserOpen}
@@ -940,41 +1017,8 @@ export default function PrivateWriter() {
           onEmptyDeleted={() => fileStructure.emptyDeleted()}
           onFocus={() => setFileBrowserFocused(true)}
           getFolders={() => fileStructure.getFolders()}
-          onSyncGoogleDrive={async () => {
-            const { supabase } = await import('@/integrations/supabase/client');
-            const { data: { session } } = await supabase.auth.getSession();
-            const googleToken = session?.provider_token;
-            if (!googleToken) {
-              showToast('Sign in to Google first (Settings → Storage)');
-              return;
-            }
-            const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-drive`;
-            const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
-            const entries = Object.entries(docs);
-            if (entries.length === 0) {
-              showToast('No files to sync.');
-              return;
-            }
-            showToast(`Syncing ${entries.length} files to Google Drive...`);
-            let uploaded = 0;
-            let failed = 0;
-            for (const [filePath, fileData] of entries) {
-              try {
-                const content = (fileData as any).content || ' ';
-                const fileName = filePath.replace(/\//g, ' - ');
-                await fetch(FUNCTION_URL, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ action: 'upload', googleToken, fileName, content, mimeType: 'text/plain' }),
-                });
-                uploaded++;
-              } catch { failed++; }
-            }
-            showToast(failed > 0 ? `${uploaded} synced, ${failed} failed.` : `✓ ${uploaded} files synced to Google Drive`);
-          }}
-          onSyncICloud={async () => {
-            showToast('iCloud sync requires Apple CloudKit integration — coming soon.');
-          }}
+          onSyncGoogleDrive={syncToGoogleDrive}
+          onSyncICloud={() => showToast('iCloud sync requires Apple CloudKit — coming soon.')}
         />
 
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={() => setFileBrowserFocused(false)}>
@@ -1216,7 +1260,7 @@ export default function PrivateWriter() {
         }}
         onConnectGoogle={() => {
           setSettingsPanelOpen(false);
-          executeAction('gdrive');
+          connectGoogle();
         }}
         onConnectApple={() => {
           setSettingsPanelOpen(false);
@@ -1427,18 +1471,13 @@ export default function PrivateWriter() {
           setNovelWizardOpen(false);
 
           if (config.storageLocation === 'google-drive') {
-            // Get Google token from session
-            const { data: { session } } = await import('@/integrations/supabase/client').then(m => m.supabase.auth.getSession());
-            const googleToken = session?.provider_token;
             if (!googleToken) {
-              showToast(`Project created locally. Sign in to Google to sync to Drive.`);
+              showToast(`Project created locally. Connect Google Drive via STORAGE menu to sync.`);
               return;
             }
 
             showToast(`Uploading "${config.title}" to Google Drive...`);
             const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-drive`;
-
-            // Gather all project files from localStorage
             const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
             const projectFiles = Object.entries(docs).filter(([key]) => key.startsWith(config.title + '/'));
 
@@ -1446,23 +1485,16 @@ export default function PrivateWriter() {
             let failed = 0;
             for (const [filePath, fileData] of projectFiles) {
               try {
-                const content = (fileData as any).content || '';
-                const fileName = filePath.replace(/\//g, ' - '); // Flatten path for Drive
-                await fetch(FUNCTION_URL, {
+                const content = (fileData as any).content || ' ';
+                const fileName = filePath.replace(/\//g, ' - ');
+                const res = await fetch(FUNCTION_URL, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    action: 'upload',
-                    googleToken,
-                    fileName,
-                    content: content || ' ', // Drive needs non-empty content
-                    mimeType: 'text/plain',
-                  }),
+                  body: JSON.stringify({ action: 'upload', googleToken, fileName, content, mimeType: 'text/plain' }),
                 });
-                uploaded++;
-              } catch {
-                failed++;
-              }
+                if (res.ok) uploaded++;
+                else failed++;
+              } catch { failed++; }
             }
 
             if (failed > 0) {
