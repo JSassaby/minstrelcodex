@@ -51,10 +51,10 @@ export default function GoogleDriveModal({
     }
   };
 
-  const signIn = async () => {
+  const signIn = async (provider: 'google' | 'apple') => {
     setLoading(true);
     setError('');
-    const { error } = await lovable.auth.signInWithOAuth('google', {
+    const { error } = await lovable.auth.signInWithOAuth(provider, {
       redirect_uri: window.location.origin,
       extraParams: {
         scope: 'https://www.googleapis.com/auth/drive.file',
@@ -186,16 +186,23 @@ export default function GoogleDriveModal({
         {!authenticated ? (
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
             <p style={{ marginBottom: '8px', fontSize: '14px' }}>
-              Sign in with Google to access your Drive files
+              Sign in to access your cloud storage
             </p>
             <p style={{ marginBottom: '24px', fontSize: '12px', opacity: 0.6 }}>
-              Requires Google Drive scope — you may need to configure your own OAuth credentials
+              Choose a sign-in method to connect your account
             </p>
-            <ModalButton
-              label={loading ? 'SIGNING IN...' : '🔑 SIGN IN WITH GOOGLE'}
-              focused={true}
-              onClick={signIn}
-            />
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <ModalButton
+                label={loading ? 'SIGNING IN...' : '🔑 SIGN IN WITH GOOGLE'}
+                focused={true}
+                onClick={() => signIn('google')}
+              />
+              <ModalButton
+                label={loading ? 'SIGNING IN...' : '🍎 SIGN IN WITH APPLE'}
+                focused={false}
+                onClick={() => signIn('apple')}
+              />
+            </div>
           </div>
         ) : (
           <>
