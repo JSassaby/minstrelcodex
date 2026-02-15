@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export type NamingFormat = 'ch-abr' | 'abr-ch' | 'abr_ch';
 export type GenrePreset = 'novel' | 'screenplay' | 'short-stories' | 'custom';
@@ -156,6 +157,26 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
       setIncludeWorldbuilding(false); setIncludeFrontMatter(false);
       setStorageLocation('local'); setCloudSyncMode('direct');
     }
+  }, [visible]);
+
+  // Check connected providers
+  const [connectedProviders, setConnectedProviders] = useState<{ google: boolean; apple: boolean }>({ google: false, apple: false });
+
+  useEffect(() => {
+    if (!visible) return;
+    const checkProviders = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const provider = session.user?.app_metadata?.provider;
+        setConnectedProviders({
+          google: provider === 'google' || !!session.provider_token,
+          apple: provider === 'apple',
+        });
+      } else {
+        setConnectedProviders({ google: false, apple: false });
+      }
+    };
+    checkProviders();
   }, [visible]);
 
   const abr = abbreviation || 'ABR';
@@ -496,8 +517,8 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {([
                 { value: 'local' as StorageLocation, label: '💾 Local Storage', desc: 'Files saved in your browser. No account needed.', linked: true },
-                { value: 'google-drive' as StorageLocation, label: '☁ Google Drive', desc: 'Sync to your Google Drive account.', linked: false },
-                { value: 'icloud' as StorageLocation, label: '🍎 iCloud', desc: 'Sync to your iCloud account.', linked: false },
+                { value: 'google-drive' as StorageLocation, label: '☁ Google Drive', desc: 'Sync to your Google Drive account.', linked: connectedProviders.google },
+                { value: 'icloud' as StorageLocation, label: '🍎 iCloud', desc: 'Sync to your iCloud account.', linked: connectedProviders.apple },
                 { value: 'dropbox' as StorageLocation, label: '☁ Dropbox', desc: 'Sync to your Dropbox account.', linked: false },
               ]).map(opt => (
                 <button
@@ -516,9 +537,9 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
                     <span style={{ width: '16px' }}>{storageLocation === opt.value ? '●' : '○'}</span>
                     <span style={{ fontWeight: 'bold' }}>{opt.label}</span>
-                    {!opt.linked && opt.value !== 'local' && (
-                      <span style={{ marginLeft: 'auto', fontSize: '11px' }}>
-                        NOT LINKED
+                    {opt.value !== 'local' && (
+                      <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 'bold', color: opt.linked ? 'inherit' : (storageLocation === opt.value ? 'var(--terminal-bg)' : '#ff5555') }}>
+                        {opt.linked ? '✓ LINKED' : 'NOT LINKED'}
                       </span>
                     )}
                   </div>
@@ -581,22 +602,31 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
               </div>
             )}
 
-            {storageLocation !== 'local' && (
-              <div style={{ marginTop: '12px', padding: '12px', border: '1px solid var(--terminal-text)' }}>
-                <div style={{ fontSize: '13px', marginBottom: '8px' }}>
-                  ⚠ You need to link your {storageLocation === 'google-drive' ? 'Google Drive' : storageLocation === 'icloud' ? 'iCloud' : 'Dropbox'} account to use cloud storage.
+            {storageLocation !== 'local' && (() => {
+              const isLinked = storageLocation === 'google-drive' ? connectedProviders.google : storageLocation === 'icloud' ? connectedProviders.apple : false;
+              return isLinked ? (
+                <div style={{ marginTop: '12px', padding: '12px', border: '1px solid var(--terminal-text)' }}>
+                  <div style={{ fontSize: '13px' }}>
+                    ✓ Your {storageLocation === 'google-drive' ? 'Google Drive' : 'iCloud'} account is connected and ready.
+                  </div>
                 </div>
-                <div style={{ fontSize: '11px', marginBottom: '8px', opacity: 0.7 }}>
-                  You can link accounts in Settings → Storage at any time.
+              ) : (
+                <div style={{ marginTop: '12px', padding: '12px', border: '1px solid var(--terminal-text)' }}>
+                  <div style={{ fontSize: '13px', marginBottom: '8px' }}>
+                    ⚠ You need to link your {storageLocation === 'google-drive' ? 'Google Drive' : storageLocation === 'icloud' ? 'iCloud' : 'Dropbox'} account to use cloud storage.
+                  </div>
+                  <div style={{ fontSize: '11px', marginBottom: '8px', opacity: 0.7 }}>
+                    You can link accounts in Settings → Storage at any time.
+                  </div>
+                  <button
+                    onClick={() => onLinkStorage(storageLocation)}
+                    style={{ ...OPTION_BTN(true), fontSize: '13px' }}
+                  >
+                    LINK ACCOUNT →
+                  </button>
                 </div>
-                <button
-                  onClick={() => onLinkStorage(storageLocation)}
-                  style={{ ...OPTION_BTN(true), fontSize: '13px' }}
-                >
-                  LINK ACCOUNT →
-                </button>
-              </div>
-            )}
+              );
+            })()}
             <div style={HINT_STYLE}>Storage location and sync mode can be changed later in settings.</div>
           </div>
 
