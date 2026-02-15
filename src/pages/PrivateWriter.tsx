@@ -940,6 +940,41 @@ export default function PrivateWriter() {
           onEmptyDeleted={() => fileStructure.emptyDeleted()}
           onFocus={() => setFileBrowserFocused(true)}
           getFolders={() => fileStructure.getFolders()}
+          onSyncGoogleDrive={async () => {
+            const { supabase } = await import('@/integrations/supabase/client');
+            const { data: { session } } = await supabase.auth.getSession();
+            const googleToken = session?.provider_token;
+            if (!googleToken) {
+              showToast('Sign in to Google first (Settings → Storage)');
+              return;
+            }
+            const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-drive`;
+            const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
+            const entries = Object.entries(docs);
+            if (entries.length === 0) {
+              showToast('No files to sync.');
+              return;
+            }
+            showToast(`Syncing ${entries.length} files to Google Drive...`);
+            let uploaded = 0;
+            let failed = 0;
+            for (const [filePath, fileData] of entries) {
+              try {
+                const content = (fileData as any).content || ' ';
+                const fileName = filePath.replace(/\//g, ' - ');
+                await fetch(FUNCTION_URL, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ action: 'upload', googleToken, fileName, content, mimeType: 'text/plain' }),
+                });
+                uploaded++;
+              } catch { failed++; }
+            }
+            showToast(failed > 0 ? `${uploaded} synced, ${failed} failed.` : `✓ ${uploaded} files synced to Google Drive`);
+          }}
+          onSyncICloud={async () => {
+            showToast('iCloud sync requires Apple CloudKit integration — coming soon.');
+          }}
         />
 
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={() => setFileBrowserFocused(false)}>
