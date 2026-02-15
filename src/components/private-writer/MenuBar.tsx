@@ -14,7 +14,7 @@ interface MenuBarProps {
   onMenuStateChange?: (open: boolean, menuIdx: number, subOpen: boolean, subIdx: number) => void;
 }
 
-const MENUS = ['file', 'edit', 'network', 'settings'] as const;
+const MENUS = ['file', 'edit', 'network', 'storage', 'settings'] as const;
 
 function getSubmenuItems(menu: string, language: string, wifiOn: boolean, bluetoothOn: boolean) {
   switch (menu) {
@@ -45,6 +45,10 @@ function getSubmenuItems(menu: string, language: string, wifiOn: boolean, blueto
       return [
         { action: 'wifi', label: `${t(language, 'network.wifi')} ${wifiOn ? t(language, 'network.on') : t(language, 'network.off')}` },
         { action: 'bluetooth', label: `${t(language, 'network.bluetooth')} ${bluetoothOn ? t(language, 'network.on') : t(language, 'network.off')}` },
+      ];
+    case 'storage':
+      return [
+        { action: 'open-storage-menu', label: '☁ Open Storage Menu...', shortcut: '' },
       ];
     case 'settings':
       return [
