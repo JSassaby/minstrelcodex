@@ -20,6 +20,8 @@ export interface FileBrowserProps {
   onEmptyDeleted: () => void;
   onFocus: () => void;
   getFolders: () => { name: string; path: string[] }[];
+  onSyncGoogleDrive?: () => void;
+  onSyncICloud?: () => void;
 }
 
 type FocusPane = 'folders' | 'files' | 'action-bar';
@@ -85,6 +87,8 @@ export default function FileBrowser({
   onEmptyDeleted,
   onFocus,
   getFolders,
+  onSyncGoogleDrive,
+  onSyncICloud,
 }: FileBrowserProps) {
   const [focusPane, setFocusPane] = useState<FocusPane>('folders');
   const [folderIndex, setFolderIndex] = useState(0);
@@ -776,6 +780,25 @@ export default function FileBrowser({
             <span style={kbdStyle}>{key}</span>{label}
           </button>
         ))}
+        {/* Cloud sync buttons */}
+        {onSyncGoogleDrive && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onSyncGoogleDrive(); }}
+            style={{ ...actionBtnStyle, borderTop: '1px solid var(--terminal-text)', marginTop: '2px', paddingTop: '4px' }}
+            title="Sync all files to Google Drive"
+          >
+            ☁ Sync Drive
+          </button>
+        )}
+        {onSyncICloud && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onSyncICloud(); }}
+            style={actionBtnStyle}
+            title="Sync all files to iCloud"
+          >
+            🍎 Sync iCloud
+          </button>
+        )}
       </div>
     </div>
   );
