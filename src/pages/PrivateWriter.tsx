@@ -1386,11 +1386,58 @@ export default function PrivateWriter() {
       <NovelProjectWizard
         visible={novelWizardOpen}
         onClose={() => setNovelWizardOpen(false)}
-        onCreate={(config) => {
+        onCreate={async (config) => {
           fileStructure.createNovelProject(config);
-          showToast(`Novel project "${config.title}" created!`);
           setFileBrowserOpen(true);
           setNovelWizardOpen(false);
+
+          if (config.storageLocation === 'google-drive') {
+            // Get Google token from session
+            const { data: { session } } = await import('@/integrations/supabase/client').then(m => m.supabase.auth.getSession());
+            const googleToken = session?.provider_token;
+            if (!googleToken) {
+              showToast(`Project created locally. Sign in to Google to sync to Drive.`);
+              return;
+            }
+
+            showToast(`Uploading "${config.title}" to Google Drive...`);
+            const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-drive`;
+
+            // Gather all project files from localStorage
+            const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
+            const projectFiles = Object.entries(docs).filter(([key]) => key.startsWith(config.title + '/'));
+
+            let uploaded = 0;
+            let failed = 0;
+            for (const [filePath, fileData] of projectFiles) {
+              try {
+                const content = (fileData as any).content || '';
+                const fileName = filePath.replace(/\//g, ' - '); // Flatten path for Drive
+                await fetch(FUNCTION_URL, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    action: 'upload',
+                    googleToken,
+                    fileName,
+                    content: content || ' ', // Drive needs non-empty content
+                    mimeType: 'text/plain',
+                  }),
+                });
+                uploaded++;
+              } catch {
+                failed++;
+              }
+            }
+
+            if (failed > 0) {
+              showToast(`Project created. ${uploaded} files uploaded, ${failed} failed.`);
+            } else {
+              showToast(`✓ "${config.title}" uploaded to Google Drive (${uploaded} files)`);
+            }
+          } else {
+            showToast(`Novel project "${config.title}" created!`);
+          }
         }}
         onLinkStorage={(location) => {
           if (location === 'google-drive') {
