@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { t } from '@/lib/languages';
 import { ModalButton } from './ModalShell';
+import { supabase } from '@/integrations/supabase/client';
 import type { AppColors, Language, PinConfig } from '@/lib/types';
 
 // Color presets
@@ -35,6 +36,15 @@ interface SettingsPanelProps {
   onSetLanguage: (lang: Language) => void;
   onOpenPinSetup: () => void;
   onOpenTypingChallenge: () => void;
+  onConnectGoogle: () => void;
+  onConnectApple: () => void;
+}
+
+type StorageProvider = 'google' | 'apple';
+
+interface ConnectedProviders {
+  google: boolean;
+  apple: boolean;
 }
 
 type SettingsTab = 'colors' | 'language' | 'security' | 'storage' | 'system';
@@ -50,7 +60,7 @@ const TABS: { id: SettingsTab; label: string }[] = [
 export default function SettingsPanel({
   visible, language, colors, wifiOn, bluetoothOn, pinConfig,
   onClose, onAction, onUpdateColors, onResetColors, onSetLanguage,
-  onOpenPinSetup, onOpenTypingChallenge,
+  onOpenPinSetup, onOpenTypingChallenge, onConnectGoogle, onConnectApple,
 }: SettingsPanelProps) {
   const [activeTabIdx, setActiveTabIdx] = useState(0);
   const [focusedItemIdx, setFocusedItemIdx] = useState(0);
@@ -61,6 +71,29 @@ export default function SettingsPanel({
   const [selectedComboIdx, setSelectedComboIdx] = useState(-1);
 
   const activeTab = TABS[activeTabIdx].id;
+
+  // Track connected providers
+  const [connectedProviders, setConnectedProviders] = useState<ConnectedProviders>({ google: false, apple: false });
+
+  useEffect(() => {
+    if (!visible) return;
+    const checkProviders = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const provider = session.user?.app_metadata?.provider;
+        setConnectedProviders(prev => ({
+          ...prev,
+          google: provider === 'google' || prev.google,
+          apple: provider === 'apple' || prev.apple,
+        }));
+        // Also check provider_token for Google Drive access
+        if (session.provider_token) {
+          setConnectedProviders(prev => ({ ...prev, google: true }));
+        }
+      }
+    };
+    checkProviders();
+  }, [visible]);
 
   // Reset focused item when tab changes
   useEffect(() => { setFocusedItemIdx(0); }, [activeTabIdx]);
@@ -467,21 +500,75 @@ export default function SettingsPanel({
         {activeTab === 'storage' && (
           <div>
             <div style={{ fontSize: '16px', marginBottom: '16px', fontWeight: 'bold' }}>💾 Storage Providers</div>
-            {[
-              { action: 'local', label: t(language, 'storage.local') },
-              { action: 'usb', label: t(language, 'storage.usb') },
-              { action: 'dropbox', label: t(language, 'storage.dropbox') },
-              { action: 'gdrive', label: t(language, 'storage.gdrive') },
-              { action: 'icloud', label: t(language, 'storage.icloud') },
-            ].map((item, i) => (
-              <div
-                key={item.action}
-                onClick={() => { onAction(item.action); setFocusedItemIdx(i); }}
-                style={itemStyle(focusedItemIdx === i)}
-              >
-                <span>{item.label}</span>
-              </div>
-            ))}
+
+            {/* Local & USB */}
+            <div
+              onClick={() => { onAction('local'); setFocusedItemIdx(0); }}
+              style={itemStyle(focusedItemIdx === 0)}
+            >
+              <span>{t(language, 'storage.local')}</span>
+              <span style={{ fontSize: '11px', opacity: 0.6 }}>✓ ALWAYS AVAILABLE</span>
+            </div>
+            <div
+              onClick={() => { onAction('usb'); setFocusedItemIdx(1); }}
+              style={itemStyle(focusedItemIdx === 1)}
+            >
+              <span>{t(language, 'storage.usb')}</span>
+            </div>
+
+            {/* Cloud Providers with connection status */}
+            <div style={{ fontSize: '14px', fontWeight: 'bold', marginTop: '20px', marginBottom: '12px', borderTop: '1px solid var(--terminal-text)', paddingTop: '12px' }}>
+              ☁ CLOUD PROVIDERS
+            </div>
+
+            {/* Google Drive */}
+            <div
+              onClick={() => {
+                if (connectedProviders.google) {
+                  onAction('gdrive');
+                } else {
+                  onConnectGoogle();
+                }
+                setFocusedItemIdx(2);
+              }}
+              style={itemStyle(focusedItemIdx === 2)}
+            >
+              <span>☁ Google Drive</span>
+              <span style={{ fontSize: '11px', fontWeight: 'bold', color: connectedProviders.google ? (focusedItemIdx === 2 ? 'var(--terminal-bg)' : 'var(--terminal-text)') : (focusedItemIdx === 2 ? 'var(--terminal-bg)' : '#ff5555') }}>
+                {connectedProviders.google ? '✓ CONNECTED' : '✕ NOT LINKED — CLICK TO CONNECT'}
+              </span>
+            </div>
+
+            {/* Apple iCloud */}
+            <div
+              onClick={() => {
+                if (connectedProviders.apple) {
+                  onAction('icloud');
+                } else {
+                  onConnectApple();
+                }
+                setFocusedItemIdx(3);
+              }}
+              style={itemStyle(focusedItemIdx === 3)}
+            >
+              <span>🍎 iCloud (Apple)</span>
+              <span style={{ fontSize: '11px', fontWeight: 'bold', color: connectedProviders.apple ? (focusedItemIdx === 3 ? 'var(--terminal-bg)' : 'var(--terminal-text)') : (focusedItemIdx === 3 ? 'var(--terminal-bg)' : '#ff5555') }}>
+                {connectedProviders.apple ? '✓ CONNECTED' : '✕ NOT LINKED — CLICK TO CONNECT'}
+              </span>
+            </div>
+
+            {/* Dropbox */}
+            <div
+              onClick={() => { onAction('dropbox'); setFocusedItemIdx(4); }}
+              style={itemStyle(focusedItemIdx === 4)}
+            >
+              <span>{t(language, 'storage.dropbox')}</span>
+              <span style={{ fontSize: '11px', opacity: 0.5 }}>COMING SOON</span>
+            </div>
+
+            <div style={{ marginTop: '16px', padding: '12px', border: '1px solid var(--terminal-text)', fontSize: '12px', opacity: 0.7, lineHeight: 1.6 }}>
+              ℹ Connect your cloud accounts to sync files across devices. Each provider opens its own sign-in flow. Your connection status is shown above.
+            </div>
           </div>
         )}
 

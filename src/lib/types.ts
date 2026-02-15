@@ -43,6 +43,7 @@ export type ModalType =
   | 'pin-setup'
   | 'pin-lock'
   | 'gdrive'
+  | 'apple-signin'
   | 'save-version'
   | null;
 
