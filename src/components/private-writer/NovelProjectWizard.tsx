@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 export type NamingFormat = 'ch-abr' | 'abr-ch' | 'abr_ch';
 export type GenrePreset = 'novel' | 'screenplay' | 'short-stories' | 'custom';
 export type StorageLocation = 'local' | 'google-drive' | 'icloud' | 'dropbox';
-
+export type CloudSyncMode = 'direct' | 'periodic';
 export interface NovelProjectConfig {
   title: string;
   abbreviation: string;
@@ -20,6 +20,7 @@ export interface NovelProjectConfig {
   includeWorldbuilding: boolean;
   includeFrontMatter: boolean;
   storageLocation: StorageLocation;
+  cloudSyncMode: CloudSyncMode;
 }
 
 interface Props {
@@ -124,6 +125,7 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
   const [includeWorldbuilding, setIncludeWorldbuilding] = useState(false);
   const [includeFrontMatter, setIncludeFrontMatter] = useState(false);
   const [storageLocation, setStorageLocation] = useState<StorageLocation>('local');
+  const [cloudSyncMode, setCloudSyncMode] = useState<CloudSyncMode>('direct');
 
   // Auto-generate abbreviation from title
   useEffect(() => {
@@ -152,7 +154,7 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
       setTargetWordCount(80000); setPov(''); setTense(''); setStyleNotes('');
       setIncludeBible(true); setIncludeNotes(true); setIncludeResearch(false);
       setIncludeWorldbuilding(false); setIncludeFrontMatter(false);
-      setStorageLocation('local');
+      setStorageLocation('local'); setCloudSyncMode('direct');
     }
   }, [visible]);
 
@@ -221,6 +223,7 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
       includeWorldbuilding,
       includeFrontMatter,
       storageLocation,
+      cloudSyncMode,
     });
   };
 
@@ -494,7 +497,7 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
               {([
                 { value: 'local' as StorageLocation, label: '💾 Local Storage', desc: 'Files saved in your browser. No account needed.', linked: true },
                 { value: 'google-drive' as StorageLocation, label: '☁ Google Drive', desc: 'Sync to your Google Drive account.', linked: false },
-                { value: 'icloud' as StorageLocation, label: '☁ iCloud', desc: 'Sync to your iCloud account.', linked: false },
+                { value: 'icloud' as StorageLocation, label: '🍎 iCloud', desc: 'Sync to your iCloud account.', linked: false },
                 { value: 'dropbox' as StorageLocation, label: '☁ Dropbox', desc: 'Sync to your Dropbox account.', linked: false },
               ]).map(opt => (
                 <button
@@ -523,10 +526,68 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
                 </button>
               ))}
             </div>
+
+            {/* Cloud sync mode - only show for cloud storage */}
+            {storageLocation !== 'local' && (
+              <div style={{ marginTop: '16px' }}>
+                <div style={LABEL_STYLE}>CLOUD SYNC MODE</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <button
+                    onClick={() => setCloudSyncMode('direct')}
+                    style={{
+                      ...OPTION_BTN(cloudSyncMode === 'direct'),
+                      textAlign: 'left',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      gap: '2px',
+                      padding: '10px 16px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ width: '16px' }}>{cloudSyncMode === 'direct' ? '●' : '○'}</span>
+                      <span style={{ fontWeight: 'bold' }}>📡 Work Directly in Cloud</span>
+                    </div>
+                    <div style={{ fontSize: '11px', paddingLeft: '26px' }}>
+                      Files are read from and saved directly to your cloud drive. Requires active internet connection.
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setCloudSyncMode('periodic')}
+                    style={{
+                      ...OPTION_BTN(cloudSyncMode === 'periodic'),
+                      textAlign: 'left',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      gap: '2px',
+                      padding: '10px 16px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ width: '16px' }}>{cloudSyncMode === 'periodic' ? '●' : '○'}</span>
+                      <span style={{ fontWeight: 'bold' }}>🔄 Sync Periodically</span>
+                    </div>
+                    <div style={{ fontSize: '11px', paddingLeft: '26px' }}>
+                      Work locally and sync changes to cloud on a regular schedule. Works offline, syncs when connected.
+                    </div>
+                  </button>
+                </div>
+                <div style={HINT_STYLE}>
+                  {cloudSyncMode === 'direct'
+                    ? 'All changes save instantly to the cloud. Best for always-online workflows.'
+                    : 'Changes are stored locally first, then synced. Best for writing on-the-go.'}
+                </div>
+              </div>
+            )}
+
             {storageLocation !== 'local' && (
               <div style={{ marginTop: '12px', padding: '12px', border: '1px solid var(--terminal-text)' }}>
                 <div style={{ fontSize: '13px', marginBottom: '8px' }}>
                   ⚠ You need to link your {storageLocation === 'google-drive' ? 'Google Drive' : storageLocation === 'icloud' ? 'iCloud' : 'Dropbox'} account to use cloud storage.
+                </div>
+                <div style={{ fontSize: '11px', marginBottom: '8px', opacity: 0.7 }}>
+                  You can link accounts in Settings → Storage at any time.
                 </div>
                 <button
                   onClick={() => onLinkStorage(storageLocation)}
@@ -536,7 +597,7 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
                 </button>
               </div>
             )}
-            <div style={HINT_STYLE}>Storage location can be changed later in settings.</div>
+            <div style={HINT_STYLE}>Storage location and sync mode can be changed later in settings.</div>
           </div>
 
           {/* ── Note ── */}

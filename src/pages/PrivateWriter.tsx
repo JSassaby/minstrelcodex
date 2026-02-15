@@ -8,6 +8,7 @@ import FileBrowser from '@/components/private-writer/FileBrowser';
 import HelpText from '@/components/private-writer/HelpText';
 import LiveStats from '@/components/private-writer/LiveStats';
 import GoogleDriveModal from '@/components/private-writer/GoogleDriveModal';
+import AppleSignInModal from '@/components/private-writer/AppleSignInModal';
 import NovelProjectWizard from '@/components/private-writer/NovelProjectWizard';
 import type { NovelProjectConfig, StorageLocation } from '@/components/private-writer/NovelProjectWizard';
 import ModalShell, { ModalButton, ModalInput } from '@/components/private-writer/ModalShell';
@@ -356,6 +357,9 @@ export default function PrivateWriter() {
         break;
       case 'gdrive':
         setActiveModal('gdrive');
+        break;
+      case 'apple-signin':
+        setActiveModal('apple-signin');
         break;
       case 'pinsetup':
         setPinStep('choose');
@@ -1175,6 +1179,14 @@ export default function PrivateWriter() {
           setSettingsPanelOpen(false);
           executeAction('typingchallenge');
         }}
+        onConnectGoogle={() => {
+          setSettingsPanelOpen(false);
+          executeAction('gdrive');
+        }}
+        onConnectApple={() => {
+          setSettingsPanelOpen(false);
+          executeAction('apple-signin');
+        }}
       />
 
       {/* Typing Challenge Modal */}
@@ -1295,6 +1307,12 @@ export default function PrivateWriter() {
         }}
         currentContent={editorContent}
         currentFilename={docStorage.currentDocument.filename}
+      />
+
+      {/* Apple Sign In Modal */}
+      <AppleSignInModal
+        visible={activeModal === 'apple-signin'}
+        onClose={closeModal}
       />
 
       {/* PIN Setup Modal */}
