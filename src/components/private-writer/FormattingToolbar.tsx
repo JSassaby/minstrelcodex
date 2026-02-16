@@ -116,6 +116,35 @@ export default function FormattingToolbar({ editor, readOnly, fontSize, fontFami
         alignItems: 'center',
       }}
     >
+      {/* Files button - left side */}
+      {onToggleSidebar && (
+        <>
+          <button
+            onClick={onToggleSidebar}
+            title="Files (Ctrl+Shift+B)"
+            style={{
+              ...btnStyle(!!sidebarOpen),
+              fontSize: '13px',
+            }}
+            onMouseEnter={(e) => {
+              if (!sidebarOpen) {
+                (e.target as HTMLElement).style.opacity = '1';
+                (e.target as HTMLElement).style.background = 'rgba(255,255,255,0.1)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!sidebarOpen) {
+                (e.target as HTMLElement).style.opacity = '0.9';
+                (e.target as HTMLElement).style.background = 'transparent';
+              }
+            }}
+          >
+            📁 Files
+          </button>
+          <span style={{ width: '1px', height: '20px', background: 'var(--terminal-text)', opacity: 0.3, margin: '0 6px' }} />
+        </>
+      )}
+
       {/* Font dropdown */}
       <select
         value={fontFamily}
@@ -202,33 +231,6 @@ export default function FormattingToolbar({ editor, readOnly, fontSize, fontFami
         );
       })}
 
-      {onToggleSidebar && (
-        <>
-          <span style={{ width: '1px', height: '20px', background: 'var(--terminal-text)', opacity: 0.3, margin: '0 6px' }} />
-          <button
-            onClick={onToggleSidebar}
-            title="Files (Ctrl+Shift+B)"
-            style={{
-              ...btnStyle(!!sidebarOpen),
-              fontSize: '13px',
-            }}
-            onMouseEnter={(e) => {
-              if (!sidebarOpen) {
-                (e.target as HTMLElement).style.opacity = '1';
-                (e.target as HTMLElement).style.background = 'rgba(255,255,255,0.1)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!sidebarOpen) {
-                (e.target as HTMLElement).style.opacity = '0.9';
-                (e.target as HTMLElement).style.background = 'transparent';
-              }
-            }}
-          >
-            📁 Files
-          </button>
-        </>
-      )}
     </div>
   );
 }
