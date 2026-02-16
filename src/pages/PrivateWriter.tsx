@@ -1040,11 +1040,13 @@ export default function PrivateWriter() {
             placeholder={t(language, 'placeholder')}
             ref={editorRef}
             readOnly={settingsPanelOpen || !!activeModal || menuOpen}
+            sidebarOpen={fileBrowserOpen}
             onChangeFontSize={(delta) => theme.changeFontSize(delta)}
             onChangeFontFamily={(font) => {
               setFontFamily(font);
               localStorage.setItem('pw-font-family', font);
             }}
+            onToggleSidebar={() => executeAction('togglesidebar')}
           />
         </div>
       </div>
