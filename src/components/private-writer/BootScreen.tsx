@@ -56,14 +56,14 @@ export default function BootScreen({ language, onComplete }: BootScreenProps) {
       style={{
         position: 'fixed',
         inset: 0,
-        background: '#000',
-        color: '#33ff33',
+        background: 'var(--terminal-bg)',
+        color: 'var(--terminal-text)',
         zIndex: 9999,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'column',
-        fontFamily: "'VT323', monospace",
+        fontFamily: 'var(--font-display)',
         fontSize: '18px',
       }}
     >
@@ -71,7 +71,7 @@ export default function BootScreen({ language, onComplete }: BootScreenProps) {
         style={{
           fontSize: '32px',
           marginBottom: '20px',
-          textShadow: '0 0 10px rgba(51, 255, 51, 0.8)',
+          textShadow: '0 0 10px var(--terminal-glow)',
         }}
       >
         PRIVATE WRITER SYSTEM

@@ -18,7 +18,8 @@ import { t } from '@/lib/languages';
 import { typingPassages } from '@/lib/typingPassages';
 import { useDocumentStorage } from '@/hooks/useDocumentStorage';
 import { useFileStructure } from '@/hooks/useFileStructure';
-import { useTerminalTheme } from '@/hooks/useTerminalTheme';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import ThemePicker from '@/components/private-writer/ThemePicker';
 import { useGoogleToken } from '@/hooks/useGoogleToken';
 import type { ModalType, Language, Difficulty, PinConfig } from '@/lib/types';
 
@@ -128,7 +129,7 @@ export default function PrivateWriter() {
   // Hooks
   const docStorage = useDocumentStorage();
   const fileStructure = useFileStructure();
-  const theme = useTerminalTheme();
+  const theme = useAppTheme();
   const { googleToken, isConnected: googleConnected, clearToken: clearGoogleToken } = useGoogleToken();
   const editorRef = useRef<EditorHandle>(null);
 
@@ -410,9 +411,7 @@ export default function PrivateWriter() {
         setBluetoothOn(prev => !prev);
         break;
       case 'shutdown':
-        if (confirm(t(language, 'shutdownConfirm'))) {
-          location.reload();
-        }
+        location.reload();
         break;
       case 'gdrive':
         setActiveModal('gdrive');
@@ -896,6 +895,17 @@ export default function PrivateWriter() {
 
   // ==================== RENDER ====================
 
+  // Theme picker — shown before everything else on first launch
+  if (!theme.themeChosen) {
+    return (
+      <ThemePicker
+        onSelect={(mode) => {
+          theme.switchTheme(mode);
+        }}
+      />
+    );
+  }
+
   if (!booted) {
     return <BootScreen language={language} onComplete={() => setBooted(true)} />;
   }
@@ -907,17 +917,17 @@ export default function PrivateWriter() {
         style={{
           position: 'fixed',
           inset: 0,
-          background: '#000',
-          color: '#33ff33',
+          background: 'var(--terminal-bg)',
+          color: 'var(--terminal-text)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexDirection: 'column',
-          fontFamily: "'VT323', monospace",
+          fontFamily: 'var(--font-display)',
           zIndex: 9999,
         }}
       >
-        <div style={{ fontSize: '32px', marginBottom: '10px', textShadow: '0 0 10px rgba(51,255,51,0.8)' }}>
+        <div style={{ fontSize: '32px', marginBottom: '10px', textShadow: '0 0 10px var(--terminal-glow)' }}>
           🔒 {t(language, 'pin.lockTitle')}
         </div>
         <div style={{ fontSize: '16px', opacity: 0.7, marginBottom: '30px' }}>
@@ -930,7 +940,7 @@ export default function PrivateWriter() {
               style={{
                 width: '40px',
                 height: '50px',
-                border: '2px solid #33ff33',
+                border: '2px solid var(--terminal-text)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -1239,6 +1249,7 @@ export default function PrivateWriter() {
         wifiOn={wifiOn}
         bluetoothOn={bluetoothOn}
         pinConfig={pinConfig}
+        themeMode={theme.themeMode}
         onClose={() => {
           setSettingsPanelOpen(false);
           setTimeout(() => editorRef.current?.focus(), 50);
@@ -1266,6 +1277,7 @@ export default function PrivateWriter() {
           setSettingsPanelOpen(false);
           executeAction('apple-signin');
         }}
+        onSwitchTheme={(mode) => theme.switchTheme(mode)}
       />
 
       {/* Typing Challenge Modal */}
