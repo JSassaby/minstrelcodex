@@ -172,13 +172,13 @@ export function useFileStructure() {
         current = current.children[p];
       }
       if (!current.children) current.children = {};
-      // Build a unique key based on path
-      const fileKey = folderPath.length > 0 ? `${folderPath.join('/')}/${filename}` : filename;
-      if (current.children[fileKey]) return prev;
-      current.children[fileKey] = { type: 'file', name: fileKey };
+      if (current.children[filename]) return prev;
+      // Use simple filename as tree key, full path as document key
+      const docKey = folderPath.length > 0 ? `${folderPath.join('/')}/${filename}` : filename;
+      current.children[filename] = { type: 'file', name: docKey };
       // Create empty doc
       const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
-      docs[fileKey] = { content: '', lastModified: new Date().toISOString() };
+      docs[docKey] = { content: '', lastModified: new Date().toISOString() };
       localStorage.setItem('pw-documents', JSON.stringify(docs));
       localStorage.setItem(FS_KEY, JSON.stringify(next));
       return next;
