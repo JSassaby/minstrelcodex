@@ -24,7 +24,6 @@ export interface FileBrowserProps {
   onSyncICloud?: () => void;
 }
 
-type FocusPane = 'folders' | 'files' | 'action-bar';
 type InputMode = 'none' | 'search' | 'rename' | 'new-folder' | 'new-file' | 'move';
 
 interface FlatItem {
@@ -35,37 +34,26 @@ interface FlatItem {
   collapsed?: boolean;
 }
 
-function flattenFolders(node: FileNode, path: string[] = [], depth: number = 0): FlatItem[] {
+function flattenTree(node: FileNode, path: string[] = [], depth: number = 0): FlatItem[] {
   const result: FlatItem[] = [];
   const children = node.children || {};
-  // Add "root" as the first entry
-  if (depth === 0) {
-    result.push({ name: 'root', type: 'folder', path: [], depth: 0, collapsed: false });
-  }
-  const entries = Object.entries(children).sort((a, b) => a[0].localeCompare(b[0]));
+  const entries = Object.entries(children).sort((a, b) => {
+    // Folders first, then files
+    const aFolder = a[1].type === 'folder';
+    const bFolder = b[1].type === 'folder';
+    if (aFolder && !bFolder) return -1;
+    if (!aFolder && bFolder) return 1;
+    return a[0].localeCompare(b[0]);
+  });
+
   for (const [name, item] of entries) {
-    if (item.type === 'folder') {
-      const itemPath = [...path, name];
-      result.push({ name, type: 'folder', path: itemPath, depth: depth + 1, collapsed: item.collapsed });
-      if (!item.collapsed) {
-        result.push(...flattenFolders(item, itemPath, depth + 1));
-      }
+    const itemPath = [...path, name];
+    result.push({ name, type: item.type, path: itemPath, depth, collapsed: item.collapsed });
+    if (item.type === 'folder' && !item.collapsed) {
+      result.push(...flattenTree(item, itemPath, depth + 1));
     }
   }
   return result;
-}
-
-function getFilesInFolder(node: FileNode, path: string[]): { name: string; path: string[] }[] {
-  let current = node;
-  for (const p of path) {
-    if (!current.children || !current.children[p]) return [];
-    current = current.children[p];
-  }
-  const children = current.children || {};
-  return Object.entries(children)
-    .filter(([, item]) => item.type === 'file')
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([name]) => ({ name, path: [...path, name] }));
 }
 
 export default function FileBrowser({
@@ -75,7 +63,6 @@ export default function FileBrowser({
   allDocuments,
   onClose,
   onOpenFile,
-  onNewFile,
   onCreateFile,
   onNewFolder,
   onDeleteFile,
@@ -90,30 +77,24 @@ export default function FileBrowser({
   onSyncGoogleDrive,
   onSyncICloud,
 }: FileBrowserProps) {
-  const [focusPane, setFocusPane] = useState<FocusPane>('folders');
-  const [folderIndex, setFolderIndex] = useState(0);
-  const [fileIndex, setFileIndex] = useState(0);
-  const [currentPath, setCurrentPath] = useState<string[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [inputMode, setInputMode] = useState<InputMode>('none');
   const [inputValue, setInputValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [moveTargetIdx, setMoveTargetIdx] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
-  const folderList = flattenFolders(rootNode);
-  const filesInCurrentFolder = getFilesInFolder(rootNode, currentPath);
-  const filteredFiles = searchQuery
-    ? filesInCurrentFolder.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    : filesInCurrentFolder;
+  const allItems = flattenTree(rootNode);
+  const filteredItems = searchQuery
+    ? allItems.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : allItems;
 
   // Reset state when browser opens
   useEffect(() => {
     if (visible) {
-      setFocusPane('folders');
-      setFolderIndex(0);
-      setFileIndex(0);
-      setCurrentPath([]);
+      setSelectedIndex(0);
       setInputMode('none');
       setInputValue('');
       setSearchQuery('');
@@ -128,11 +109,26 @@ export default function FileBrowser({
     }
   }, [inputMode]);
 
-  // Show status messages temporarily
+  // Scroll selected item into view
+  useEffect(() => {
+    if (listRef.current) {
+      const el = listRef.current.querySelector(`[data-idx="${selectedIndex}"]`);
+      if (el) el.scrollIntoView({ block: 'nearest' });
+    }
+  }, [selectedIndex]);
+
   const showStatus = useCallback((msg: string) => {
     setStatusMessage(msg);
     setTimeout(() => setStatusMessage(''), 2000);
   }, []);
+
+  // Get the folder path the selected item lives in (for creating files)
+  const getSelectedFolderPath = useCallback((): string[] => {
+    const item = filteredItems[selectedIndex];
+    if (!item) return [];
+    if (item.type === 'folder') return item.path;
+    return item.path.slice(0, -1);
+  }, [filteredItems, selectedIndex]);
 
   // Keyboard handler
   useEffect(() => {
@@ -147,23 +143,19 @@ export default function FileBrowser({
           e.preventDefault();
         } else if (e.key === 'Enter') {
           setInputMode('none');
-          if (filteredFiles.length > 0) {
-            setFileIndex(0);
-            setFocusPane('files');
-          }
+          if (filteredItems.length > 0) setSelectedIndex(0);
           e.preventDefault();
         }
-        return; // Let input handle other keys
+        return;
       }
 
       if (inputMode === 'rename') {
-        if (e.key === 'Escape') {
-          setInputMode('none');
-          e.preventDefault();
-        } else if (e.key === 'Enter') {
-          if (inputValue.trim() && filteredFiles[fileIndex]) {
-            onRenameFile(filteredFiles[fileIndex].name, inputValue.trim());
-            showStatus(`Renamed to "${inputValue.trim()}"`);
+        if (e.key === 'Escape') { setInputMode('none'); e.preventDefault(); }
+        else if (e.key === 'Enter') {
+          const item = filteredItems[selectedIndex];
+          if (inputValue.trim() && item?.type === 'file') {
+            onRenameFile(item.name, inputValue.trim());
+            showStatus(`Renamed`);
           }
           setInputMode('none');
           e.preventDefault();
@@ -172,13 +164,11 @@ export default function FileBrowser({
       }
 
       if (inputMode === 'new-folder') {
-        if (e.key === 'Escape') {
-          setInputMode('none');
-          e.preventDefault();
-        } else if (e.key === 'Enter') {
+        if (e.key === 'Escape') { setInputMode('none'); e.preventDefault(); }
+        else if (e.key === 'Enter') {
           if (inputValue.trim()) {
             onNewFolder(inputValue.trim());
-            showStatus(`Folder "${inputValue.trim()}" created`);
+            showStatus(`Folder created`);
           }
           setInputMode('none');
           e.preventDefault();
@@ -187,13 +177,11 @@ export default function FileBrowser({
       }
 
       if (inputMode === 'new-file') {
-        if (e.key === 'Escape') {
-          setInputMode('none');
-          e.preventDefault();
-        } else if (e.key === 'Enter') {
+        if (e.key === 'Escape') { setInputMode('none'); e.preventDefault(); }
+        else if (e.key === 'Enter') {
           if (inputValue.trim()) {
-            onCreateFile(inputValue.trim(), currentPath);
-            showStatus(`File "${inputValue.trim()}" created`);
+            onCreateFile(inputValue.trim(), getSelectedFolderPath());
+            showStatus(`File created`);
           }
           setInputMode('none');
           e.preventDefault();
@@ -203,29 +191,15 @@ export default function FileBrowser({
 
       if (inputMode === 'move') {
         const folders = getFolders();
-        if (e.key === 'Escape') {
-          setInputMode('none');
-          e.preventDefault();
-        } else if (e.key === 'ArrowDown') {
-          setMoveTargetIdx(prev => Math.min(prev + 1, folders.length));
-          e.preventDefault();
-        } else if (e.key === 'ArrowUp') {
-          setMoveTargetIdx(prev => Math.max(prev - 1, 0));
-          e.preventDefault();
-        } else if (e.key === 'Enter') {
-          const file = filteredFiles[fileIndex];
-          if (file) {
-            if (moveTargetIdx === 0) {
-              // Move to root
-              onMoveFile(file.name, file.path.slice(0, -1), []);
-              showStatus(`Moved "${file.name}" to root`);
-            } else {
-              const target = folders[moveTargetIdx - 1];
-              if (target) {
-                onMoveFile(file.name, file.path.slice(0, -1), target.path);
-                showStatus(`Moved "${file.name}" to ${target.name}`);
-              }
-            }
+        if (e.key === 'Escape') { setInputMode('none'); e.preventDefault(); }
+        else if (e.key === 'ArrowDown') { setMoveTargetIdx(prev => Math.min(prev + 1, folders.length)); e.preventDefault(); }
+        else if (e.key === 'ArrowUp') { setMoveTargetIdx(prev => Math.max(prev - 1, 0)); e.preventDefault(); }
+        else if (e.key === 'Enter') {
+          const item = filteredItems[selectedIndex];
+          if (item?.type === 'file') {
+            const targetPath = moveTargetIdx === 0 ? [] : folders[moveTargetIdx - 1]?.path || [];
+            onMoveFile(item.name, item.path.slice(0, -1), targetPath);
+            showStatus(`Moved`);
           }
           setInputMode('none');
           e.preventDefault();
@@ -233,160 +207,89 @@ export default function FileBrowser({
         return;
       }
 
-      // Global file browser keys
-      if (e.key === 'Escape') {
-        onClose();
+      // Global keys
+      if (e.key === 'Escape') { onClose(); e.preventDefault(); return; }
+      if (e.key === '/') { setInputMode('search'); setInputValue(''); e.preventDefault(); return; }
+      if (e.key === 'n' || e.key === 'N') { setInputMode('new-folder'); setInputValue(''); e.preventDefault(); return; }
+      if (e.key === 'c' || e.key === 'C') { setInputMode('new-file'); setInputValue(''); e.preventDefault(); return; }
+
+      // Navigation
+      if (e.key === 'ArrowDown') {
+        setSelectedIndex(prev => Math.min(prev + 1, filteredItems.length - 1));
         e.preventDefault();
-        return;
-      }
-
-      if (e.key === '/') {
-        setInputMode('search');
-        setInputValue('');
+      } else if (e.key === 'ArrowUp') {
+        setSelectedIndex(prev => Math.max(prev - 1, 0));
         e.preventDefault();
-        return;
-      }
-
-      if (e.key === 'n' || e.key === 'N') {
-        setInputMode('new-folder');
-        setInputValue('');
-        e.preventDefault();
-        return;
-      }
-
-      if (e.key === 'c' || e.key === 'C') {
-        setInputMode('new-file');
-        setInputValue('');
-        e.preventDefault();
-        return;
-      }
-
-      if (e.key === 'Tab') {
-        e.preventDefault();
-        if (focusPane === 'folders') setFocusPane('files');
-        else if (focusPane === 'files') setFocusPane('folders');
-        return;
-      }
-
-      // Folder pane
-      if (focusPane === 'folders') {
-        if (e.key === 'ArrowDown') {
-          setFolderIndex(prev => Math.min(prev + 1, folderList.length - 1));
-          e.preventDefault();
-        } else if (e.key === 'ArrowUp') {
-          setFolderIndex(prev => Math.max(prev - 1, 0));
-          e.preventDefault();
-        } else if (e.key === 'Enter' || e.key === 'ArrowRight') {
-          const folder = folderList[folderIndex];
-          if (folder) {
-            setCurrentPath(folder.path);
-            setFileIndex(0);
-            setSearchQuery('');
-            setFocusPane('files');
-            // Expand folder if collapsed
-            if (folder.collapsed && folder.path.length > 0) {
-              onToggleFolder(folder.path);
-            }
-          }
-          e.preventDefault();
-        } else if (e.key === ' ') {
-          const folder = folderList[folderIndex];
-          if (folder && folder.path.length > 0) {
-            onToggleFolder(folder.path);
-          }
-          e.preventDefault();
-        } else if (e.key === 'd' || e.key === 'D') {
-          const folder = folderList[folderIndex];
-          if (folder && folder.path.length > 0 && folder.path[0] !== 'Deleted') {
-            onDeleteFolder(folder.path);
-            showStatus('Folder moved to Deleted');
-            setFolderIndex(prev => Math.max(0, prev - 1));
-          }
-          e.preventDefault();
-        } else if (e.key === 'u' || e.key === 'U') {
-          const folder = folderList[folderIndex];
-          if (folder && folder.path.length === 2 && folder.path[0] === 'Deleted') {
-            const itemName = folder.path[1];
-            onRestoreFromDeleted(itemName);
-            showStatus(`"${itemName}" restored`);
-            setFolderIndex(prev => Math.max(0, prev - 1));
-          }
-          e.preventDefault();
-        } else if (e.key === 'e' || e.key === 'E') {
-          const folder = folderList[folderIndex];
-          if (folder && folder.path.length === 1 && folder.path[0] === 'Deleted') {
-            onEmptyDeleted();
-            showStatus('Deleted emptied');
-          }
-          e.preventDefault();
-        }
-        return;
-      }
-
-      // Files pane
-      if (focusPane === 'files') {
-        if (e.key === 'ArrowDown') {
-          setFileIndex(prev => Math.min(prev + 1, filteredFiles.length - 1));
-          e.preventDefault();
-        } else if (e.key === 'ArrowUp') {
-          setFileIndex(prev => Math.max(prev - 1, 0));
-          e.preventDefault();
-        } else if (e.key === 'ArrowLeft') {
-          setFocusPane('folders');
-          e.preventDefault();
-        } else if (e.key === 'Enter') {
-          const file = filteredFiles[fileIndex];
-          if (file) {
-            onOpenFile(file.name);
+      } else if (e.key === 'Enter') {
+        const item = filteredItems[selectedIndex];
+        if (item) {
+          if (item.type === 'folder') {
+            onToggleFolder(item.path);
+          } else {
+            onOpenFile(item.name);
             onClose();
           }
-          e.preventDefault();
-        } else if (e.key === 'd' || e.key === 'D') {
-          const file = filteredFiles[fileIndex];
-          if (file) {
-            onDeleteFile(file.name);
-            showStatus('Moved to Deleted');
-            setFileIndex(prev => Math.max(0, prev - 1));
-          }
-          e.preventDefault();
-        } else if (e.key === 'r' || e.key === 'R') {
-          const file = filteredFiles[fileIndex];
-          if (file) {
-            setInputMode('rename');
-            setInputValue(file.name);
-          }
-          e.preventDefault();
-        } else if (e.key === 'm' || e.key === 'M') {
-          const file = filteredFiles[fileIndex];
-          if (file) {
-            setInputMode('move');
-            setMoveTargetIdx(0);
-          }
-          e.preventDefault();
-        } else if (e.key === 'u' || e.key === 'U') {
-          if (currentPath[0] === 'Deleted') {
-            const file = filteredFiles[fileIndex];
-            if (file) {
-              onRestoreFromDeleted(file.name);
-              showStatus(`"${file.name}" restored`);
-              setFileIndex(prev => Math.max(0, prev - 1));
-            }
-          }
-          e.preventDefault();
         }
-        return;
+        e.preventDefault();
+      } else if (e.key === ' ') {
+        const item = filteredItems[selectedIndex];
+        if (item?.type === 'folder') onToggleFolder(item.path);
+        e.preventDefault();
+      } else if (e.key === 'd' || e.key === 'D') {
+        const item = filteredItems[selectedIndex];
+        if (item) {
+          if (item.type === 'file') {
+            onDeleteFile(item.name);
+            showStatus('Moved to Deleted');
+          } else if (item.path[0] !== 'Deleted') {
+            onDeleteFolder(item.path);
+            showStatus('Folder moved to Deleted');
+          }
+          setSelectedIndex(prev => Math.max(0, prev - 1));
+        }
+        e.preventDefault();
+      } else if (e.key === 'r' || e.key === 'R') {
+        const item = filteredItems[selectedIndex];
+        if (item?.type === 'file') {
+          setInputMode('rename');
+          setInputValue(item.name);
+        }
+        e.preventDefault();
+      } else if (e.key === 'm' || e.key === 'M') {
+        const item = filteredItems[selectedIndex];
+        if (item?.type === 'file') {
+          setInputMode('move');
+          setMoveTargetIdx(0);
+        }
+        e.preventDefault();
+      } else if (e.key === 'u' || e.key === 'U') {
+        const item = filteredItems[selectedIndex];
+        if (item && item.path[0] === 'Deleted') {
+          const restoreName = item.type === 'folder' ? item.path[1] : item.name;
+          onRestoreFromDeleted(restoreName);
+          showStatus(`Restored`);
+          setSelectedIndex(prev => Math.max(0, prev - 1));
+        }
+        e.preventDefault();
+      } else if (e.key === 'e' || e.key === 'E') {
+        const item = filteredItems[selectedIndex];
+        if (item && item.path[0] === 'Deleted') {
+          onEmptyDeleted();
+          showStatus('Deleted emptied');
+        }
+        e.preventDefault();
       }
     };
 
     window.addEventListener('keydown', handler, true);
     return () => window.removeEventListener('keydown', handler, true);
-  }, [visible, focused, focusPane, folderIndex, fileIndex, inputMode, inputValue, searchQuery,
-    moveTargetIdx, folderList, filteredFiles, currentPath, onClose, onOpenFile, onDeleteFile,
-    onRenameFile, onMoveFile, onToggleFolder, onRestoreFromDeleted, onNewFolder, getFolders, showStatus]);
+  }, [visible, focused, selectedIndex, inputMode, inputValue, searchQuery,
+    moveTargetIdx, filteredItems, onClose, onOpenFile, onDeleteFile, onDeleteFolder,
+    onRenameFile, onMoveFile, onToggleFolder, onRestoreFromDeleted, onEmptyDeleted,
+    onNewFolder, onCreateFile, getFolders, showStatus, getSelectedFolderPath]);
 
   if (!visible) return null;
 
-  const breadcrumb = ['root', ...currentPath].join(' / ');
   const allFolders = getFolders();
 
   const termStyle: React.CSSProperties = {
@@ -425,21 +328,21 @@ export default function FileBrowser({
         <span
           onClick={onClose}
           style={{ fontSize: '11px', opacity: 0.5, cursor: 'pointer' }}
-          title="Ctrl+Shift+B or ESC"
+          title="Esc to close"
         >
           ✕
         </span>
       </div>
 
-      {/* Search bar (when active) */}
+      {/* Search bar */}
       {inputMode === 'search' && (
-        <div style={{ padding: '8px 20px', borderBottom: '1px solid var(--terminal-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--terminal-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ opacity: 0.7 }}>/</span>
           <input
             ref={inputRef}
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search files..."
+            placeholder="Search..."
             autoFocus
             style={{
               flex: 1,
@@ -451,15 +354,14 @@ export default function FileBrowser({
               fontSize: '14px',
             }}
           />
-          <span style={{ fontSize: '11px', opacity: 0.5 }}>Enter to confirm • Esc to cancel</span>
         </div>
       )}
 
       {/* Rename input */}
       {inputMode === 'rename' && (
-        <div style={{ padding: '8px 20px', borderBottom: '1px solid var(--terminal-text)', background: 'rgba(51,255,51,0.05)' }}>
+        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--terminal-text)', background: 'rgba(51,255,51,0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>RENAME TO:</span>
+            <span style={{ fontSize: '12px' }}>RENAME:</span>
             <input
               ref={inputRef}
               value={inputValue}
@@ -470,22 +372,21 @@ export default function FileBrowser({
                 background: 'var(--terminal-bg)',
                 border: '1px solid var(--terminal-text)',
                 color: 'var(--terminal-text)',
-                padding: '6px 8px',
+                padding: '4px 8px',
                 ...termStyle,
-                fontSize: '14px',
+                fontSize: '13px',
                 outline: 'none',
               }}
             />
-            <span style={{ fontSize: '11px', opacity: 0.5 }}>Enter to confirm • Esc to cancel</span>
           </div>
         </div>
       )}
 
       {/* New folder input */}
       {inputMode === 'new-folder' && (
-        <div style={{ padding: '8px 20px', borderBottom: '1px solid var(--terminal-text)', background: 'rgba(51,255,51,0.05)' }}>
+        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--terminal-text)', background: 'rgba(51,255,51,0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>NEW FOLDER:</span>
+            <span style={{ fontSize: '12px' }}>NEW FOLDER:</span>
             <input
               ref={inputRef}
               value={inputValue}
@@ -496,22 +397,21 @@ export default function FileBrowser({
                 background: 'var(--terminal-bg)',
                 border: '1px solid var(--terminal-text)',
                 color: 'var(--terminal-text)',
-                padding: '6px 8px',
+                padding: '4px 8px',
                 ...termStyle,
-                fontSize: '14px',
+                fontSize: '13px',
                 outline: 'none',
               }}
             />
-            <span style={{ fontSize: '11px', opacity: 0.5 }}>Enter to create • Esc to cancel</span>
           </div>
         </div>
       )}
 
       {/* New file input */}
       {inputMode === 'new-file' && (
-        <div style={{ padding: '8px 20px', borderBottom: '1px solid var(--terminal-text)', background: 'rgba(51,255,51,0.05)' }}>
+        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--terminal-text)', background: 'rgba(51,255,51,0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>NEW FILE:</span>
+            <span style={{ fontSize: '12px' }}>NEW FILE:</span>
             <input
               ref={inputRef}
               value={inputValue}
@@ -523,195 +423,124 @@ export default function FileBrowser({
                 background: 'var(--terminal-bg)',
                 border: '1px solid var(--terminal-text)',
                 color: 'var(--terminal-text)',
-                padding: '6px 8px',
+                padding: '4px 8px',
                 ...termStyle,
-                fontSize: '14px',
+                fontSize: '13px',
                 outline: 'none',
               }}
             />
-            <span style={{ fontSize: '11px', opacity: 0.5 }}>Enter to create • Esc to cancel</span>
           </div>
-          <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '4px' }}>
-            Creating in: 📂 {['root', ...currentPath].join(' / ')}
+          <div style={{ fontSize: '10px', opacity: 0.5, marginTop: '4px' }}>
+            In: {getSelectedFolderPath().join('/') || 'root'}
           </div>
         </div>
       )}
 
-      {/* Move to folder picker */}
+      {/* Move picker */}
       {inputMode === 'move' && (
-        <div style={{ padding: '8px 20px', borderBottom: '1px solid var(--terminal-text)', background: 'rgba(51,255,51,0.05)' }}>
-          <div style={{ marginBottom: '8px' }}>
-            MOVE "{filteredFiles[fileIndex]?.name}" TO:
+        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--terminal-text)', background: 'rgba(51,255,51,0.05)' }}>
+          <div style={{ marginBottom: '6px', fontSize: '12px' }}>
+            MOVE TO:
           </div>
-          <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
+          <div style={{ maxHeight: '120px', overflowY: 'auto' }}>
             <div
               style={{
-                padding: '6px 12px',
+                padding: '4px 10px',
                 background: moveTargetIdx === 0 ? 'var(--terminal-text)' : 'transparent',
                 color: moveTargetIdx === 0 ? 'var(--terminal-bg)' : 'var(--terminal-text)',
                 cursor: 'pointer',
-                margin: '2px 0',
+                fontSize: '12px',
               }}
+              onClick={() => { setMoveTargetIdx(0); }}
             >
-              📁 root (top level)
+              📁 root
             </div>
             {allFolders.map((f, i) => (
               <div
                 key={f.path.join('/')}
+                onClick={() => setMoveTargetIdx(i + 1)}
                 style={{
-                  padding: '6px 12px',
+                  padding: '4px 10px',
                   background: moveTargetIdx === i + 1 ? 'var(--terminal-text)' : 'transparent',
                   color: moveTargetIdx === i + 1 ? 'var(--terminal-bg)' : 'var(--terminal-text)',
                   cursor: 'pointer',
-                  margin: '2px 0',
+                  fontSize: '12px',
                 }}
               >
                 📁 {f.name}
               </div>
             ))}
           </div>
-          <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '4px' }}>↑↓ Select • Enter to move • Esc to cancel</div>
+          <div style={{ fontSize: '10px', opacity: 0.5, marginTop: '4px' }}>↑↓ Enter • Esc cancel</div>
         </div>
       )}
 
-      {/* Breadcrumb */}
-      <div style={{ padding: '4px 12px', fontSize: '11px', opacity: 0.8, borderBottom: '1px solid var(--terminal-text)', flexShrink: 0 }}>
-        📂 {breadcrumb}
-      </div>
-
-      {/* Folders section */}
+      {/* Unified file tree */}
       <div
-        style={{
-          overflowY: 'auto',
-          padding: '4px 0',
-          opacity: 1,
-          borderBottom: '1px solid var(--terminal-text)',
-          maxHeight: '35%',
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ padding: '2px 12px', fontSize: '10px', opacity: 0.7, letterSpacing: '2px' }}>
-          FOLDERS
-        </div>
-        {folderList.map((folder, i) => {
-          const isFocused = focusPane === 'folders' && folderIndex === i;
-          const isSelected = JSON.stringify(folder.path) === JSON.stringify(currentPath);
-
-          return (
-            <div
-              key={folder.path.join('/') || 'root'}
-              onClick={() => {
-                setFolderIndex(i);
-                setCurrentPath(folder.path);
-                setFileIndex(0);
-                setSearchQuery('');
-                setFocusPane('folders');
-                // Toggle collapse on click for non-root folders
-                if (folder.path.length > 0) {
-                  onToggleFolder(folder.path);
-                }
-              }}
-              style={{
-                padding: '5px 8px',
-                paddingLeft: `${8 + folder.depth * 14}px`,
-                cursor: 'pointer',
-                background: isFocused
-                  ? 'var(--terminal-text)'
-                  : isSelected
-                    ? 'rgba(51, 255, 51, 0.1)'
-                    : 'transparent',
-                color: isFocused ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '13px',
-                borderLeft: isSelected && !isFocused ? '3px solid var(--terminal-text)' : '3px solid transparent',
-              }}
-            >
-              {folder.depth > 0 && (
-                <span style={{ fontSize: '9px', userSelect: 'none' }}>
-                  {folder.collapsed ? '▶' : '▼'}
-                </span>
-              )}
-              <span style={{ fontSize: '12px' }}>{folder.depth === 0 ? '🖥️' : '📁'}</span>
-              <span style={{ fontWeight: isSelected ? 'bold' : 'normal', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{folder.name}</span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Files section */}
-      <div
+        ref={listRef}
         style={{
           flex: 1,
           overflowY: 'auto',
           padding: '4px 0',
-          opacity: 1,
         }}
       >
-        <div style={{ padding: '2px 12px', fontSize: '10px', opacity: 0.7, letterSpacing: '2px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>
-            FILES ({filteredFiles.length})
-            {searchQuery && <span> — "{searchQuery}"</span>}
-          </span>
-          {currentPath.length === 1 && currentPath[0] === 'Deleted' && filteredFiles.length > 0 && (
-            <span
-              onClick={(e) => {
-                e.stopPropagation();
-                onEmptyDeleted();
-                showStatus('Deleted emptied');
-              }}
-              style={{ cursor: 'pointer', fontSize: '10px', opacity: 0.9, color: '#ff5555' }}
-              title="E to empty"
-            >
-              🗑 Empty
-            </span>
-          )}
-        </div>
-
-        {filteredFiles.length === 0 ? (
-          <div style={{ padding: '20px 12px', textAlign: 'center', opacity: 0.7, fontSize: '12px' }}>
-            {searchQuery ? 'No matches' : 'Empty folder'}
-            <div style={{ marginTop: '4px', fontSize: '11px' }}>
-              N New Folder • C New File
-            </div>
+        {filteredItems.length === 0 ? (
+          <div style={{ padding: '20px 12px', textAlign: 'center', opacity: 0.5, fontSize: '12px' }}>
+            {searchQuery ? 'No matches' : 'No files yet'}
           </div>
         ) : (
-          filteredFiles.map((file, i) => {
-            const isFocused = focusPane === 'files' && fileIndex === i;
-            const doc = allDocuments[file.name];
+          filteredItems.map((item, i) => {
+            const isFocused = selectedIndex === i;
+            const isFolder = item.type === 'folder';
+            const doc = !isFolder ? allDocuments[item.name] : null;
             const words = doc?.content ? doc.content.split(/\s+/).filter(Boolean).length : 0;
-            const displayName = file.name.includes('/') ? file.name.split('/').pop() || file.name : file.name;
-            const lastMod = doc?.lastModified ? new Date(doc.lastModified) : null;
-            const dateStr = lastMod ? lastMod.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+            const displayName = item.name.includes('/') ? item.name.split('/').pop() || item.name : item.name;
+            const isDeleted = item.path[0] === 'Deleted';
 
             return (
               <div
-                key={file.name}
-                onClick={() => {
-                  setFileIndex(i);
-                  setFocusPane('files');
-                }}
+                key={item.path.join('/') + item.type}
+                data-idx={i}
+                onClick={() => setSelectedIndex(i)}
                 onDoubleClick={() => {
-                  onOpenFile(file.name);
+                  if (isFolder) onToggleFolder(item.path);
+                  else { onOpenFile(item.name); onClose(); }
                 }}
                 style={{
-                  padding: '6px 12px',
+                  padding: '5px 10px',
+                  paddingLeft: `${10 + item.depth * 16}px`,
                   cursor: 'pointer',
                   background: isFocused ? 'var(--terminal-text)' : 'transparent',
                   color: isFocused ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-                  borderBottom: '1px solid rgba(51,255,51,0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
                   fontSize: '13px',
+                  opacity: isDeleted && !isFocused ? 0.5 : 1,
+                  transition: 'background 0.05s',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '12px' }}>📄</span>
-                  <span style={{ fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
-                </div>
-                <div style={{ fontSize: '10px', marginTop: '1px', paddingLeft: '20px', display: 'flex', gap: '10px' }}>
-                  <span>{words} words</span>
-                  {dateStr && <span>{dateStr}</span>}
-                </div>
+                {isFolder && (
+                  <span style={{ fontSize: '9px', userSelect: 'none', width: '10px', textAlign: 'center' }}>
+                    {item.collapsed ? '▶' : '▼'}
+                  </span>
+                )}
+                {!isFolder && <span style={{ width: '10px' }} />}
+                <span style={{ fontSize: '12px' }}>{isFolder ? '📁' : '📄'}</span>
+                <span style={{
+                  fontWeight: isFolder ? 'bold' : 'normal',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  flex: 1,
+                }}>
+                  {displayName}
+                </span>
+                {!isFolder && doc && (
+                  <span style={{ fontSize: '10px', opacity: isFocused ? 0.7 : 0.4, whiteSpace: 'nowrap' }}>
+                    {words}w
+                  </span>
+                )}
               </div>
             );
           })
@@ -732,7 +561,7 @@ export default function FileBrowser({
         </div>
       )}
 
-      {/* Clickable action buttons */}
+      {/* Action bar */}
       <div
         style={{
           borderTop: '2px solid var(--terminal-text)',
@@ -740,7 +569,6 @@ export default function FileBrowser({
           fontSize: '10px',
           opacity: 0.8,
           flexShrink: 0,
-          lineHeight: 1.6,
           display: 'flex',
           flexWrap: 'wrap',
           gap: '2px 6px',
@@ -754,7 +582,6 @@ export default function FileBrowser({
           { key: 'n', label: 'Folder' },
           { key: 'c', label: 'File' },
           { key: '/', label: 'Search' },
-          { key: 'Tab', label: 'Pane' },
         ].map(({ key, label }) => (
           <button
             key={key}
@@ -768,23 +595,20 @@ export default function FileBrowser({
             <span style={kbdStyle}>{key}</span>{label}
           </button>
         ))}
-        {/* Cloud sync buttons */}
         {onSyncGoogleDrive && (
           <button
             onClick={(e) => { e.stopPropagation(); onSyncGoogleDrive(); }}
-            style={{ ...actionBtnStyle, borderTop: '1px solid var(--terminal-text)', marginTop: '2px', paddingTop: '4px' }}
-            title="Sync all files to Google Drive"
+            style={actionBtnStyle}
           >
-            ☁ Sync Drive
+            ☁ Sync
           </button>
         )}
         {onSyncICloud && (
           <button
             onClick={(e) => { e.stopPropagation(); onSyncICloud(); }}
             style={actionBtnStyle}
-            title="Sync all files to iCloud"
           >
-            🍎 Sync iCloud
+            🍎 Sync
           </button>
         )}
       </div>
