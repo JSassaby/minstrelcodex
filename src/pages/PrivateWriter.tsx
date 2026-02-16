@@ -12,6 +12,7 @@ import AppleSignInModal from '@/components/private-writer/AppleSignInModal';
 import NovelProjectWizard from '@/components/private-writer/NovelProjectWizard';
 import StorageMenu from '@/components/private-writer/StorageMenu';
 import type { NovelProjectConfig, StorageLocation } from '@/components/private-writer/NovelProjectWizard';
+import ExportModal from '@/components/private-writer/ExportModal';
 import ModalShell, { ModalButton, ModalInput } from '@/components/private-writer/ModalShell';
 import SettingsPanel from '@/components/private-writer/SettingsPanel';
 import { t } from '@/lib/languages';
@@ -457,6 +458,26 @@ export default function PrivateWriter() {
         showToast(`Snapshot saved: ${dateStr} - ${shortName}`);
         break;
       }
+      case 'print': {
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          const style = getComputedStyle(document.documentElement);
+          printWindow.document.write(`<html><head><title>${docStorage.currentDocument.filename || 'Untitled'}</title>
+            <style>body { font-family: 'Courier New', monospace; padding: 40px; line-height: 1.6; max-width: 800px; margin: 0 auto; }
+            h1 { font-size: 2em; border-bottom: 1px solid #333; padding-bottom: 8px; }
+            h2 { font-size: 1.6em; } h3 { font-size: 1.3em; }
+            blockquote { border-left: 3px solid #333; padding-left: 1em; opacity: 0.8; }
+            @media print { body { padding: 20px; } }</style></head>
+            <body>${editorContent}</body></html>`);
+          printWindow.document.close();
+          printWindow.focus();
+          printWindow.print();
+        }
+        break;
+      }
+      case 'export':
+        setActiveModal('export');
+        break;
     }
   }, [docStorage, editorContent, fileStructure, theme, language, pinConfig, toggleFullscreen]);
 
@@ -1406,6 +1427,16 @@ export default function PrivateWriter() {
       <AppleSignInModal
         visible={activeModal === 'apple-signin'}
         onClose={closeModal}
+      />
+
+      {/* Export Modal */}
+      <ExportModal
+        visible={activeModal === 'export'}
+        onClose={closeModal}
+        fileStructure={fileStructure.structure.root}
+        getFolders={fileStructure.getFolders}
+        findFilesInFolder={fileStructure.findFilesInFolder}
+        showToast={showToast}
       />
 
       {/* PIN Setup Modal */}
