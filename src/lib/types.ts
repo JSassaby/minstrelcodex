@@ -45,6 +45,7 @@ export type ModalType =
   | 'gdrive'
   | 'apple-signin'
   | 'save-version'
+  | 'export'
   | null;
 
 export type Language = 'en-GB' | 'en-US' | 'af';

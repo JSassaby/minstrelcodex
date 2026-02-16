@@ -31,6 +31,9 @@ function getSubmenuItems(menu: string, language: string, wifiOn: boolean, blueto
         { action: 'saveversion', label: '📋 Save Version...' },
         { action: 'savesnapshot', label: '📸 Save Snapshot', shortcut: 'Ctrl+Shift+V' },
         { action: 'separator', label: '' },
+        { action: 'print', label: '🖨 Print Current Page', shortcut: 'Ctrl+P' },
+        { action: 'export', label: '📤 Export / Combine...' },
+        { action: 'separator', label: '' },
         { action: 'togglesidebar', label: 'File Browser', shortcut: 'Ctrl+Shift+B' },
       ];
     case 'edit':
