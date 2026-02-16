@@ -17,11 +17,13 @@ interface EditorProps {
   fontFamily: string;
   placeholder: string;
   readOnly?: boolean;
+  sidebarOpen?: boolean;
   onChangeFontSize: (delta: number) => void;
   onChangeFontFamily: (font: string) => void;
+  onToggleSidebar?: () => void;
 }
 
-const Editor = forwardRef<EditorHandle, EditorProps>(({ content, onChange, fontSize, fontFamily, placeholder, readOnly, onChangeFontSize, onChangeFontFamily }, ref) => {
+const Editor = forwardRef<EditorHandle, EditorProps>(({ content, onChange, fontSize, fontFamily, placeholder, readOnly, sidebarOpen, onChangeFontSize, onChangeFontFamily, onToggleSidebar }, ref) => {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -84,8 +86,10 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({ content, onChange, fontS
         readOnly={readOnly}
         fontSize={fontSize}
         fontFamily={fontFamily}
+        sidebarOpen={sidebarOpen}
         onChangeFontSize={onChangeFontSize}
         onChangeFontFamily={onChangeFontFamily}
+        onToggleSidebar={onToggleSidebar}
       />
       <div
         style={{

@@ -16,8 +16,10 @@ interface FormattingToolbarProps {
   readOnly?: boolean;
   fontSize: number;
   fontFamily: string;
+  sidebarOpen?: boolean;
   onChangeFontSize: (delta: number) => void;
   onChangeFontFamily: (font: string) => void;
+  onToggleSidebar?: () => void;
 }
 
 interface ToolbarButton {
@@ -27,7 +29,7 @@ interface ToolbarButton {
   isActive: boolean;
 }
 
-export default function FormattingToolbar({ editor, readOnly, fontSize, fontFamily, onChangeFontSize, onChangeFontFamily }: FormattingToolbarProps) {
+export default function FormattingToolbar({ editor, readOnly, fontSize, fontFamily, sidebarOpen, onChangeFontSize, onChangeFontFamily, onToggleSidebar }: FormattingToolbarProps) {
   if (readOnly) return null;
 
   const buttons: ToolbarButton[] = [
@@ -199,6 +201,34 @@ export default function FormattingToolbar({ editor, readOnly, fontSize, fontFami
           </button>
         );
       })}
+
+      {onToggleSidebar && (
+        <>
+          <span style={{ width: '1px', height: '20px', background: 'var(--terminal-text)', opacity: 0.3, margin: '0 6px' }} />
+          <button
+            onClick={onToggleSidebar}
+            title="Files (Ctrl+Shift+B)"
+            style={{
+              ...btnStyle(!!sidebarOpen),
+              fontSize: '13px',
+            }}
+            onMouseEnter={(e) => {
+              if (!sidebarOpen) {
+                (e.target as HTMLElement).style.opacity = '1';
+                (e.target as HTMLElement).style.background = 'rgba(255,255,255,0.1)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!sidebarOpen) {
+                (e.target as HTMLElement).style.opacity = '0.9';
+                (e.target as HTMLElement).style.background = 'transparent';
+              }
+            }}
+          >
+            📁 Files
+          </button>
+        </>
+      )}
     </div>
   );
 }
