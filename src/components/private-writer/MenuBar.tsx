@@ -212,7 +212,7 @@ export default function MenuBar({
         })}
       </div>
 
-      {/* Filename display - top right */}
+      {/* Filename display - center */}
       <div
         style={{
           position: 'absolute',
@@ -230,6 +230,23 @@ export default function MenuBar({
         title={shortName}
       >
         📄 {shortName}
+      </div>
+
+      {/* File browser toggle */}
+      <div
+        style={{
+          cursor: 'pointer',
+          padding: '4px 10px',
+          fontSize: '15px',
+          opacity: 0.8,
+          transition: 'opacity 0.15s',
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+        onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.8')}
+        onClick={() => onAction('togglesidebar')}
+        title="Files (Ctrl+Shift+B)"
+      >
+        📁
       </div>
     </div>
   );
