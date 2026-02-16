@@ -500,10 +500,10 @@ export default function FileBrowser({
               <div
                 key={item.path.join('/') + item.type}
                 data-idx={i}
-                onClick={() => setSelectedIndex(i)}
-                onDoubleClick={() => {
+                onClick={() => {
+                  setSelectedIndex(i);
                   if (isFolder) onToggleFolder(item.path);
-                  else { onOpenFile(item.name); }
+                  else onOpenFile(item.name);
                 }}
                 style={{
                   padding: '5px 10px',
