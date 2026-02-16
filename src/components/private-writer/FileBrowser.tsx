@@ -227,7 +227,6 @@ export default function FileBrowser({
             onToggleFolder(item.path);
           } else {
             onOpenFile(item.name);
-            onClose();
           }
         }
         e.preventDefault();
@@ -504,7 +503,7 @@ export default function FileBrowser({
                 onClick={() => setSelectedIndex(i)}
                 onDoubleClick={() => {
                   if (isFolder) onToggleFolder(item.path);
-                  else { onOpenFile(item.name); onClose(); }
+                  else { onOpenFile(item.name); }
                 }}
                 style={{
                   padding: '5px 10px',
