@@ -2,12 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Courier+Prime&family=VT323&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Courier+Prime&family=VT323&family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
 
 :root {
   --terminal-text: #33ff33;
   --terminal-bg: #000000;
   --terminal-glow: rgba(51, 255, 51, 0.5);
+  --terminal-accent: #33ff33;
+  --terminal-muted: rgba(51, 255, 51, 0.4);
+  --terminal-border: #33ff33;
+  --terminal-surface: rgba(51, 255, 51, 0.05);
+  --font-body: 'Courier Prime', 'Courier New', monospace;
+  --font-display: 'VT323', monospace;
+  --font-ui: 'VT323', monospace;
 }
 
 * {
@@ -17,7 +24,7 @@
 }
 
 body {
-  font-family: 'Courier Prime', 'Courier New', monospace;
+  font-family: var(--font-body);
   background-color: var(--terminal-bg);
   color: var(--terminal-text);
   height: 100vh;
@@ -25,8 +32,10 @@ body {
   position: relative;
 }
 
-/* CRT Scanline Effect */
-body::before {
+/* ===== TERMINAL THEME EFFECTS ===== */
+
+/* CRT Scanlines — terminal only */
+body.theme-terminal::before {
   content: "";
   position: fixed;
   top: 0;
@@ -44,8 +53,8 @@ body::before {
   z-index: 1000;
 }
 
-/* CRT Screen Glow */
-body::after {
+/* CRT Screen Glow — terminal only */
+body.theme-terminal::after {
   content: "";
   position: fixed;
   top: 0;
@@ -57,7 +66,38 @@ body::after {
   z-index: 999;
 }
 
-/* Scrollbar styling */
+/* ===== TYPEWRITER THEME EFFECTS ===== */
+
+/* Paper texture — typewriter only */
+body.theme-typewriter::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url("data:image/svg+xml,%3Csvg width='4' height='4' viewBox='0 0 4 4' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 3h1v1H1V3zm2-2h1v1H3V1z' fill='%23000000' fill-opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* Subtle vignette — typewriter only */
+body.theme-typewriter::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.08) 100%);
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* ===== MODERN THEME ===== */
+/* No ::before or ::after effects — clean and minimal */
+
+/* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -65,9 +105,16 @@ body::after {
   background: var(--terminal-bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--terminal-text);
+  background: var(--terminal-border);
 }
 
+/* Modern theme scrollbar override */
+body.theme-modern::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+/* ===== ANIMATIONS ===== */
 @keyframes fadeIn {
   to { opacity: 1; }
 }
@@ -75,4 +122,15 @@ body::after {
 @keyframes blink {
   0%, 50% { opacity: 1; }
   51%, 100% { opacity: 0; }
+}
+
+/* ===== MODERN THEME STYLE OVERRIDES ===== */
+body.theme-modern {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== TYPEWRITER THEME STYLE OVERRIDES ===== */
+body.theme-typewriter {
+  -webkit-font-smoothing: auto;
 }

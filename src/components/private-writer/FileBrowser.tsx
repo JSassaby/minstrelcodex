@@ -298,31 +298,25 @@ export default function FileBrowser({
         } else if (e.key === 'd' || e.key === 'D') {
           const folder = folderList[folderIndex];
           if (folder && folder.path.length > 0 && folder.path[0] !== 'Deleted') {
-            if (confirm(`Delete folder "${folder.path[folder.path.length - 1]}"? It will be moved to Deleted.`)) {
-              onDeleteFolder(folder.path);
-              showStatus(`Folder moved to Deleted`);
-              setFolderIndex(prev => Math.max(0, prev - 1));
-            }
+            onDeleteFolder(folder.path);
+            showStatus('Folder moved to Deleted');
+            setFolderIndex(prev => Math.max(0, prev - 1));
           }
           e.preventDefault();
         } else if (e.key === 'u' || e.key === 'U') {
           const folder = folderList[folderIndex];
           if (folder && folder.path.length === 2 && folder.path[0] === 'Deleted') {
             const itemName = folder.path[1];
-            if (confirm(`Restore "${itemName}" from Deleted?`)) {
-              onRestoreFromDeleted(itemName);
-              showStatus(`"${itemName}" restored`);
-              setFolderIndex(prev => Math.max(0, prev - 1));
-            }
+            onRestoreFromDeleted(itemName);
+            showStatus(`"${itemName}" restored`);
+            setFolderIndex(prev => Math.max(0, prev - 1));
           }
           e.preventDefault();
         } else if (e.key === 'e' || e.key === 'E') {
           const folder = folderList[folderIndex];
           if (folder && folder.path.length === 1 && folder.path[0] === 'Deleted') {
-            if (confirm('Permanently empty the Deleted folder? This cannot be undone.')) {
-              onEmptyDeleted();
-              showStatus('Deleted folder emptied');
-            }
+            onEmptyDeleted();
+            showStatus('Deleted emptied');
           }
           e.preventDefault();
         }
@@ -350,11 +344,9 @@ export default function FileBrowser({
         } else if (e.key === 'd' || e.key === 'D') {
           const file = filteredFiles[fileIndex];
           if (file) {
-            if (confirm(`Move "${file.name}" to Deleted folder?`)) {
-              onDeleteFile(file.name);
-              showStatus(`Moved to Deleted`);
-              setFileIndex(prev => Math.max(0, prev - 1));
-            }
+            onDeleteFile(file.name);
+            showStatus('Moved to Deleted');
+            setFileIndex(prev => Math.max(0, prev - 1));
           }
           e.preventDefault();
         } else if (e.key === 'r' || e.key === 'R') {
@@ -375,11 +367,9 @@ export default function FileBrowser({
           if (currentPath[0] === 'Deleted') {
             const file = filteredFiles[fileIndex];
             if (file) {
-              if (confirm(`Restore "${file.name}" from Deleted?`)) {
-                onRestoreFromDeleted(file.name);
-                showStatus(`"${file.name}" restored`);
-                setFileIndex(prev => Math.max(0, prev - 1));
-              }
+              onRestoreFromDeleted(file.name);
+              showStatus(`"${file.name}" restored`);
+              setFileIndex(prev => Math.max(0, prev - 1));
             }
           }
           e.preventDefault();
@@ -668,10 +658,8 @@ export default function FileBrowser({
             <span
               onClick={(e) => {
                 e.stopPropagation();
-                if (confirm('Permanently empty the Deleted folder? This cannot be undone.')) {
-                  onEmptyDeleted();
-                  showStatus('Deleted folder emptied');
-                }
+                onEmptyDeleted();
+                showStatus('Deleted emptied');
               }}
               style={{ cursor: 'pointer', fontSize: '10px', opacity: 0.9, color: '#ff5555' }}
               title="E to empty"
