@@ -29,6 +29,7 @@ function buildTreeItems(node: FileNode, path: string[] = [], depth: number = 0):
     return a.localeCompare(b);
   });
   for (const name of sorted) {
+    if (name === 'Deleted') continue; // Skip trash folder
     const item = children[name];
     const itemPath = [...path, name];
     if (item.type === 'folder') {
