@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { t } from '@/lib/languages';
 
 interface BootScreenProps {
@@ -8,8 +8,6 @@ interface BootScreenProps {
 
 export default function BootScreen({ language, onComplete }: BootScreenProps) {
   const [lines, setLines] = useState<string[]>([]);
-  const [showPressKey, setShowPressKey] = useState(false);
-  const handledRef = useRef(false);
 
   const bootMessages = [
     t(language, 'boot.bios'),
@@ -33,23 +31,11 @@ export default function BootScreen({ language, onComplete }: BootScreenProps) {
         i++;
       } else {
         clearInterval(interval);
-        setTimeout(() => setShowPressKey(true), 500);
+        setTimeout(() => onComplete(), 500);
       }
     }, 100);
     return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    if (!showPressKey) return;
-    const handler = (e: KeyboardEvent) => {
-      if (handledRef.current) return;
-      handledRef.current = true;
-      e.preventDefault();
-      onComplete();
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [showPressKey, onComplete]);
 
   return (
     <div
@@ -92,17 +78,6 @@ export default function BootScreen({ language, onComplete }: BootScreenProps) {
           </div>
         ))}
       </div>
-      {showPressKey && (
-        <div
-          style={{
-            marginTop: '20px',
-            animation: 'blink 1s infinite',
-            fontSize: '16px',
-          }}
-        >
-          ▶ Press any key to continue...
-        </div>
-      )}
     </div>
   );
 }
