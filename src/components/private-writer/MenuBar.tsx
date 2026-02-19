@@ -181,15 +181,16 @@ export default function MenuBar({
                 <div
                   style={{
                     position: 'absolute',
-                    top: 'calc(100% + 4px)',
+                    top: 'calc(100% + 6px)',
                     left: 0,
-                    background: 'var(--terminal-bg)',
+                    background: 'var(--terminal-surface)',
                     border: '1px solid var(--terminal-border)',
                     minWidth: '270px',
                     zIndex: 300,
-                    borderRadius: '6px',
+                    borderRadius: '12px',
                     overflow: 'hidden',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08)',
+                    padding: '6px',
                   }}
                 >
                   {items.map((item, j) => {
@@ -197,7 +198,7 @@ export default function MenuBar({
                       return (
                         <div
                           key={`sep-${j}`}
-                          style={{ height: '1px', background: 'var(--terminal-border)', opacity: 0.6, margin: '3px 10px' }}
+                          style={{ height: '1px', background: 'var(--terminal-border)', opacity: 0.5, margin: '4px 6px' }}
                         />
                       );
                     }
@@ -213,31 +214,31 @@ export default function MenuBar({
                           setMouseActive(false);
                         }}
                         style={{
-                          padding: '7px 14px',
+                          padding: '7px 10px',
                           cursor: 'pointer',
-                          background: isActive ? 'var(--terminal-surface)' : 'transparent',
-                          color: 'var(--terminal-text)',
+                          borderRadius: '8px',
+                          background: isActive ? 'var(--terminal-accent)' : 'transparent',
+                          color: isActive ? 'var(--terminal-bg)' : 'var(--terminal-text)',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '10px',
                           justifyContent: 'space-between',
-                          transition: 'background 0.08s',
-                          borderLeft: isActive ? '2px solid var(--terminal-accent)' : '2px solid transparent',
+                          transition: 'background 0.1s, color 0.1s',
                         }}
                       >
                         <span style={{ display: 'flex', alignItems: 'center', gap: '9px', flex: 1 }}>
                           {item.icon && (
-                            <span style={{ display: 'flex', alignItems: 'center', width: '16px', justifyContent: 'center', flexShrink: 0 }}>
+                            <span style={{ display: 'flex', alignItems: 'center', width: '16px', justifyContent: 'center', flexShrink: 0, opacity: isActive ? 0.85 : 1 }}>
                               {item.icon}
                             </span>
                           )}
-                          <span style={{ opacity: isActive ? 1 : 0.85, fontSize: '12px', fontFamily: uiFont }}>
+                          <span style={{ opacity: isActive ? 1 : 0.8, fontSize: '12px', fontFamily: uiFont, fontWeight: isActive ? '500' : '400' }}>
                             {item.label}
                           </span>
                         </span>
                         {item.shortcut && (
                           <span style={{
-                            opacity: 0.35,
+                            opacity: isActive ? 0.6 : 0.3,
                             fontSize: '10px',
                             fontFamily: uiFont,
                             letterSpacing: '0.03em',
