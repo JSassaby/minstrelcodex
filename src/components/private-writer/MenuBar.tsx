@@ -1,4 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
+import {
+  FilePlus, BookOpen, FolderOpen, Clock, Save, FileOutput,
+  Printer, PanelLeftOpen, Undo2, Redo2, Copy, ClipboardPaste,
+  Wifi, WifiOff, Bluetooth, Cloud, Settings, Camera, FileText
+} from 'lucide-react';
 import { t } from '@/lib/languages';
 
 interface MenuBarProps {
@@ -16,46 +21,62 @@ interface MenuBarProps {
 
 const MENUS = ['file', 'edit', 'network', 'storage', 'settings'] as const;
 
-function getSubmenuItems(menu: string, language: string, wifiOn: boolean, bluetoothOn: boolean) {
+// Accent colours per icon category — use CSS vars so they adapt per theme
+const ICON_ACCENT = {
+  green:  'var(--terminal-accent)',
+  amber:  '#f5c542',
+  blue:   '#5b9cf6',
+  red:    '#e05c5c',
+  muted:  'var(--terminal-muted)',
+};
+
+interface MenuItem {
+  action: string;
+  label: string;
+  shortcut?: string;
+  icon?: React.ReactNode;
+}
+
+function getSubmenuItems(menu: string, language: string, wifiOn: boolean, bluetoothOn: boolean): MenuItem[] {
   switch (menu) {
     case 'file':
       return [
-        { action: 'new', label: t(language, 'file.new'), shortcut: 'Ctrl+N' },
-        { action: 'newnovel', label: '📖 New Novel Project' },
-        { action: 'separator', label: '' },
-        { action: 'open', label: t(language, 'file.open'), shortcut: 'Ctrl+O' },
-        { action: 'recent', label: t(language, 'file.recent') },
-        { action: 'separator', label: '' },
-        { action: 'save', label: t(language, 'file.save'), shortcut: 'Ctrl+S' },
-        { action: 'saveas', label: t(language, 'file.saveas') },
-        { action: 'saveversion', label: '📋 Save Version...' },
-        { action: 'savesnapshot', label: '📸 Save Snapshot', shortcut: 'Ctrl+Shift+V' },
-        { action: 'separator', label: '' },
-        { action: 'print', label: '🖨 Print Current Page', shortcut: 'Ctrl+P' },
-        { action: 'export', label: '📤 Export / Combine...' },
-        { action: 'separator', label: '' },
-        { action: 'togglesidebar', label: 'File Browser', shortcut: 'Ctrl+Shift+B' },
+        { action: 'new',           label: t(language, 'file.new'),             shortcut: 'Ctrl+N',       icon: <FilePlus size={13} color={ICON_ACCENT.green} strokeWidth={1.8} /> },
+        { action: 'newnovel',      label: 'New Novel Project',                  shortcut: '',             icon: <BookOpen size={13} color={ICON_ACCENT.amber} strokeWidth={1.8} /> },
+        { action: 'separator',     label: '' },
+        { action: 'open',          label: t(language, 'file.open'),             shortcut: 'Ctrl+O',       icon: <FolderOpen size={13} color={ICON_ACCENT.amber} strokeWidth={1.8} /> },
+        { action: 'recent',        label: t(language, 'file.recent'),           shortcut: '',             icon: <Clock size={13} color={ICON_ACCENT.muted} strokeWidth={1.8} /> },
+        { action: 'separator',     label: '' },
+        { action: 'save',          label: t(language, 'file.save'),             shortcut: 'Ctrl+S',       icon: <Save size={13} color={ICON_ACCENT.green} strokeWidth={1.8} /> },
+        { action: 'saveas',        label: t(language, 'file.saveas'),           shortcut: '',             icon: <Save size={13} color={ICON_ACCENT.muted} strokeWidth={1.8} /> },
+        { action: 'saveversion',   label: 'Save Version…',                      shortcut: '',             icon: <FileText size={13} color={ICON_ACCENT.blue} strokeWidth={1.8} /> },
+        { action: 'savesnapshot',  label: 'Save Snapshot',                      shortcut: 'Ctrl+Shift+V', icon: <Camera size={13} color={ICON_ACCENT.blue} strokeWidth={1.8} /> },
+        { action: 'separator',     label: '' },
+        { action: 'print',         label: 'Print Current Page',                 shortcut: 'Ctrl+P',       icon: <Printer size={13} color={ICON_ACCENT.muted} strokeWidth={1.8} /> },
+        { action: 'export',        label: 'Export / Combine…',                  shortcut: '',             icon: <FileOutput size={13} color={ICON_ACCENT.green} strokeWidth={1.8} /> },
+        { action: 'separator',     label: '' },
+        { action: 'togglesidebar', label: 'File Browser',                       shortcut: 'Ctrl+Shift+B', icon: <PanelLeftOpen size={13} color={ICON_ACCENT.muted} strokeWidth={1.8} /> },
       ];
     case 'edit':
       return [
-        { action: 'undo', label: t(language, 'edit.undo'), shortcut: 'Ctrl+Z' },
-        { action: 'redo', label: t(language, 'edit.redo'), shortcut: 'Ctrl+R' },
+        { action: 'undo',  label: t(language, 'edit.undo'),  shortcut: 'Ctrl+Z', icon: <Undo2 size={13} color={ICON_ACCENT.muted} strokeWidth={1.8} /> },
+        { action: 'redo',  label: t(language, 'edit.redo'),  shortcut: 'Ctrl+R', icon: <Redo2 size={13} color={ICON_ACCENT.muted} strokeWidth={1.8} /> },
         { action: 'separator', label: '' },
-        { action: 'copy', label: t(language, 'edit.copy'), shortcut: 'Ctrl+C' },
-        { action: 'paste', label: t(language, 'edit.paste'), shortcut: 'Ctrl+V' },
+        { action: 'copy',  label: t(language, 'edit.copy'),  shortcut: 'Ctrl+C', icon: <Copy size={13} color={ICON_ACCENT.blue} strokeWidth={1.8} /> },
+        { action: 'paste', label: t(language, 'edit.paste'), shortcut: 'Ctrl+V', icon: <ClipboardPaste size={13} color={ICON_ACCENT.blue} strokeWidth={1.8} /> },
       ];
     case 'network':
       return [
-        { action: 'wifi', label: `${t(language, 'network.wifi')} ${wifiOn ? t(language, 'network.on') : t(language, 'network.off')}` },
-        { action: 'bluetooth', label: `${t(language, 'network.bluetooth')} ${bluetoothOn ? t(language, 'network.on') : t(language, 'network.off')}` },
+        { action: 'wifi',      label: `Wi-Fi — ${wifiOn ? 'On' : 'Off'}`,           icon: wifiOn ? <Wifi size={13} color={ICON_ACCENT.green} strokeWidth={1.8} /> : <WifiOff size={13} color={ICON_ACCENT.red} strokeWidth={1.8} /> },
+        { action: 'bluetooth', label: `Bluetooth — ${bluetoothOn ? 'On' : 'Off'}`,  icon: <Bluetooth size={13} color={bluetoothOn ? ICON_ACCENT.blue : ICON_ACCENT.red} strokeWidth={1.8} /> },
       ];
     case 'storage':
       return [
-        { action: 'open-storage-menu', label: '☁ Open Storage Menu...', shortcut: '' },
+        { action: 'open-storage-menu', label: 'Open Storage Menu…', icon: <Cloud size={13} color={ICON_ACCENT.blue} strokeWidth={1.8} /> },
       ];
     case 'settings':
       return [
-        { action: 'opensettings', label: '⚙ Open Settings Panel...', shortcut: '' },
+        { action: 'opensettings', label: 'Open Settings Panel…', icon: <Settings size={13} color={ICON_ACCENT.muted} strokeWidth={1.8} /> },
       ];
     default:
       return [];
@@ -85,21 +106,23 @@ export default function MenuBar({
     return () => document.removeEventListener('mousedown', handler);
   }, [mouseActive]);
 
-  // Determine which state to show — mouse takes priority when active
   const activeMenuIdx = mouseActive ? hoverMenuIdx : (visible ? menuIndex : null);
   const activeSubOpen = mouseActive ? (hoverMenuIdx !== null) : (visible && submenuOpen);
-  const activeSubIdx = mouseActive ? (hoverSubIdx ?? 0) : submenuIndex;
+  const activeSubIdx  = mouseActive ? (hoverSubIdx ?? 0) : submenuIndex;
 
   const shortName = filename ? filename.split('/').pop() || filename : t(language, 'status.untitled');
+
+  const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
 
   return (
     <div
       ref={barRef}
       style={{
         backgroundColor: 'var(--terminal-bg)',
-        borderBottom: '1px solid var(--terminal-text)',
-        padding: '6px 16px',
-        fontSize: '15px',
+        borderBottom: '1px solid var(--terminal-border)',
+        padding: '4px 14px',
+        fontSize: '12px',
+        fontFamily: uiFont,
         color: 'var(--terminal-text)',
         position: 'relative',
         zIndex: 200,
@@ -108,26 +131,29 @@ export default function MenuBar({
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
+        letterSpacing: '0.01em',
       }}
     >
-      <div style={{ display: 'flex', gap: '4px' }}>
+      {/* Left — menu items */}
+      <div style={{ display: 'flex', gap: '2px' }}>
         {MENUS.map((menu, i) => {
           const isFocused = i === activeMenuIdx;
           const items = getSubmenuItems(menu, language, wifiOn, bluetoothOn);
-          // Filter out separators for keyboard navigation indexing
-          const actionItems = items.filter(item => item.action !== 'separator');
 
           return (
             <div
               key={menu}
               style={{
-                padding: '4px 10px',
+                padding: '4px 9px',
                 position: 'relative',
                 cursor: 'pointer',
-                background: isFocused ? 'var(--terminal-text)' : 'transparent',
-                color: isFocused ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-                textShadow: isFocused ? 'none' : '0 0 5px var(--terminal-glow)',
-                transition: 'background 0.1s, color 0.1s',
+                borderRadius: '4px',
+                background: isFocused ? 'var(--terminal-surface)' : 'transparent',
+                color: isFocused ? 'var(--terminal-accent)' : 'var(--terminal-text)',
+                fontWeight: isFocused ? '500' : '400',
+                opacity: isFocused ? 1 : 0.7,
+                transition: 'background 0.12s, color 0.12s, opacity 0.12s',
+                borderLeft: isFocused ? '2px solid var(--terminal-accent)' : '2px solid transparent',
               }}
               onMouseEnter={() => {
                 if (mouseActive || hoverMenuIdx !== null) {
@@ -155,14 +181,15 @@ export default function MenuBar({
                 <div
                   style={{
                     position: 'absolute',
-                    top: '100%',
+                    top: 'calc(100% + 4px)',
                     left: 0,
                     background: 'var(--terminal-bg)',
-                    border: '1px solid var(--terminal-text)',
-                    minWidth: '260px',
+                    border: '1px solid var(--terminal-border)',
+                    minWidth: '270px',
                     zIndex: 300,
-                    marginTop: '2px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                    borderRadius: '6px',
+                    overflow: 'hidden',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
                   }}
                 >
                   {items.map((item, j) => {
@@ -170,16 +197,10 @@ export default function MenuBar({
                       return (
                         <div
                           key={`sep-${j}`}
-                          style={{
-                            height: '1px',
-                            background: 'var(--terminal-text)',
-                            opacity: 0.2,
-                            margin: '4px 8px',
-                          }}
+                          style={{ height: '1px', background: 'var(--terminal-border)', opacity: 0.6, margin: '3px 10px' }}
                         />
                       );
                     }
-                    // For hover tracking, use the visual index (j)
                     const isActive = j === activeSubIdx;
                     return (
                       <div
@@ -192,18 +213,38 @@ export default function MenuBar({
                           setMouseActive(false);
                         }}
                         style={{
-                          padding: '8px 16px',
+                          padding: '7px 14px',
                           cursor: 'pointer',
-                          background: isActive ? 'var(--terminal-text)' : 'transparent',
-                          color: isActive ? 'var(--terminal-bg)' : 'var(--terminal-text)',
+                          background: isActive ? 'var(--terminal-surface)' : 'transparent',
+                          color: 'var(--terminal-text)',
                           display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
                           justifyContent: 'space-between',
-                          transition: 'background 0.05s, color 0.05s',
+                          transition: 'background 0.08s',
+                          borderLeft: isActive ? '2px solid var(--terminal-accent)' : '2px solid transparent',
                         }}
                       >
-                        <span>{item.label}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '9px', flex: 1 }}>
+                          {item.icon && (
+                            <span style={{ display: 'flex', alignItems: 'center', width: '16px', justifyContent: 'center', flexShrink: 0 }}>
+                              {item.icon}
+                            </span>
+                          )}
+                          <span style={{ opacity: isActive ? 1 : 0.85, fontSize: '12px', fontFamily: uiFont }}>
+                            {item.label}
+                          </span>
+                        </span>
                         {item.shortcut && (
-                          <span style={{ opacity: 0.5, marginLeft: '20px', fontSize: '13px' }}>{item.shortcut}</span>
+                          <span style={{
+                            opacity: 0.35,
+                            fontSize: '10px',
+                            fontFamily: uiFont,
+                            letterSpacing: '0.03em',
+                            flexShrink: 0,
+                          }}>
+                            {item.shortcut}
+                          </span>
                         )}
                       </div>
                     );
@@ -215,24 +256,30 @@ export default function MenuBar({
         })}
       </div>
 
-      {/* Filename display - center */}
+      {/* Centre — filename */}
       <div
         style={{
           position: 'absolute',
           left: '50%',
           transform: 'translateX(-50%)',
-          fontSize: '15px',
-          fontFamily: "'Courier Prime', 'Courier New', monospace",
-          textShadow: '0 0 5px var(--terminal-glow)',
+          fontSize: '12px',
+          fontFamily: uiFont,
+          fontWeight: '500',
+          opacity: 0.55,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
-          maxWidth: '400px',
+          maxWidth: '320px',
           pointerEvents: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          letterSpacing: '0.02em',
         }}
         title={shortName}
       >
-        📄 {shortName}
+        <FileText size={11} strokeWidth={1.8} style={{ flexShrink: 0, opacity: 0.7 }} />
+        {shortName}
       </div>
     </div>
   );
