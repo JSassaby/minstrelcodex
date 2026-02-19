@@ -50,9 +50,10 @@ interface ConnectedProviders {
   apple: boolean;
 }
 
-type SettingsTab = 'colors' | 'language' | 'security' | 'storage' | 'system';
+type SettingsTab = 'appearance' | 'colors' | 'language' | 'security' | 'storage' | 'system';
 
 const TABS: { id: SettingsTab; label: string }[] = [
+  { id: 'appearance', label: '🖥 Theme' },
   { id: 'colors', label: '🎨 Colours' },
   { id: 'language', label: '🌐 Language' },
   { id: 'security', label: '🔒 Security' },
@@ -105,6 +106,7 @@ export default function SettingsPanel({
   // Get the number of focusable items in the current tab
   const getItemCount = useCallback((): number => {
     switch (activeTab) {
+      case 'appearance': return 3;
       case 'colors': return TEXT_PRESETS.length + BG_PRESETS.length + COLOR_COMBOS.length + 2;
       case 'language': return 3;
       case 'security': return 1;
@@ -156,6 +158,11 @@ export default function SettingsPanel({
 
   const handleEnter = () => {
     switch (activeTab) {
+      case 'appearance': {
+        const modes: ThemeMode[] = ['terminal', 'modern', 'typewriter'];
+        if (focusedItemIdx < modes.length) onSwitchTheme(modes[focusedItemIdx]);
+        break;
+      }
       case 'colors': {
         const textEnd = TEXT_PRESETS.length;
         const bgEnd = textEnd + BG_PRESETS.length;
@@ -312,6 +319,63 @@ export default function SettingsPanel({
 
       {/* Content */}
       <div style={{ flex: 1, overflow: 'auto', padding: '20px' }}>
+
+        {/* APPEARANCE TAB */}
+        {activeTab === 'appearance' && (
+          <div>
+            <div style={{ fontSize: '16px', marginBottom: '20px', fontWeight: 'bold' }}>🖥 Visual Theme</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+              {(['terminal', 'modern', 'typewriter'] as ThemeMode[]).map((mode, i) => {
+                const themeDef = THEMES[mode];
+                const isActive = themeMode === mode;
+                const isFocused = focusedItemIdx === i;
+                return (
+                  <div
+                    key={mode}
+                    onClick={() => { onSwitchTheme(mode); setFocusedItemIdx(i); }}
+                    style={{
+                      cursor: 'pointer',
+                      border: isActive ? '3px solid var(--terminal-accent)' : isFocused ? '2px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      transition: 'all 0.2s',
+                      boxShadow: isActive ? '0 4px 16px var(--terminal-glow)' : 'none',
+                    }}
+                  >
+                    <div style={{
+                      background: themeDef.preview.bg,
+                      color: themeDef.preview.fg,
+                      padding: '20px 16px',
+                      fontFamily: themeDef.fonts.body,
+                      fontSize: '15px',
+                      lineHeight: 1.55,
+                      minHeight: '80px',
+                      textShadow: themeDef.effects.textGlow ? `0 0 8px ${themeDef.colors.glow}` : 'none',
+                    }}>
+                      <div style={{ fontWeight: 'bold' }}>{themeDef.preview.sampleText}</div>
+                      <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '4px' }}>jumps over the lazy dog.</div>
+                    </div>
+                    <div style={{
+                      padding: '10px 16px',
+                      background: isActive ? 'var(--terminal-accent)' : 'transparent',
+                      color: isActive ? 'var(--terminal-bg)' : 'var(--terminal-text)',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      fontSize: '13px', fontWeight: '600',
+                      fontFamily: 'var(--font-ui)',
+                    }}>
+                      <span>{themeDef.label}</span>
+                      {isActive && <span>✓</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ marginTop: '16px', fontSize: '12px', opacity: 0.5, lineHeight: 1.6, fontFamily: 'var(--font-ui)' }}>
+              Theme changes take effect immediately. Fine-tune colours in the Colours tab.
+            </div>
+          </div>
+        )}
+
         {/* COLOURS TAB */}
         {activeTab === 'colors' && (
           <div>
