@@ -1,5 +1,46 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { ChevronRight, ChevronDown } from 'lucide-react';
 import type { FileNode, DocumentData } from '@/lib/types';
+
+
+// ── Graphic folder icon (yellow) ──────────────────────────────────────────────
+function FolderIcon({ open = false, isDeleted = false, size = 16 }: { open?: boolean; isDeleted?: boolean; size?: number }) {
+  const color = isDeleted ? '#e05c5c' : '#f5c542';
+  const shadow = isDeleted ? 'drop-shadow(0 0 3px rgba(224,92,92,0.6))' : 'drop-shadow(0 0 4px rgba(245,197,66,0.5))';
+  const s = size;
+  return (
+    <svg width={s} height={s} viewBox="0 0 20 16" fill="none" style={{ flexShrink: 0, filter: shadow }}>
+      {/* folder back */}
+      <rect x="0" y="3" width="20" height="13" rx="2" fill={color} opacity="0.25" />
+      {/* tab */}
+      <path d={`M0 5 Q0 3 2 3 L${open ? 7 : 6} 3 Q${open ? 8.5 : 7.5} 3 ${open ? 9 : 8} 1.5 L${open ? 10 : 9} 0 Q${open ? 10.5 : 9.5} -0.2 11 0 L18 0 Q20 0 20 2 L20 5 Z`} fill={color} />
+      {/* folder body */}
+      <rect x="0" y="4.5" width="20" height="11.5" rx="2" fill={color} />
+      {/* highlight line */}
+      <rect x="2" y="6.5" width="16" height="1.2" rx="0.6" fill="white" opacity="0.18" />
+    </svg>
+  );
+}
+
+// ── Graphic file/doc icon ─────────────────────────────────────────────────────
+function FileIcon({ isDeleted = false, focused = false, size = 16 }: { isDeleted?: boolean; focused?: boolean; size?: number }) {
+  const color = isDeleted ? (focused ? '#000' : '#e05c5c') : (focused ? '#000' : 'var(--terminal-text)');
+  const accent = isDeleted ? '#e05c5c' : 'var(--terminal-text)';
+  const s = size;
+  return (
+    <svg width={s} height={Math.round(s * 1.2)} viewBox="0 0 16 20" fill="none" style={{ flexShrink: 0, opacity: isDeleted && !focused ? 0.6 : 1 }}>
+      {/* page body */}
+      <rect x="0" y="0" width="13" height="18" rx="2" fill={color} opacity={focused ? 0.9 : 0.12} stroke={accent} strokeWidth="1.2" />
+      {/* dog-ear fold */}
+      <path d="M9 0 L13 4 L9 4 Z" fill={accent} opacity={focused ? 0.5 : 0.4} />
+      {/* lines */}
+      <rect x="2" y="6.5" width="7" height="1" rx="0.5" fill={accent} opacity={focused ? 0.6 : 0.5} />
+      <rect x="2" y="9" width="9" height="1" rx="0.5" fill={accent} opacity={focused ? 0.6 : 0.4} />
+      <rect x="2" y="11.5" width="6" height="1" rx="0.5" fill={accent} opacity={focused ? 0.6 : 0.35} />
+    </svg>
+  );
+}
+
 
 export interface FileBrowserProps {
   visible: boolean;
@@ -321,8 +362,8 @@ export default function FileBrowser({
           flexShrink: 0,
         }}
       >
-        <span style={{ fontSize: '13px', fontWeight: 'bold', textShadow: '0 0 10px var(--terminal-glow)' }}>
-          📂 FILES
+        <span style={{ fontSize: '13px', fontWeight: 'bold', textShadow: '0 0 10px var(--terminal-glow)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <FolderIcon open size={16} /> FILES
         </span>
         <span
           onClick={onClose}
@@ -520,23 +561,32 @@ export default function FileBrowser({
                 }}
               >
                 {isFolder && (
-                  <span style={{ fontSize: '9px', userSelect: 'none', width: '10px', textAlign: 'center' }}>
-                    {item.collapsed ? '▶' : '▼'}
+                  <span style={{ display: 'flex', alignItems: 'center', width: '10px', justifyContent: 'center', flexShrink: 0 }}>
+                    {item.collapsed
+                      ? <ChevronRight size={10} style={{ opacity: 0.6 }} />
+                      : <ChevronDown size={10} style={{ opacity: 0.6 }} />}
                   </span>
                 )}
-                {!isFolder && <span style={{ width: '10px' }} />}
-                <span style={{ fontSize: '12px' }}>{isFolder ? '📁' : '📄'}</span>
+                {!isFolder && <span style={{ width: '10px', flexShrink: 0 }} />}
+
+                {/* Icon */}
+                {isFolder
+                  ? <FolderIcon open={!item.collapsed} isDeleted={item.name === 'Deleted'} size={16} />
+                  : <FileIcon isDeleted={isDeleted} focused={isFocused} size={16} />
+                }
+
                 <span style={{
-                  fontWeight: isFolder ? 'bold' : 'normal',
+                  fontWeight: isFolder ? '600' : 'normal',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                   flex: 1,
+                  letterSpacing: isFolder ? '0.02em' : 'normal',
                 }}>
                   {displayName}
                 </span>
                 {!isFolder && doc && (
-                  <span style={{ fontSize: '10px', opacity: isFocused ? 0.7 : 0.4, whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: '10px', opacity: isFocused ? 0.7 : 0.35, whiteSpace: 'nowrap' }}>
                     {words}w
                   </span>
                 )}
