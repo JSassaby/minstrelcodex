@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { t } from '@/lib/languages';
-import { ModalButton } from './ModalShell';
 import { supabase } from '@/integrations/supabase/client';
 import { ThemeMode, THEMES } from '@/lib/themes';
 import type { AppColors, Language, PinConfig } from '@/lib/types';
@@ -52,14 +51,16 @@ interface ConnectedProviders {
 
 type SettingsTab = 'appearance' | 'colors' | 'language' | 'security' | 'storage' | 'system';
 
-const TABS: { id: SettingsTab; label: string }[] = [
-  { id: 'appearance', label: '🖥 Theme' },
-  { id: 'colors', label: '🎨 Colours' },
-  { id: 'language', label: '🌐 Language' },
-  { id: 'security', label: '🔒 Security' },
-  { id: 'storage', label: '💾 Storage' },
-  { id: 'system', label: '⚙ System' },
+const TABS: { id: SettingsTab; label: string; icon: string }[] = [
+  { id: 'appearance', label: 'Theme',    icon: '🖥' },
+  { id: 'colors',     label: 'Colours',  icon: '🎨' },
+  { id: 'language',   label: 'Language', icon: '🌐' },
+  { id: 'security',   label: 'Security', icon: '🔒' },
+  { id: 'storage',    label: 'Storage',  icon: '💾' },
+  { id: 'system',     label: 'System',   icon: '⚙' },
 ];
+
+const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
 
 export default function SettingsPanel({
   visible, language, colors, wifiOn, bluetoothOn, pinConfig, themeMode,
@@ -77,7 +78,6 @@ export default function SettingsPanel({
 
   const activeTab = TABS[activeTabIdx].id;
 
-  // Track connected providers
   const [connectedProviders, setConnectedProviders] = useState<ConnectedProviders>({ google: false, apple: false });
 
   useEffect(() => {
@@ -91,7 +91,6 @@ export default function SettingsPanel({
           google: provider === 'google' || prev.google,
           apple: provider === 'apple' || prev.apple,
         }));
-        // Also check provider_token for Google Drive access
         if (session.provider_token) {
           setConnectedProviders(prev => ({ ...prev, google: true }));
         }
@@ -100,10 +99,8 @@ export default function SettingsPanel({
     checkProviders();
   }, [visible]);
 
-  // Reset focused item when tab changes
   useEffect(() => { setFocusedItemIdx(0); }, [activeTabIdx]);
 
-  // Get the number of focusable items in the current tab
   const getItemCount = useCallback((): number => {
     switch (activeTab) {
       case 'appearance': return 3;
@@ -116,30 +113,17 @@ export default function SettingsPanel({
     }
   }, [activeTab]);
 
-  // Keyboard handler
   useEffect(() => {
     if (!visible) return;
-
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-        e.preventDefault();
-        return;
-      }
-
-      // Tab/Shift+Tab to switch tabs
+      if (e.key === 'Escape') { onClose(); e.preventDefault(); return; }
       if (e.key === 'Tab') {
         e.preventDefault();
-        if (e.shiftKey) {
-          setActiveTabIdx(prev => (prev - 1 + TABS.length) % TABS.length);
-        } else {
-          setActiveTabIdx(prev => (prev + 1) % TABS.length);
-        }
+        if (e.shiftKey) setActiveTabIdx(prev => (prev - 1 + TABS.length) % TABS.length);
+        else setActiveTabIdx(prev => (prev + 1) % TABS.length);
         return;
       }
-
       const itemCount = getItemCount();
-
       if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
         e.preventDefault();
         setFocusedItemIdx(prev => (prev + 1) % itemCount);
@@ -151,7 +135,6 @@ export default function SettingsPanel({
         handleEnter();
       }
     };
-
     window.addEventListener('keydown', handler, true);
     return () => window.removeEventListener('keydown', handler, true);
   }, [visible, activeTab, activeTabIdx, focusedItemIdx, textColorInput, bgColorInput, getItemCount]);
@@ -169,32 +152,21 @@ export default function SettingsPanel({
         const comboEnd = bgEnd + COLOR_COMBOS.length;
         if (focusedItemIdx < textEnd) {
           const color = TEXT_PRESETS[focusedItemIdx];
-          setTextColorInput(color.toUpperCase());
-          setSelectedTextIdx(focusedItemIdx);
-          setSelectedComboIdx(-1);
+          setTextColorInput(color.toUpperCase()); setSelectedTextIdx(focusedItemIdx); setSelectedComboIdx(-1);
         } else if (focusedItemIdx < bgEnd) {
           const i = focusedItemIdx - textEnd;
-          const color = BG_PRESETS[i];
-          setBgColorInput(color.toUpperCase());
-          setSelectedBgIdx(i);
-          setSelectedComboIdx(-1);
+          setBgColorInput(BG_PRESETS[i].toUpperCase()); setSelectedBgIdx(i); setSelectedComboIdx(-1);
         } else if (focusedItemIdx < comboEnd) {
           const i = focusedItemIdx - bgEnd;
           const combo = COLOR_COMBOS[i];
-          setTextColorInput(combo.text.toUpperCase());
-          setBgColorInput(combo.bg.toUpperCase());
-          setSelectedComboIdx(i);
-          setSelectedTextIdx(-1);
-          setSelectedBgIdx(-1);
+          setTextColorInput(combo.text.toUpperCase()); setBgColorInput(combo.bg.toUpperCase());
+          setSelectedComboIdx(i); setSelectedTextIdx(-1); setSelectedBgIdx(-1);
         } else if (focusedItemIdx === comboEnd) {
           handleApplyColors();
         } else {
           onResetColors();
-          setTextColorInput('#33FF33');
-          setBgColorInput('#000000');
-          setSelectedTextIdx(-1);
-          setSelectedBgIdx(-1);
-          setSelectedComboIdx(-1);
+          setTextColorInput('#33FF33'); setBgColorInput('#000000');
+          setSelectedTextIdx(-1); setSelectedBgIdx(-1); setSelectedComboIdx(-1);
         }
         break;
       }
@@ -203,9 +175,7 @@ export default function SettingsPanel({
         if (focusedItemIdx < langs.length) onSetLanguage(langs[focusedItemIdx]);
         break;
       }
-      case 'security':
-        onOpenPinSetup();
-        break;
+      case 'security': onOpenPinSetup(); break;
       case 'storage': {
         const actions = ['local', 'usb', 'dropbox', 'gdrive', 'icloud'];
         if (focusedItemIdx < actions.length) onAction(actions[focusedItemIdx]);
@@ -228,23 +198,33 @@ export default function SettingsPanel({
 
   if (!visible) return null;
 
-  const itemStyle = (focused: boolean, selected?: boolean): React.CSSProperties => ({
+  // ── Shared card-style item ────────────────────────────────────────────────
+  const rowCard = (focused: boolean, selected?: boolean, danger?: boolean): React.CSSProperties => ({
     padding: '12px 16px',
-    margin: '4px 0',
-    border: selected ? '2px solid var(--terminal-text)' : '1px solid var(--terminal-text)',
+    marginBottom: '8px',
+    borderRadius: '10px',
+    border: selected
+      ? '2px solid var(--terminal-accent)'
+      : focused
+        ? '2px solid var(--terminal-accent)'
+        : '1px solid var(--terminal-border)',
     cursor: 'pointer',
-    background: focused ? 'var(--terminal-text)' : 'transparent',
-    color: focused ? 'var(--terminal-bg)' : 'var(--terminal-text)',
+    background: focused
+      ? 'var(--terminal-accent)'
+      : selected
+        ? 'var(--terminal-surface)'
+        : 'var(--terminal-surface)',
+    color: focused ? 'var(--terminal-bg)' : danger ? '#e05c5c' : 'var(--terminal-text)',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    transition: 'background 0.05s, color 0.05s',
-    fontWeight: selected ? 'bold' : 'normal',
+    transition: 'all 0.15s',
+    fontFamily: uiFont,
+    fontSize: '14px',
+    fontWeight: selected ? '600' : '400',
+    boxShadow: focused ? '0 2px 12px var(--terminal-glow)' : '0 1px 3px rgba(0,0,0,0.06)',
   });
 
-  const sectionStyle: React.CSSProperties = { padding: '16px', marginBottom: '12px' };
-
-  // Helper: is a color swatch focused?
   const isTextSwatchFocused = (i: number) => activeTab === 'colors' && focusedItemIdx === i;
   const isBgSwatchFocused = (i: number) => activeTab === 'colors' && focusedItemIdx === TEXT_PRESETS.length + i;
   const isComboFocused = (i: number) => activeTab === 'colors' && focusedItemIdx === TEXT_PRESETS.length + BG_PRESETS.length + i;
@@ -259,72 +239,107 @@ export default function SettingsPanel({
         zIndex: 500,
         background: 'var(--terminal-bg)',
         color: 'var(--terminal-text)',
-        fontFamily: "'Courier Prime', 'Courier New', monospace",
+        fontFamily: uiFont,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
       }}
     >
-      {/* Header */}
+      {/* ── Header ─────────────────────────────────────────────────────── */}
       <div style={{
-        padding: '12px 20px',
-        borderBottom: '2px solid var(--terminal-text)',
+        padding: '14px 24px',
+        borderBottom: '1px solid var(--terminal-border)',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         flexShrink: 0,
+        background: 'var(--terminal-surface)',
       }}>
-        <div style={{ fontSize: '20px', fontWeight: 'bold', textShadow: '0 0 10px var(--terminal-glow)' }}>
-          ⚙ SETTINGS
+        <div style={{
+          fontSize: '18px',
+          fontWeight: '700',
+          fontFamily: uiFont,
+          letterSpacing: '-0.01em',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+        }}>
+          <span style={{ fontSize: '14px', opacity: 0.6 }}>⚙</span>
+          Settings
         </div>
-        <div
+        <button
           onClick={onClose}
           style={{
             cursor: 'pointer',
-            padding: '4px 12px',
-            border: '1px solid var(--terminal-text)',
-            fontSize: '14px',
+            padding: '6px 14px',
+            borderRadius: '8px',
+            border: '1px solid var(--terminal-border)',
+            background: 'transparent',
+            color: 'var(--terminal-text)',
+            fontSize: '13px',
+            fontFamily: uiFont,
+            fontWeight: '500',
+            opacity: 0.7,
+            transition: 'opacity 0.1s, background 0.1s',
           }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; (e.currentTarget as HTMLElement).style.background = 'var(--terminal-border)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.7'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
         >
-          ESC Close
-        </div>
+          ESC  ✕
+        </button>
       </div>
 
-      {/* Tab bar */}
+      {/* ── Tab bar ────────────────────────────────────────────────────── */}
       <div style={{
         display: 'flex',
-        borderBottom: '1px solid var(--terminal-text)',
+        gap: '4px',
+        padding: '10px 24px',
+        borderBottom: '1px solid var(--terminal-border)',
         flexShrink: 0,
         overflowX: 'auto',
+        background: 'var(--terminal-surface)',
       }}>
-        {TABS.map((tab, i) => (
-          <div
-            key={tab.id}
-            onClick={() => setActiveTabIdx(i)}
-            style={{
-              padding: '10px 16px',
-              cursor: 'pointer',
-              background: i === activeTabIdx ? 'var(--terminal-text)' : 'transparent',
-              color: i === activeTabIdx ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-              borderRight: '1px solid var(--terminal-text)',
-              fontSize: '14px',
-              whiteSpace: 'nowrap',
-              transition: 'background 0.1s',
-            }}
-          >
-            {tab.label}
-          </div>
-        ))}
+        {TABS.map((tab, i) => {
+          const active = i === activeTabIdx;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTabIdx(i)}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '8px',
+                border: active ? '1.5px solid var(--terminal-accent)' : '1px solid transparent',
+                background: active ? 'var(--terminal-accent)' : 'transparent',
+                color: active ? 'var(--terminal-bg)' : 'var(--terminal-text)',
+                fontSize: '13px',
+                fontFamily: uiFont,
+                fontWeight: active ? '600' : '400',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.15s',
+                opacity: active ? 1 : 0.65,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+              onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.opacity = '1'; (e.currentTarget as HTMLElement).style.background = 'var(--terminal-border)'; } }}
+              onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.opacity = '0.65'; (e.currentTarget as HTMLElement).style.background = 'transparent'; } }}
+            >
+              <span style={{ fontSize: '12px' }}>{tab.icon}</span>
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Content */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '20px' }}>
+      {/* ── Content ────────────────────────────────────────────────────── */}
+      <div style={{ flex: 1, overflow: 'auto', padding: '24px', maxWidth: '800px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
 
-        {/* APPEARANCE TAB */}
+        {/* APPEARANCE */}
         {activeTab === 'appearance' && (
           <div>
-            <div style={{ fontSize: '16px', marginBottom: '20px', fontWeight: 'bold' }}>🖥 Visual Theme</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+            <div style={{ fontSize: '15px', marginBottom: '20px', fontWeight: '600', fontFamily: uiFont, opacity: 0.8 }}>Visual Theme</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: '16px' }}>
               {(['terminal', 'modern', 'typewriter'] as ThemeMode[]).map((mode, i) => {
                 const themeDef = THEMES[mode];
                 const isActive = themeMode === mode;
@@ -335,66 +350,72 @@ export default function SettingsPanel({
                     onClick={() => { onSwitchTheme(mode); setFocusedItemIdx(i); }}
                     style={{
                       cursor: 'pointer',
-                      border: isActive ? '3px solid var(--terminal-accent)' : isFocused ? '2px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
-                      borderRadius: '8px',
+                      border: isActive
+                        ? '2px solid var(--terminal-accent)'
+                        : isFocused
+                          ? '2px solid var(--terminal-accent)'
+                          : '1px solid var(--terminal-border)',
+                      borderRadius: '12px',
                       overflow: 'hidden',
                       transition: 'all 0.2s',
-                      boxShadow: isActive ? '0 4px 16px var(--terminal-glow)' : 'none',
+                      boxShadow: isActive ? '0 4px 20px var(--terminal-glow)' : '0 1px 4px rgba(0,0,0,0.08)',
                     }}
                   >
                     <div style={{
                       background: themeDef.preview.bg,
                       color: themeDef.preview.fg,
-                      padding: '20px 16px',
+                      padding: '20px 18px',
                       fontFamily: themeDef.fonts.body,
-                      fontSize: '15px',
-                      lineHeight: 1.55,
+                      fontSize: '14px',
+                      lineHeight: 1.6,
                       minHeight: '80px',
                       textShadow: themeDef.effects.textGlow ? `0 0 8px ${themeDef.colors.glow}` : 'none',
                     }}>
-                      <div style={{ fontWeight: 'bold' }}>{themeDef.preview.sampleText}</div>
-                      <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '4px' }}>jumps over the lazy dog.</div>
+                      <div style={{ fontWeight: '700' }}>{themeDef.preview.sampleText}</div>
+                      <div style={{ fontSize: '12px', opacity: 0.55, marginTop: '4px' }}>jumps over the lazy dog.</div>
                     </div>
                     <div style={{
-                      padding: '10px 16px',
-                      background: isActive ? 'var(--terminal-accent)' : 'transparent',
+                      padding: '10px 18px',
+                      background: isActive ? 'var(--terminal-accent)' : 'var(--terminal-surface)',
                       color: isActive ? 'var(--terminal-bg)' : 'var(--terminal-text)',
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                       fontSize: '13px', fontWeight: '600',
-                      fontFamily: 'var(--font-ui)',
+                      fontFamily: uiFont,
+                      borderTop: `1px solid var(--terminal-border)`,
                     }}>
                       <span>{themeDef.label}</span>
-                      {isActive && <span>✓</span>}
+                      {isActive && <span style={{ fontSize: '11px', opacity: 0.85 }}>✓ Active</span>}
                     </div>
                   </div>
                 );
               })}
             </div>
-            <div style={{ marginTop: '16px', fontSize: '12px', opacity: 0.5, lineHeight: 1.6, fontFamily: 'var(--font-ui)' }}>
-              Theme changes take effect immediately. Fine-tune colours in the Colours tab.
+            <div style={{ marginTop: '16px', fontSize: '12px', opacity: 0.45, lineHeight: 1.6, fontFamily: uiFont }}>
+              Theme changes apply instantly. Fine-tune accent colours in the Colours tab.
             </div>
           </div>
         )}
 
-        {/* COLOURS TAB */}
+        {/* COLOURS */}
         {activeTab === 'colors' && (
           <div>
             {/* Live Preview */}
             <div style={{
-              border: '2px solid var(--terminal-text)', padding: '16px', marginBottom: '20px',
+              border: '1px solid var(--terminal-border)', padding: '18px', marginBottom: '24px',
               background: bgColorInput, color: textColorInput, textAlign: 'center',
-              fontFamily: "'Courier Prime', monospace",
+              fontFamily: "'Courier Prime', monospace", borderRadius: '12px',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
             }}>
-              <div style={{ fontSize: '11px', opacity: 0.6, marginBottom: '4px', color: 'var(--terminal-text)' }}>LIVE PREVIEW</div>
-              <div style={{ fontSize: '24px', fontWeight: 'bold' }}>The quick brown fox</div>
-              <div style={{ fontSize: '14px', marginTop: '4px' }}>jumps over the lazy dog</div>
+              <div style={{ fontSize: '11px', opacity: 0.5, marginBottom: '6px', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: uiFont }}>Live Preview</div>
+              <div style={{ fontSize: '22px', fontWeight: 'bold' }}>The quick brown fox</div>
+              <div style={{ fontSize: '14px', marginTop: '4px', opacity: 0.75 }}>jumps over the lazy dog</div>
             </div>
 
             {/* Text Color */}
-            <div style={sectionStyle}>
-              <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '8px' }}>{t(language, 'modals.textColor')} (↑↓ Navigate • Enter Select)</div>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
-                <div style={{ width: '32px', height: '32px', border: '2px solid var(--terminal-text)', background: textColorInput, flexShrink: 0 }} />
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ fontSize: '12px', opacity: 0.55, marginBottom: '10px', fontFamily: uiFont, fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Text Colour</div>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '12px' }}>
+                <div style={{ width: '30px', height: '30px', borderRadius: '6px', border: '1px solid var(--terminal-border)', background: textColorInput, flexShrink: 0 }} />
                 <input
                   value={textColorInput}
                   onChange={e => { setTextColorInput(e.target.value.toUpperCase()); setSelectedTextIdx(-1); setSelectedComboIdx(-1); }}
@@ -402,9 +423,11 @@ export default function SettingsPanel({
                   placeholder="#33FF33"
                   tabIndex={-1}
                   style={{
-                    flex: 1, maxWidth: '200px', background: 'var(--terminal-bg)', border: '1px solid var(--terminal-text)',
-                    color: 'var(--terminal-text)', padding: '8px',
-                    fontFamily: "'Courier Prime', monospace", fontSize: '14px', textTransform: 'uppercase', outline: 'none',
+                    flex: 1, maxWidth: '160px', background: 'var(--terminal-surface)',
+                    border: '1px solid var(--terminal-border)', borderRadius: '8px',
+                    color: 'var(--terminal-text)', padding: '7px 12px',
+                    fontFamily: "'Courier Prime', monospace", fontSize: '13px',
+                    textTransform: 'uppercase', outline: 'none',
                   }}
                 />
               </div>
@@ -416,15 +439,15 @@ export default function SettingsPanel({
                       key={color}
                       onClick={() => { setTextColorInput(color.toUpperCase()); setSelectedTextIdx(i); setSelectedComboIdx(-1); setFocusedItemIdx(i); }}
                       style={{
-                        width: '32px', height: '32px', background: color,
-                        border: (focused || selectedTextIdx === i) ? '3px solid var(--terminal-text)' : '2px solid var(--terminal-text)',
-                        cursor: 'pointer', opacity: (focused || selectedTextIdx === i) ? 1 : 0.6, position: 'relative',
-                        outline: focused ? '2px solid var(--terminal-glow)' : 'none',
-                        outlineOffset: '2px',
+                        width: '30px', height: '30px', borderRadius: '6px', background: color,
+                        border: (focused || selectedTextIdx === i) ? '3px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
+                        cursor: 'pointer', position: 'relative',
+                        boxShadow: focused ? '0 0 0 2px var(--terminal-glow)' : 'none',
+                        transition: 'all 0.1s',
                       }}
                     >
                       {selectedTextIdx === i && (
-                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 'bold', color: color === '#ffffff' || color === '#ffff00' || color === '#e6e6e6' ? '#000' : '#fff' }}>✓</div>
+                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', color: color === '#ffffff' || color === '#ffff00' || color === '#e6e6e6' ? '#000' : '#fff' }}>✓</div>
                       )}
                     </div>
                   );
@@ -433,10 +456,10 @@ export default function SettingsPanel({
             </div>
 
             {/* BG Color */}
-            <div style={sectionStyle}>
-              <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '8px' }}>{t(language, 'modals.bgColor')}</div>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
-                <div style={{ width: '32px', height: '32px', border: '2px solid var(--terminal-text)', background: bgColorInput, flexShrink: 0 }} />
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ fontSize: '12px', opacity: 0.55, marginBottom: '10px', fontFamily: uiFont, fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Background Colour</div>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '12px' }}>
+                <div style={{ width: '30px', height: '30px', borderRadius: '6px', border: '1px solid var(--terminal-border)', background: bgColorInput, flexShrink: 0 }} />
                 <input
                   value={bgColorInput}
                   onChange={e => { setBgColorInput(e.target.value.toUpperCase()); setSelectedBgIdx(-1); setSelectedComboIdx(-1); }}
@@ -444,9 +467,11 @@ export default function SettingsPanel({
                   placeholder="#000000"
                   tabIndex={-1}
                   style={{
-                    flex: 1, maxWidth: '200px', background: 'var(--terminal-bg)', border: '1px solid var(--terminal-text)',
-                    color: 'var(--terminal-text)', padding: '8px',
-                    fontFamily: "'Courier Prime', monospace", fontSize: '14px', textTransform: 'uppercase', outline: 'none',
+                    flex: 1, maxWidth: '160px', background: 'var(--terminal-surface)',
+                    border: '1px solid var(--terminal-border)', borderRadius: '8px',
+                    color: 'var(--terminal-text)', padding: '7px 12px',
+                    fontFamily: "'Courier Prime', monospace", fontSize: '13px',
+                    textTransform: 'uppercase', outline: 'none',
                   }}
                 />
               </div>
@@ -458,15 +483,15 @@ export default function SettingsPanel({
                       key={color}
                       onClick={() => { setBgColorInput(color.toUpperCase()); setSelectedBgIdx(i); setSelectedComboIdx(-1); setFocusedItemIdx(TEXT_PRESETS.length + i); }}
                       style={{
-                        width: '32px', height: '32px', background: color,
-                        border: (focused || selectedBgIdx === i) ? '3px solid var(--terminal-text)' : `2px solid ${color === '#ffffff' || color === '#f5f5f5' ? '#666' : 'var(--terminal-text)'}`,
-                        cursor: 'pointer', opacity: (focused || selectedBgIdx === i) ? 1 : 0.6, position: 'relative',
-                        outline: focused ? '2px solid var(--terminal-glow)' : 'none',
-                        outlineOffset: '2px',
+                        width: '30px', height: '30px', borderRadius: '6px', background: color,
+                        border: (focused || selectedBgIdx === i) ? `3px solid var(--terminal-accent)` : `1px solid ${color === '#ffffff' || color === '#f5f5f5' ? '#ccc' : 'var(--terminal-border)'}`,
+                        cursor: 'pointer', position: 'relative',
+                        boxShadow: focused ? '0 0 0 2px var(--terminal-glow)' : 'none',
+                        transition: 'all 0.1s',
                       }}
                     >
                       {selectedBgIdx === i && (
-                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 'bold', color: color === '#000000' || color === '#0a0a0a' || color === '#1a1a1a' ? '#fff' : '#000' }}>✓</div>
+                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', color: color === '#000000' || color === '#0a0a0a' || color === '#1a1a1a' ? '#fff' : '#000' }}>✓</div>
                       )}
                     </div>
                   );
@@ -475,40 +500,35 @@ export default function SettingsPanel({
             </div>
 
             {/* Combos */}
-            <div style={{ ...sectionStyle, borderTop: '1px solid var(--terminal-text)', paddingTop: '16px' }}>
-              <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '12px' }}>COLOUR COMBINATIONS (WCAG Compliant):</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
+            <div style={{ paddingTop: '20px', borderTop: '1px solid var(--terminal-border)', marginBottom: '20px' }}>
+              <div style={{ fontSize: '12px', opacity: 0.55, marginBottom: '14px', fontFamily: uiFont, fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Colour Combinations</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '10px' }}>
                 {COLOR_COMBOS.map((combo, i) => {
                   const focused = isComboFocused(i);
+                  const sel = selectedComboIdx === i;
                   return (
                     <div
                       key={combo.name}
                       onClick={() => {
-                        setTextColorInput(combo.text.toUpperCase());
-                        setBgColorInput(combo.bg.toUpperCase());
-                        setSelectedComboIdx(i);
-                        setSelectedTextIdx(-1);
-                        setSelectedBgIdx(-1);
+                        setTextColorInput(combo.text.toUpperCase()); setBgColorInput(combo.bg.toUpperCase());
+                        setSelectedComboIdx(i); setSelectedTextIdx(-1); setSelectedBgIdx(-1);
                         setFocusedItemIdx(TEXT_PRESETS.length + BG_PRESETS.length + i);
                       }}
                       style={{
-                        border: (focused || selectedComboIdx === i) ? '3px solid var(--terminal-text)' : '1px solid var(--terminal-text)',
-                        padding: (focused || selectedComboIdx === i) ? '6px' : '8px',
-                        cursor: 'pointer', textAlign: 'center',
-                        opacity: (focused || selectedComboIdx === i) ? 1 : 0.6, position: 'relative',
-                        outline: focused ? '2px solid var(--terminal-glow)' : 'none',
-                        outlineOffset: '2px',
+                        border: (focused || sel) ? '2px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
+                        borderRadius: '10px', overflow: 'hidden',
+                        cursor: 'pointer', position: 'relative',
+                        boxShadow: focused ? '0 0 0 2px var(--terminal-glow)' : '0 1px 3px rgba(0,0,0,0.06)',
+                        transition: 'all 0.1s',
                       }}
                     >
-                      {selectedComboIdx === i && (
-                        <div style={{ position: 'absolute', top: '2px', right: '4px', fontSize: '14px', color: 'var(--terminal-text)' }}>✓</div>
-                      )}
+                      {sel && <div style={{ position: 'absolute', top: '6px', right: '8px', fontSize: '11px', color: 'var(--terminal-accent)', fontWeight: 'bold' }}>✓</div>}
                       <div style={{
-                        background: combo.bg, color: combo.text, padding: '8px',
+                        background: combo.bg, color: combo.text, padding: '10px 10px 6px',
                         fontWeight: 'bold', fontSize: '20px',
-                        fontFamily: "'Courier Prime', monospace", marginBottom: '8px',
+                        fontFamily: "'Courier Prime', monospace",
                       }}>Aa</div>
-                      <div style={{ fontSize: '11px', opacity: 0.9 }}>{combo.name}</div>
+                      <div style={{ padding: '6px 10px', fontSize: '11px', fontFamily: uiFont, opacity: 0.8, background: 'var(--terminal-surface)', borderTop: '1px solid var(--terminal-border)' }}>{combo.name}</div>
                     </div>
                   );
                 })}
@@ -516,24 +536,42 @@ export default function SettingsPanel({
             </div>
 
             {/* Action buttons */}
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', padding: '16px 0' }}>
-              <ModalButton label={t(language, 'modals.apply')} focused={applyFocused} onClick={handleApplyColors} />
-              <ModalButton label={t(language, 'modals.reset')} focused={resetFocused} onClick={() => {
-                onResetColors();
-                setTextColorInput('#33FF33');
-                setBgColorInput('#000000');
-                setSelectedTextIdx(-1);
-                setSelectedBgIdx(-1);
-                setSelectedComboIdx(-1);
-              }} />
+            <div style={{ display: 'flex', gap: '10px', paddingBottom: '8px' }}>
+              <button
+                onClick={handleApplyColors}
+                style={{
+                  padding: '9px 20px', borderRadius: '8px',
+                  border: applyFocused ? '2px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
+                  background: applyFocused ? 'var(--terminal-accent)' : 'var(--terminal-surface)',
+                  color: applyFocused ? 'var(--terminal-bg)' : 'var(--terminal-text)',
+                  fontFamily: uiFont, fontSize: '13px', fontWeight: '600', cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                Apply Colours
+              </button>
+              <button
+                onClick={() => { onResetColors(); setTextColorInput('#33FF33'); setBgColorInput('#000000'); setSelectedTextIdx(-1); setSelectedBgIdx(-1); setSelectedComboIdx(-1); }}
+                style={{
+                  padding: '9px 20px', borderRadius: '8px',
+                  border: resetFocused ? '2px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
+                  background: resetFocused ? 'var(--terminal-accent)' : 'transparent',
+                  color: resetFocused ? 'var(--terminal-bg)' : 'var(--terminal-text)',
+                  fontFamily: uiFont, fontSize: '13px', fontWeight: '500', cursor: 'pointer',
+                  opacity: resetFocused ? 1 : 0.7,
+                  transition: 'all 0.15s',
+                }}
+              >
+                Reset
+              </button>
             </div>
           </div>
         )}
 
-        {/* LANGUAGE TAB */}
+        {/* LANGUAGE */}
         {activeTab === 'language' && (
           <div>
-            <div style={{ fontSize: '16px', marginBottom: '16px', fontWeight: 'bold' }}>
+            <div style={{ fontSize: '15px', marginBottom: '20px', fontWeight: '600', fontFamily: uiFont, opacity: 0.8 }}>
               {t(language, 'modals.languageTitle')}
             </div>
             {([
@@ -544,123 +582,86 @@ export default function SettingsPanel({
               <div
                 key={lang.code}
                 onClick={() => { onSetLanguage(lang.code); setFocusedItemIdx(i); }}
-                style={itemStyle(focusedItemIdx === i, language === lang.code)}
+                style={rowCard(focusedItemIdx === i, language === lang.code)}
               >
                 <span>{lang.label}</span>
-                {language === lang.code && <span>✓</span>}
+                {language === lang.code && <span style={{ fontSize: '12px', opacity: 0.7 }}>✓ Active</span>}
               </div>
             ))}
           </div>
         )}
 
-        {/* SECURITY TAB */}
+        {/* SECURITY */}
         {activeTab === 'security' && (
           <div>
-            <div style={{ fontSize: '16px', marginBottom: '16px', fontWeight: 'bold' }}>🔒 PIN Lock</div>
-            <div style={itemStyle(focusedItemIdx === 0)} onClick={onOpenPinSetup}>
+            <div style={{ fontSize: '15px', marginBottom: '20px', fontWeight: '600', fontFamily: uiFont, opacity: 0.8 }}>🔒 PIN Lock</div>
+            <div style={rowCard(focusedItemIdx === 0)} onClick={onOpenPinSetup}>
               <span>{pinConfig.enabled ? `Change PIN (${pinConfig.length}-digit enabled)` : 'Set Up PIN'}</span>
-              <span style={{ opacity: 0.5 }}>Enter</span>
+              <span style={{ fontSize: '12px', opacity: 0.45 }}>Enter →</span>
             </div>
           </div>
         )}
 
-        {/* STORAGE TAB */}
+        {/* STORAGE */}
         {activeTab === 'storage' && (
           <div>
-            <div style={{ fontSize: '16px', marginBottom: '16px', fontWeight: 'bold' }}>💾 Storage Providers</div>
+            <div style={{ fontSize: '15px', marginBottom: '20px', fontWeight: '600', fontFamily: uiFont, opacity: 0.8 }}>💾 Storage Providers</div>
 
-            {/* Local & USB */}
-            <div
-              onClick={() => { onAction('local'); setFocusedItemIdx(0); }}
-              style={itemStyle(focusedItemIdx === 0)}
-            >
+            <div onClick={() => { onAction('local'); setFocusedItemIdx(0); }} style={rowCard(focusedItemIdx === 0)}>
               <span>{t(language, 'storage.local')}</span>
-              <span style={{ fontSize: '11px', opacity: 0.6 }}>✓ ALWAYS AVAILABLE</span>
+              <span style={{ fontSize: '11px', opacity: 0.5, fontWeight: '600' }}>✓ Always Available</span>
             </div>
-            <div
-              onClick={() => { onAction('usb'); setFocusedItemIdx(1); }}
-              style={itemStyle(focusedItemIdx === 1)}
-            >
+            <div onClick={() => { onAction('usb'); setFocusedItemIdx(1); }} style={rowCard(focusedItemIdx === 1)}>
               <span>{t(language, 'storage.usb')}</span>
             </div>
 
-            {/* Cloud Providers with connection status */}
-            <div style={{ fontSize: '14px', fontWeight: 'bold', marginTop: '20px', marginBottom: '12px', borderTop: '1px solid var(--terminal-text)', paddingTop: '12px' }}>
-              ☁ CLOUD PROVIDERS
+            <div style={{ fontSize: '12px', opacity: 0.45, marginTop: '24px', marginBottom: '12px', fontFamily: uiFont, fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Cloud Providers
             </div>
 
-            {/* Google Drive */}
             <div
-              onClick={() => {
-                if (connectedProviders.google) {
-                  onAction('gdrive');
-                } else {
-                  onConnectGoogle();
-                }
-                setFocusedItemIdx(2);
-              }}
-              style={itemStyle(focusedItemIdx === 2)}
+              onClick={() => { connectedProviders.google ? onAction('gdrive') : onConnectGoogle(); setFocusedItemIdx(2); }}
+              style={rowCard(focusedItemIdx === 2)}
             >
               <span>☁ Google Drive</span>
-              <span style={{ fontSize: '11px', fontWeight: 'bold', color: connectedProviders.google ? (focusedItemIdx === 2 ? 'var(--terminal-bg)' : 'var(--terminal-text)') : (focusedItemIdx === 2 ? 'var(--terminal-bg)' : '#ff5555') }}>
-                {connectedProviders.google ? '✓ CONNECTED' : '✕ NOT LINKED — CLICK TO CONNECT'}
+              <span style={{ fontSize: '11px', fontWeight: '700', color: connectedProviders.google ? 'var(--terminal-accent)' : '#e05c5c' }}>
+                {connectedProviders.google ? '✓ Connected' : '✕ Not linked'}
               </span>
             </div>
-
-            {/* Apple iCloud */}
             <div
-              onClick={() => {
-                if (connectedProviders.apple) {
-                  onAction('icloud');
-                } else {
-                  onConnectApple();
-                }
-                setFocusedItemIdx(3);
-              }}
-              style={itemStyle(focusedItemIdx === 3)}
+              onClick={() => { connectedProviders.apple ? onAction('icloud') : onConnectApple(); setFocusedItemIdx(3); }}
+              style={rowCard(focusedItemIdx === 3)}
             >
-              <span>🍎 iCloud (Apple)</span>
-              <span style={{ fontSize: '11px', fontWeight: 'bold', color: connectedProviders.apple ? (focusedItemIdx === 3 ? 'var(--terminal-bg)' : 'var(--terminal-text)') : (focusedItemIdx === 3 ? 'var(--terminal-bg)' : '#ff5555') }}>
-                {connectedProviders.apple ? '✓ CONNECTED' : '✕ NOT LINKED — CLICK TO CONNECT'}
+              <span>🍎 iCloud</span>
+              <span style={{ fontSize: '11px', fontWeight: '700', color: connectedProviders.apple ? 'var(--terminal-accent)' : '#e05c5c' }}>
+                {connectedProviders.apple ? '✓ Connected' : '✕ Not linked'}
               </span>
             </div>
-
-            {/* Dropbox */}
-            <div
-              onClick={() => { onAction('dropbox'); setFocusedItemIdx(4); }}
-              style={itemStyle(focusedItemIdx === 4)}
-            >
+            <div onClick={() => { onAction('dropbox'); setFocusedItemIdx(4); }} style={rowCard(focusedItemIdx === 4)}>
               <span>{t(language, 'storage.dropbox')}</span>
-              <span style={{ fontSize: '11px', opacity: 0.5 }}>COMING SOON</span>
+              <span style={{ fontSize: '11px', opacity: 0.4 }}>Coming soon</span>
             </div>
 
-            <div style={{ marginTop: '16px', padding: '12px', border: '1px solid var(--terminal-text)', fontSize: '12px', opacity: 0.7, lineHeight: 1.6 }}>
-              ℹ Connect your cloud accounts to sync files across devices. Each provider opens its own sign-in flow. Your connection status is shown above.
+            <div style={{ marginTop: '20px', padding: '14px 16px', border: '1px solid var(--terminal-border)', borderRadius: '10px', fontSize: '12px', opacity: 0.6, lineHeight: 1.65, fontFamily: uiFont, background: 'var(--terminal-surface)' }}>
+              Connect cloud accounts to sync files across devices. Each provider opens its own sign-in flow.
             </div>
           </div>
         )}
 
-        {/* SYSTEM TAB */}
+        {/* SYSTEM */}
         {activeTab === 'system' && (
           <div>
-            <div style={{ fontSize: '16px', marginBottom: '16px', fontWeight: 'bold' }}>⚙ System</div>
-
-            <div onClick={() => { onOpenTypingChallenge(); setFocusedItemIdx(0); }} style={itemStyle(focusedItemIdx === 0)}>
+            <div style={{ fontSize: '15px', marginBottom: '20px', fontWeight: '600', fontFamily: uiFont, opacity: 0.8 }}>⚙ System</div>
+            <div onClick={() => { onOpenTypingChallenge(); setFocusedItemIdx(0); }} style={rowCard(focusedItemIdx === 0)}>
               <span>⌨ Typing Challenge</span>
-              <span style={{ opacity: 0.5 }}>Enter</span>
+              <span style={{ fontSize: '12px', opacity: 0.45 }}>Enter →</span>
             </div>
-
-            <div onClick={() => { onAction('update'); setFocusedItemIdx(1); }} style={itemStyle(focusedItemIdx === 1)}>
+            <div onClick={() => { onAction('update'); setFocusedItemIdx(1); }} style={rowCard(focusedItemIdx === 1)}>
               <span>{t(language, 'power.update')}</span>
             </div>
-
             <div
               onClick={() => { onAction('shutdown'); setFocusedItemIdx(2); }}
-              style={{
-                ...itemStyle(focusedItemIdx === 2),
-                borderColor: focusedItemIdx === 2 ? 'var(--terminal-text)' : '#ff5555',
-                color: focusedItemIdx === 2 ? 'var(--terminal-bg)' : '#ff5555',
-              }}
+              style={rowCard(focusedItemIdx === 2, false, true)}
             >
               <span>{t(language, 'power.shutdown')}</span>
             </div>
@@ -668,16 +669,19 @@ export default function SettingsPanel({
         )}
       </div>
 
-      {/* Footer hint */}
+      {/* ── Footer ─────────────────────────────────────────────────────── */}
       <div style={{
-        padding: '8px 20px',
-        borderTop: '1px solid var(--terminal-text)',
-        fontSize: '12px',
-        opacity: 0.5,
+        padding: '8px 24px',
+        borderTop: '1px solid var(--terminal-border)',
+        fontSize: '11px',
+        opacity: 0.35,
         textAlign: 'center',
         flexShrink: 0,
+        fontFamily: uiFont,
+        letterSpacing: '0.03em',
+        background: 'var(--terminal-surface)',
       }}>
-        [ Tab Switch Section • ↑↓ Navigate • Enter Select • ESC Close ]
+        Tab — switch section · ↑↓ navigate · Enter select · Esc close
       </div>
     </div>
   );

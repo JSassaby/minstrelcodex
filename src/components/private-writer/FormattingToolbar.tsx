@@ -11,6 +11,8 @@ const AVAILABLE_FONTS = [
   { label: 'Roboto Mono', value: "'Roboto Mono', monospace" },
 ];
 
+const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
+
 interface FormattingToolbarProps {
   editor: Editor;
   readOnly?: boolean;
@@ -29,137 +31,98 @@ interface ToolbarButton {
   isActive: boolean;
 }
 
-export default function FormattingToolbar({ editor, readOnly, fontSize, fontFamily, sidebarOpen, onChangeFontSize, onChangeFontFamily, onToggleSidebar }: FormattingToolbarProps) {
+// Pill button style — rounded, soft border, accent-filled when active
+const pillBtn = (active: boolean, danger?: boolean): React.CSSProperties => ({
+  padding: '4px 11px',
+  borderRadius: '7px',
+  border: active
+    ? '1.5px solid var(--terminal-accent)'
+    : '1px solid var(--terminal-border)',
+  background: active ? 'var(--terminal-accent)' : 'var(--terminal-surface)',
+  color: active
+    ? 'var(--terminal-bg)'
+    : danger ? '#e05c5c' : 'var(--terminal-text)',
+  cursor: 'pointer',
+  fontFamily: uiFont,
+  fontSize: '12px',
+  fontWeight: active ? '600' : '500',
+  transition: 'all 0.12s',
+  opacity: active ? 1 : 0.75,
+  whiteSpace: 'nowrap' as const,
+  lineHeight: '1.4',
+});
+
+export default function FormattingToolbar({
+  editor, readOnly, fontSize, fontFamily, sidebarOpen, onChangeFontSize, onChangeFontFamily, onToggleSidebar,
+}: FormattingToolbarProps) {
   if (readOnly) return null;
 
   const buttons: ToolbarButton[] = [
-    {
-      label: 'H1',
-      shortcut: 'Ctrl+Alt+1',
-      action: () => editor.chain().focus().toggleHeading({ level: 1 }).run(),
-      isActive: editor.isActive('heading', { level: 1 }),
-    },
-    {
-      label: 'H2',
-      shortcut: 'Ctrl+Alt+2',
-      action: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
-      isActive: editor.isActive('heading', { level: 2 }),
-    },
-    {
-      label: 'H3',
-      shortcut: 'Ctrl+Alt+3',
-      action: () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
-      isActive: editor.isActive('heading', { level: 3 }),
-    },
-    {
-      label: 'H4',
-      shortcut: 'Ctrl+Alt+4',
-      action: () => editor.chain().focus().toggleHeading({ level: 4 }).run(),
-      isActive: editor.isActive('heading', { level: 4 }),
-    },
+    { label: 'H1', shortcut: 'Ctrl+Alt+1', action: () => editor.chain().focus().toggleHeading({ level: 1 }).run(), isActive: editor.isActive('heading', { level: 1 }) },
+    { label: 'H2', shortcut: 'Ctrl+Alt+2', action: () => editor.chain().focus().toggleHeading({ level: 2 }).run(), isActive: editor.isActive('heading', { level: 2 }) },
+    { label: 'H3', shortcut: 'Ctrl+Alt+3', action: () => editor.chain().focus().toggleHeading({ level: 3 }).run(), isActive: editor.isActive('heading', { level: 3 }) },
+    { label: 'H4', shortcut: 'Ctrl+Alt+4', action: () => editor.chain().focus().toggleHeading({ level: 4 }).run(), isActive: editor.isActive('heading', { level: 4 }) },
     { label: '|', shortcut: '', action: () => {}, isActive: false },
-    {
-      label: 'B',
-      shortcut: 'Ctrl+B',
-      action: () => editor.chain().focus().toggleBold().run(),
-      isActive: editor.isActive('bold'),
-    },
-    {
-      label: 'I',
-      shortcut: 'Ctrl+I',
-      action: () => editor.chain().focus().toggleItalic().run(),
-      isActive: editor.isActive('italic'),
-    },
-    {
-      label: 'U',
-      shortcut: 'Ctrl+U',
-      action: () => editor.chain().focus().toggleUnderline().run(),
-      isActive: editor.isActive('underline'),
-    },
+    { label: 'B', shortcut: 'Ctrl+B', action: () => editor.chain().focus().toggleBold().run(), isActive: editor.isActive('bold') },
+    { label: 'I', shortcut: 'Ctrl+I', action: () => editor.chain().focus().toggleItalic().run(), isActive: editor.isActive('italic') },
+    { label: 'U', shortcut: 'Ctrl+U', action: () => editor.chain().focus().toggleUnderline().run(), isActive: editor.isActive('underline') },
     { label: '|', shortcut: '', action: () => {}, isActive: false },
-    {
-      label: '• List',
-      shortcut: 'Ctrl+Shift+8',
-      action: () => editor.chain().focus().toggleBulletList().run(),
-      isActive: editor.isActive('bulletList'),
-    },
-    {
-      label: '1. List',
-      shortcut: 'Ctrl+Shift+7',
-      action: () => editor.chain().focus().toggleOrderedList().run(),
-      isActive: editor.isActive('orderedList'),
-    },
+    { label: '• List', shortcut: 'Ctrl+Shift+8', action: () => editor.chain().focus().toggleBulletList().run(), isActive: editor.isActive('bulletList') },
+    { label: '1. List', shortcut: 'Ctrl+Shift+7', action: () => editor.chain().focus().toggleOrderedList().run(), isActive: editor.isActive('orderedList') },
   ];
 
-  const btnStyle = (active: boolean): React.CSSProperties => ({
-    padding: '4px 10px',
-    background: active ? 'var(--terminal-text)' : 'transparent',
-    color: active ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-    border: '1px solid var(--terminal-text)',
-    cursor: 'pointer',
-    fontFamily: "'Courier Prime', 'Courier New', monospace",
-    fontSize: '13px',
-    textShadow: active ? 'none' : '0 0 5px var(--terminal-glow)',
-    opacity: 0.9,
-    transition: 'all 0.1s',
-  });
+  const divider = (key: string) => (
+    <span
+      key={key}
+      style={{ width: '1px', height: '18px', background: 'var(--terminal-border)', margin: '0 5px', flexShrink: 0 }}
+    />
+  );
 
   return (
     <div
       style={{
         display: 'flex',
-        gap: '2px',
-        padding: '4px 16px',
-        borderBottom: '1px solid var(--terminal-text)',
-        backgroundColor: 'var(--terminal-bg)',
+        gap: '4px',
+        padding: '6px 14px',
+        borderBottom: '1px solid var(--terminal-border)',
+        backgroundColor: 'var(--terminal-surface)',
         flexWrap: 'wrap',
         alignItems: 'center',
       }}
     >
-      {/* Files button - left side */}
+      {/* Files / sidebar toggle */}
       {onToggleSidebar && (
         <>
           <button
             onClick={onToggleSidebar}
             title="Files (Ctrl+Shift+B)"
-            style={{
-              ...btnStyle(!!sidebarOpen),
-              fontSize: '13px',
-            }}
-            onMouseEnter={(e) => {
-              if (!sidebarOpen) {
-                (e.target as HTMLElement).style.opacity = '1';
-                (e.target as HTMLElement).style.background = 'rgba(255,255,255,0.1)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!sidebarOpen) {
-                (e.target as HTMLElement).style.opacity = '0.9';
-                (e.target as HTMLElement).style.background = 'transparent';
-              }
-            }}
+            style={pillBtn(!!sidebarOpen)}
+            onMouseEnter={e => { if (!sidebarOpen) { (e.currentTarget as HTMLElement).style.opacity = '1'; (e.currentTarget as HTMLElement).style.background = 'var(--terminal-border)'; } }}
+            onMouseLeave={e => { if (!sidebarOpen) { (e.currentTarget as HTMLElement).style.opacity = '0.75'; (e.currentTarget as HTMLElement).style.background = 'var(--terminal-surface)'; } }}
           >
             📁 Files
           </button>
-          <span style={{ width: '1px', height: '20px', background: 'var(--terminal-text)', opacity: 0.3, margin: '0 6px' }} />
+          {divider('sep-files')}
         </>
       )}
 
-      {/* Font dropdown */}
+      {/* Font family */}
       <select
         value={fontFamily}
         onChange={e => onChangeFontFamily(e.target.value)}
         style={{
-          background: 'var(--terminal-bg)',
+          background: 'var(--terminal-surface)',
           color: 'var(--terminal-text)',
-          border: '1px solid var(--terminal-text)',
-          padding: '4px 6px',
-          fontFamily: "'Courier Prime', monospace",
+          border: '1px solid var(--terminal-border)',
+          borderRadius: '7px',
+          padding: '4px 8px',
+          fontFamily: uiFont,
           fontSize: '12px',
           cursor: 'pointer',
           outline: 'none',
-          maxWidth: '140px',
-          marginRight: '4px',
+          maxWidth: '148px',
+          fontWeight: '500',
+          opacity: 0.85,
         }}
       >
         {AVAILABLE_FONTS.map(f => (
@@ -167,39 +130,43 @@ export default function FormattingToolbar({ editor, readOnly, fontSize, fontFami
         ))}
       </select>
 
-      {/* Text size controls */}
+      {/* Font size */}
       <button
         onClick={() => onChangeFontSize(-2)}
         title="Decrease text size (Ctrl+-)"
-        style={btnStyle(false)}
+        style={pillBtn(false)}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.75'; }}
       >
         A−
       </button>
       <span style={{
         padding: '4px 6px',
         fontSize: '12px',
-        opacity: 0.7,
+        opacity: 0.55,
         color: 'var(--terminal-text)',
-        fontFamily: "'Courier Prime', monospace",
-        minWidth: '32px',
+        fontFamily: uiFont,
+        minWidth: '28px',
         textAlign: 'center',
+        fontWeight: '500',
       }}>
         {fontSize}
       </span>
       <button
         onClick={() => onChangeFontSize(2)}
         title="Increase text size (Ctrl++)"
-        style={btnStyle(false)}
+        style={pillBtn(false)}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.75'; }}
       >
         A+
       </button>
 
-      <span style={{ width: '1px', height: '20px', background: 'var(--terminal-text)', opacity: 0.3, margin: '0 6px' }} />
+      {divider('sep-size')}
 
+      {/* Formatting buttons */}
       {buttons.map((btn, idx) => {
-        if (btn.label === '|') {
-          return <span key={`sep-${idx}`} style={{ width: '1px', height: '20px', background: 'var(--terminal-text)', opacity: 0.3, margin: '0 4px' }} />;
-        }
+        if (btn.label === '|') return divider(`sep-${idx}`);
         const isHeading = btn.label.startsWith('H');
         return (
           <button
@@ -207,30 +174,19 @@ export default function FormattingToolbar({ editor, readOnly, fontSize, fontFami
             onClick={btn.action}
             title={btn.shortcut ? `${btn.label} (${btn.shortcut})` : btn.label}
             style={{
-              ...btnStyle(btn.isActive),
-              fontSize: isHeading ? '12px' : '13px',
-              fontWeight: (btn.label === 'B' || isHeading) ? 'bold' : 'normal',
+              ...pillBtn(btn.isActive),
+              fontSize: isHeading ? '11px' : '12px',
+              fontWeight: (btn.label === 'B' || isHeading) ? '700' : btn.label === 'I' ? '400' : '500',
               fontStyle: btn.label === 'I' ? 'italic' : 'normal',
               textDecoration: btn.label === 'U' ? 'underline' : 'none',
             }}
-            onMouseEnter={(e) => {
-              if (!btn.isActive) {
-                (e.target as HTMLElement).style.opacity = '1';
-                (e.target as HTMLElement).style.background = 'rgba(255,255,255,0.1)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!btn.isActive) {
-                (e.target as HTMLElement).style.opacity = '0.9';
-                (e.target as HTMLElement).style.background = 'transparent';
-              }
-            }}
+            onMouseEnter={e => { if (!btn.isActive) { (e.currentTarget as HTMLElement).style.opacity = '1'; (e.currentTarget as HTMLElement).style.background = 'var(--terminal-border)'; } }}
+            onMouseLeave={e => { if (!btn.isActive) { (e.currentTarget as HTMLElement).style.opacity = '0.75'; (e.currentTarget as HTMLElement).style.background = 'var(--terminal-surface)'; } }}
           >
             {btn.label}
           </button>
         );
       })}
-
     </div>
   );
 }
