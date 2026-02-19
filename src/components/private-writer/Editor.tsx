@@ -96,7 +96,9 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({ content, onChange, fontS
           flex: 1,
           padding: '20px',
           overflow: 'auto',
+          cursor: 'text',
         }}
+        onClick={() => editor?.commands.focus('end')}
       >
         <style>{`
           .terminal-editor {
