@@ -376,142 +376,43 @@ export default function FileBrowser({
 
       {/* Search bar */}
       {inputMode === 'search' && (
-        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--terminal-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ opacity: 0.7 }}>/</span>
-          <input
-            ref={inputRef}
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search..."
-            autoFocus
-            style={{
-              flex: 1,
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              color: 'var(--terminal-text)',
-              ...termStyle,
-              fontSize: '14px',
-            }}
-          />
+        <div style={{ padding: '7px 12px', borderBottom: '1px solid var(--terminal-border)', display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--terminal-surface)' }}>
+          <span style={{ opacity: 0.4, fontSize: '12px', fontFamily: 'var(--font-ui)' }}>/</span>
+          <input ref={inputRef} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search…" autoFocus
+            style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--terminal-text)', fontFamily: 'var(--font-ui)', fontSize: '13px' }} />
         </div>
       )}
 
-      {/* Rename input */}
-      {inputMode === 'rename' && (
-        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--terminal-text)', background: 'rgba(51,255,51,0.05)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '12px' }}>RENAME:</span>
-            <input
-              ref={inputRef}
-              value={inputValue}
-              onChange={e => setInputValue(e.target.value)}
-              autoFocus
-              style={{
-                flex: 1,
-                background: 'var(--terminal-bg)',
-                border: '1px solid var(--terminal-text)',
-                color: 'var(--terminal-text)',
-                padding: '4px 8px',
-                ...termStyle,
-                fontSize: '13px',
-                outline: 'none',
-              }}
-            />
+      {/* Inline input bar (rename / new-folder / new-file) */}
+      {(inputMode === 'rename' || inputMode === 'new-folder' || inputMode === 'new-file') && (
+        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--terminal-border)', background: 'var(--terminal-surface)' }}>
+          <div style={{ fontSize: '10px', opacity: 0.45, fontFamily: 'var(--font-ui)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
+            {inputMode === 'rename' ? 'Rename' : inputMode === 'new-folder' ? 'New Folder' : 'New File'}
           </div>
-        </div>
-      )}
-
-      {/* New folder input */}
-      {inputMode === 'new-folder' && (
-        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--terminal-text)', background: 'rgba(51,255,51,0.05)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '12px' }}>NEW FOLDER:</span>
-            <input
-              ref={inputRef}
-              value={inputValue}
-              onChange={e => setInputValue(e.target.value)}
-              autoFocus
-              style={{
-                flex: 1,
-                background: 'var(--terminal-bg)',
-                border: '1px solid var(--terminal-text)',
-                color: 'var(--terminal-text)',
-                padding: '4px 8px',
-                ...termStyle,
-                fontSize: '13px',
-                outline: 'none',
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* New file input */}
-      {inputMode === 'new-file' && (
-        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--terminal-text)', background: 'rgba(51,255,51,0.05)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '12px' }}>NEW FILE:</span>
-            <input
-              ref={inputRef}
-              value={inputValue}
-              onChange={e => setInputValue(e.target.value)}
-              autoFocus
-              placeholder="filename.txt"
-              style={{
-                flex: 1,
-                background: 'var(--terminal-bg)',
-                border: '1px solid var(--terminal-text)',
-                color: 'var(--terminal-text)',
-                padding: '4px 8px',
-                ...termStyle,
-                fontSize: '13px',
-                outline: 'none',
-              }}
-            />
-          </div>
-          <div style={{ fontSize: '10px', opacity: 0.5, marginTop: '4px' }}>
-            In: {getSelectedFolderPath().join('/') || 'root'}
-          </div>
+          <input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} autoFocus
+            placeholder={inputMode === 'new-file' ? 'filename.txt' : ''}
+            style={{ width: '100%', background: 'var(--terminal-bg)', border: '1px solid var(--terminal-border)', borderRadius: '7px', color: 'var(--terminal-text)', padding: '6px 10px', fontFamily: 'var(--font-ui)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+          {inputMode === 'new-file' && (
+            <div style={{ fontSize: '10px', opacity: 0.4, marginTop: '4px', fontFamily: 'var(--font-ui)' }}>
+              In: {getSelectedFolderPath().join('/') || 'root'}
+            </div>
+          )}
         </div>
       )}
 
       {/* Move picker */}
       {inputMode === 'move' && (
-        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--terminal-text)', background: 'rgba(51,255,51,0.05)' }}>
-          <div style={{ marginBottom: '6px', fontSize: '12px' }}>
-            MOVE TO:
-          </div>
-          <div style={{ maxHeight: '120px', overflowY: 'auto' }}>
-            <div
-              style={{
-                padding: '4px 10px',
-                background: moveTargetIdx === 0 ? 'var(--terminal-text)' : 'transparent',
-                color: moveTargetIdx === 0 ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-                cursor: 'pointer',
-                fontSize: '12px',
-              }}
-              onClick={() => { setMoveTargetIdx(0); }}
-            >
-              📁 root
-            </div>
-            {allFolders.map((f, i) => (
-              <div
-                key={f.path.join('/')}
-                onClick={() => setMoveTargetIdx(i + 1)}
-                style={{
-                  padding: '4px 10px',
-                  background: moveTargetIdx === i + 1 ? 'var(--terminal-text)' : 'transparent',
-                  color: moveTargetIdx === i + 1 ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                }}
-              >
+        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--terminal-border)', background: 'var(--terminal-surface)' }}>
+          <div style={{ fontSize: '10px', opacity: 0.45, fontFamily: 'var(--font-ui)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>Move to</div>
+          <div style={{ maxHeight: '120px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            {[{ path: [] as string[], name: 'root' }, ...allFolders].map((f, i) => (
+              <div key={i} onClick={() => setMoveTargetIdx(i)}
+                style={{ padding: '5px 10px', borderRadius: '6px', background: moveTargetIdx === i ? 'var(--terminal-accent)' : 'transparent', color: moveTargetIdx === i ? 'var(--terminal-bg)' : 'var(--terminal-text)', cursor: 'pointer', fontSize: '12px', fontFamily: 'var(--font-ui)', transition: 'background 0.1s' }}>
                 📁 {f.name}
               </div>
             ))}
           </div>
-          <div style={{ fontSize: '10px', opacity: 0.5, marginTop: '4px' }}>↑↓ Enter • Esc cancel</div>
+          <div style={{ fontSize: '10px', opacity: 0.35, marginTop: '5px', fontFamily: 'var(--font-ui)' }}>↑↓ navigate · Enter confirm · Esc cancel</div>
         </div>
       )}
 
@@ -613,12 +514,15 @@ export default function FileBrowser({
       {/* Status message */}
       {statusMessage && (
         <div style={{
-          padding: '4px 12px',
-          borderTop: '1px solid var(--terminal-text)',
-          background: 'rgba(51,255,51,0.1)',
+          padding: '5px 12px',
+          borderTop: '1px solid var(--terminal-border)',
+          background: 'var(--terminal-surface)',
           fontSize: '11px',
           textAlign: 'center',
           flexShrink: 0,
+          fontFamily: 'var(--font-ui)',
+          opacity: 0.7,
+          color: 'var(--terminal-accent)',
         }}>
           ✓ {statusMessage}
         </div>

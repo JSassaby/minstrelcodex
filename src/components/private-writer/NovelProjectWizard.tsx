@@ -55,58 +55,73 @@ const GENRE_FOLDERS: Record<GenrePreset, { bible: boolean; notes: boolean; resea
   custom: { bible: true, notes: true, research: false, worldbuilding: false, frontMatter: false },
 };
 
+const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
+
 const SECTION_STYLE: React.CSSProperties = {
-  marginBottom: '28px',
+  marginBottom: '20px',
   padding: '20px',
-  border: '1px solid var(--terminal-text)',
+  border: '1px solid var(--terminal-border)',
+  borderRadius: '12px',
+  background: 'var(--terminal-surface)',
 };
 
 const LABEL_STYLE: React.CSSProperties = {
-  fontSize: '13px',
-  marginBottom: '6px',
-  letterSpacing: '1px',
-  fontWeight: 'bold',
+  fontSize: '11px',
+  marginBottom: '8px',
+  letterSpacing: '0.07em',
+  fontWeight: '600',
+  textTransform: 'uppercase',
+  opacity: 0.55,
+  fontFamily: "var(--font-ui, 'Space Grotesk', sans-serif)",
 };
 
 const HINT_STYLE: React.CSSProperties = {
   fontSize: '11px',
-  marginTop: '4px',
-  color: 'var(--terminal-text)',
+  marginTop: '6px',
+  opacity: 0.45,
+  fontFamily: "var(--font-ui, 'Space Grotesk', sans-serif)",
 };
 
 const INPUT_STYLE: React.CSSProperties = {
   width: '100%',
   background: 'var(--terminal-bg)',
-  border: '1px solid var(--terminal-text)',
+  border: '1px solid var(--terminal-border)',
+  borderRadius: '9px',
   color: 'var(--terminal-text)',
-  padding: '8px',
-  fontFamily: "'Courier Prime', 'Courier New', monospace",
-  fontSize: '16px',
+  padding: '10px 14px',
+  fontFamily: "var(--font-ui, 'Space Grotesk', sans-serif)",
+  fontSize: '15px',
   outline: 'none',
+  boxSizing: 'border-box',
 };
 
 const OPTION_BTN = (selected: boolean): React.CSSProperties => ({
-  padding: '8px 16px',
-  background: selected ? 'var(--terminal-text)' : 'var(--terminal-bg)',
+  padding: '9px 16px',
+  borderRadius: '9px',
+  background: selected ? 'var(--terminal-accent)' : 'var(--terminal-bg)',
   color: selected ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-  border: selected ? '2px solid var(--terminal-text)' : '1px solid var(--terminal-text)',
-  fontWeight: selected ? 'bold' : 'normal',
+  border: selected ? '1.5px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
+  fontWeight: selected ? '600' : '400',
   cursor: 'pointer',
-  fontFamily: "'Courier Prime', 'Courier New', monospace",
+  fontFamily: "var(--font-ui, 'Space Grotesk', sans-serif)",
   fontSize: '13px',
+  transition: 'all 0.12s',
 });
 
 const TOGGLE_STYLE = (on: boolean): React.CSSProperties => ({
-  padding: '6px 14px',
-  background: on ? 'var(--terminal-text)' : 'var(--terminal-bg)',
+  padding: '7px 14px',
+  borderRadius: '8px',
+  background: on ? 'var(--terminal-accent)' : 'var(--terminal-bg)',
   color: on ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-  border: '1px solid var(--terminal-text)',
+  border: on ? '1.5px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
   cursor: 'pointer',
-  fontFamily: "'Courier Prime', 'Courier New', monospace",
+  fontFamily: "var(--font-ui, 'Space Grotesk', sans-serif)",
   fontSize: '12px',
+  fontWeight: on ? '600' : '400',
   display: 'flex',
   alignItems: 'center',
   gap: '6px',
+  transition: 'all 0.12s',
 });
 
 export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkStorage }: Props) {
@@ -257,7 +272,7 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
         inset: 0,
         background: 'var(--terminal-bg)',
         color: 'var(--terminal-text)',
-        fontFamily: "'Courier Prime', 'Courier New', monospace",
+        fontFamily: uiFont,
         zIndex: 3000,
         overflowY: 'auto',
         display: 'flex',
@@ -266,29 +281,35 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
     >
       {/* Header */}
       <div style={{
-        borderBottom: '2px solid var(--terminal-text)',
-        padding: '16px 24px',
+        borderBottom: '1px solid var(--terminal-border)',
+        padding: '14px 24px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         flexShrink: 0,
+        background: 'var(--terminal-surface)',
       }}>
-        <div style={{ fontSize: '22px', fontWeight: 'bold', textShadow: '0 0 8px var(--terminal-glow)' }}>
-          📖 NEW NOVEL PROJECT
+        <div style={{ fontSize: '17px', fontWeight: '700', fontFamily: uiFont, letterSpacing: '-0.01em', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ opacity: 0.7 }}>📖</span> New Novel Project
         </div>
         <button
           onClick={onClose}
           style={{
             background: 'transparent',
-            border: '1px solid var(--terminal-text)',
+            border: '1px solid var(--terminal-border)',
+            borderRadius: '8px',
             color: 'var(--terminal-text)',
-            padding: '6px 16px',
+            padding: '6px 14px',
             cursor: 'pointer',
-            fontFamily: "'Courier Prime', 'Courier New', monospace",
-            fontSize: '14px',
+            fontFamily: uiFont,
+            fontSize: '13px',
+            opacity: 0.6,
+            transition: 'opacity 0.1s',
           }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+          onMouseLeave={e => (e.currentTarget.style.opacity = '0.6')}
         >
-          ✕ CLOSE
+          ✕ Close
         </button>
       </div>
 
@@ -304,8 +325,8 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
         <div style={{ flex: 1, maxWidth: '640px' }}>
           {/* ── Title & Abbreviation ── */}
           <div style={SECTION_STYLE}>
-            <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px', borderBottom: '1px solid var(--terminal-text)', paddingBottom: '8px' }}>
-              TITLE & ABBREVIATION
+            <div style={{ fontSize: '12px', fontWeight: '700', marginBottom: '16px', borderBottom: '1px solid var(--terminal-border)', paddingBottom: '10px', fontFamily: uiFont, opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Title &amp; Abbreviation
             </div>
             <div style={{ marginBottom: '16px' }}>
               <div style={LABEL_STYLE}>PROJECT TITLE</div>
@@ -345,8 +366,8 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
 
           {/* ── Chapters ── */}
           <div style={SECTION_STYLE}>
-            <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px', borderBottom: '1px solid var(--terminal-text)', paddingBottom: '8px' }}>
-              CHAPTERS
+            <div style={{ fontSize: '12px', fontWeight: '700', marginBottom: '16px', borderBottom: '1px solid var(--terminal-border)', paddingBottom: '10px', fontFamily: uiFont, opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Chapters
             </div>
             <div style={{ marginBottom: '16px' }}>
               <div style={LABEL_STYLE}>NUMBER OF CHAPTERS</div>
@@ -400,8 +421,8 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
 
           {/* ── Genre / Template ── */}
           <div style={SECTION_STYLE}>
-            <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px', borderBottom: '1px solid var(--terminal-text)', paddingBottom: '8px' }}>
-              PROJECT TYPE
+            <div style={{ fontSize: '12px', fontWeight: '700', marginBottom: '16px', borderBottom: '1px solid var(--terminal-border)', paddingBottom: '10px', fontFamily: uiFont, opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Project Type
             </div>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
               {([
@@ -442,8 +463,8 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
 
           {/* ── Writing Goals & Style ── */}
           <div style={SECTION_STYLE}>
-            <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px', borderBottom: '1px solid var(--terminal-text)', paddingBottom: '8px' }}>
-              WRITING GOALS & STYLE
+            <div style={{ fontSize: '12px', fontWeight: '700', marginBottom: '16px', borderBottom: '1px solid var(--terminal-border)', paddingBottom: '10px', fontFamily: uiFont, opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Writing Goals &amp; Style
             </div>
             <div style={{ marginBottom: '16px' }}>
               <div style={LABEL_STYLE}>TARGET WORD COUNT</div>
@@ -511,8 +532,8 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
 
           {/* ── Storage Location ── */}
           <div style={SECTION_STYLE}>
-            <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px', borderBottom: '1px solid var(--terminal-text)', paddingBottom: '8px' }}>
-              STORAGE LOCATION
+            <div style={{ fontSize: '12px', fontWeight: '700', marginBottom: '16px', borderBottom: '1px solid var(--terminal-border)', paddingBottom: '10px', fontFamily: uiFont, opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Storage Location
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {([
@@ -632,100 +653,65 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
 
           {/* ── Note ── */}
           <div style={{
-            padding: '16px 20px',
-            border: '1px solid var(--terminal-text)',
-            marginBottom: '28px',
+            padding: '14px 18px',
+            border: '1px solid var(--terminal-border)',
+            borderRadius: '10px',
+            marginBottom: '20px',
             fontSize: '13px',
             lineHeight: 1.6,
+            fontFamily: uiFont,
+            background: 'var(--terminal-surface)',
+            opacity: 0.75,
           }}>
-            ℹ <strong>All settings can be changed after creation.</strong> You can add/remove chapters, rename files, 
-            change the abbreviation format, modify your word count goals, and update style notes at any time 
-            through the file browser and settings.
+            <strong>All settings can be changed after creation.</strong> Add/remove chapters, rename files, and update style notes at any time.
           </div>
         </div>
 
         {/* Right: Live Preview */}
-        <div style={{
-          width: '340px',
-          flexShrink: 0,
-          position: 'sticky',
-          top: '0',
-          alignSelf: 'flex-start',
-        }}>
-          <div style={{
-            border: '2px solid var(--terminal-text)',
-            padding: '16px',
-          }}>
-            <div style={{
-              fontSize: '14px',
-              fontWeight: 'bold',
-              marginBottom: '12px',
-              borderBottom: '1px solid var(--terminal-text)',
-              paddingBottom: '8px',
-              letterSpacing: '1px',
-            }}>
-              PROJECT PREVIEW
+        <div style={{ width: '320px', flexShrink: 0, position: 'sticky', top: '0', alignSelf: 'flex-start' }}>
+          <div style={{ border: '1px solid var(--terminal-border)', borderRadius: '12px', padding: '16px', background: 'var(--terminal-surface)' }}>
+            <div style={{ fontSize: '11px', fontWeight: '700', marginBottom: '12px', borderBottom: '1px solid var(--terminal-border)', paddingBottom: '10px', fontFamily: uiFont, opacity: 0.55, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Project Preview
             </div>
-            <pre style={{
-              fontFamily: "'Courier Prime', 'Courier New', monospace",
-              fontSize: '12px',
-              lineHeight: 1.6,
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              margin: 0,
-            }}>
+            <pre style={{ fontFamily: "'Courier Prime', 'Courier New', monospace", fontSize: '12px', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, opacity: 0.85 }}>
               {treePreview}
             </pre>
-
-            {/* Stats summary */}
-            <div style={{
-              marginTop: '16px',
-              paddingTop: '12px',
-              borderTop: '1px solid var(--terminal-text)',
-              fontSize: '12px',
-              lineHeight: 1.8,
-            }}>
+            <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--terminal-border)', fontSize: '12px', lineHeight: 1.8, fontFamily: uiFont, opacity: 0.65 }}>
               <div>📝 {chapterCount} chapters</div>
               <div>🎯 {targetWordCount.toLocaleString()} word target</div>
               {pov && <div>👁 POV: {pov}</div>}
               {tense && <div>⏱ Tense: {tense}</div>}
-              <div>💾 Storage: {storageLocation === 'local' ? 'Local' : storageLocation === 'google-drive' ? 'Google Drive' : storageLocation === 'icloud' ? 'iCloud' : 'Dropbox'}</div>
+              <div>💾 {storageLocation === 'local' ? 'Local' : storageLocation === 'google-drive' ? 'Google Drive' : storageLocation === 'icloud' ? 'iCloud' : 'Dropbox'}</div>
             </div>
           </div>
 
-          {/* Create button */}
-          <div style={{ marginTop: '20px', display: 'flex', gap: '12px' }}>
+          <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
             <button
               onClick={handleCreate}
               disabled={!canCreate}
               style={{
-                flex: 1,
-                padding: '14px',
-                background: canCreate ? 'var(--terminal-text)' : 'transparent',
+                flex: 1, padding: '13px',
+                borderRadius: '10px',
+                background: canCreate ? 'var(--terminal-accent)' : 'var(--terminal-surface)',
                 color: canCreate ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-                border: '2px solid var(--terminal-text)',
+                border: canCreate ? '1.5px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
                 cursor: canCreate ? 'pointer' : 'not-allowed',
-                fontFamily: "'Courier Prime', 'Courier New', monospace",
-                fontSize: '16px',
-                fontWeight: 'bold',
-                letterSpacing: '1px',
+                fontFamily: uiFont, fontSize: '14px', fontWeight: '700',
+                opacity: canCreate ? 1 : 0.5, transition: 'all 0.15s',
               }}
             >
-              CREATE PROJECT
+              Create Project
             </button>
             <button
               onClick={onClose}
               style={{
-                padding: '14px 20px',
-                background: 'transparent',
-                color: 'var(--terminal-text)',
-                border: '1px solid var(--terminal-text)',
-                cursor: 'pointer',
-                fontFamily: "'Courier Prime', 'Courier New', monospace",
-                fontSize: '14px',
+                padding: '13px 18px', borderRadius: '10px',
+                background: 'transparent', color: 'var(--terminal-text)',
+                border: '1px solid var(--terminal-border)',
+                cursor: 'pointer', fontFamily: uiFont, fontSize: '13px', opacity: 0.65,
               }}
             >
-              CANCEL
+              Cancel
             </button>
           </div>
         </div>
