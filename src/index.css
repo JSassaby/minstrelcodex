@@ -134,3 +134,8 @@ body.theme-modern {
 body.theme-typewriter {
   -webkit-font-smoothing: auto;
 }
+
+/* ===== FILE BROWSER ROW HOVER ===== */
+.file-browser-row:hover {
+  background: var(--terminal-surface) !important;
+}

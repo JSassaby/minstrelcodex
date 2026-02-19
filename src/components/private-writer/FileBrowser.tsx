@@ -4,7 +4,7 @@ import type { FileNode, DocumentData } from '@/lib/types';
 
 
 // ── Graphic folder icon (yellow) ──────────────────────────────────────────────
-function FolderIcon({ open = false, isDeleted = false, size = 16 }: { open?: boolean; isDeleted?: boolean; size?: number }) {
+function FolderIcon({ open = false, isDeleted = false, size = 18 }: { open?: boolean; isDeleted?: boolean; size?: number }) {
   const color = isDeleted ? '#e05c5c' : '#f5c542';
   const shadow = isDeleted ? 'drop-shadow(0 0 3px rgba(224,92,92,0.6))' : 'drop-shadow(0 0 4px rgba(245,197,66,0.5))';
   const s = size;
@@ -23,7 +23,7 @@ function FolderIcon({ open = false, isDeleted = false, size = 16 }: { open?: boo
 }
 
 // ── Graphic file/doc icon ─────────────────────────────────────────────────────
-function FileIcon({ isDeleted = false, focused = false, size = 16 }: { isDeleted?: boolean; focused?: boolean; size?: number }) {
+function FileIcon({ isDeleted = false, focused = false, size = 18 }: { isDeleted?: boolean; focused?: boolean; size?: number }) {
   const color = isDeleted ? (focused ? '#000' : '#e05c5c') : (focused ? '#000' : 'var(--terminal-text)');
   const accent = isDeleted ? '#e05c5c' : 'var(--terminal-text)';
   const s = size;
@@ -341,10 +341,10 @@ export default function FileBrowser({
     <div
       onClick={onFocus}
       style={{
-        width: '320px',
+      width: '320px',
         minWidth: '320px',
         background: 'var(--terminal-bg)',
-        borderRight: focused ? '2px solid var(--terminal-text)' : '1px solid var(--terminal-text)',
+        borderRight: focused ? '1px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -354,20 +354,20 @@ export default function FileBrowser({
       {/* Header */}
       <div
         style={{
-          borderBottom: '2px solid var(--terminal-text)',
-          padding: '8px 12px',
+          borderBottom: '1px solid var(--terminal-border)',
+          padding: '12px 14px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           flexShrink: 0,
         }}
       >
-        <span style={{ fontSize: '13px', fontWeight: 'bold', textShadow: '0 0 10px var(--terminal-glow)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <FolderIcon open size={16} /> FILES
+        <span style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'var(--font-ui)', opacity: 0.7, display: 'flex', alignItems: 'center', gap: '7px' }}>
+          <FolderIcon open size={18} /> Files
         </span>
         <span
           onClick={onClose}
-          style={{ fontSize: '11px', opacity: 0.5, cursor: 'pointer' }}
+          style={{ fontSize: '14px', opacity: 0.35, cursor: 'pointer', lineHeight: 1, padding: '2px 4px' }}
           title="Esc to close"
         >
           ✕
@@ -546,47 +546,61 @@ export default function FileBrowser({
                   if (isFolder) onToggleFolder(item.path);
                   else onOpenFile(item.name);
                 }}
+                className="file-browser-row"
                 style={{
-                  padding: '5px 10px',
-                  paddingLeft: `${10 + item.depth * 16}px`,
+                  padding: '6px 12px 6px 0',
+                  paddingLeft: `${12 + item.depth * 18}px`,
                   cursor: 'pointer',
-                  background: isFocused ? 'var(--terminal-text)' : 'transparent',
-                  color: isFocused ? 'var(--terminal-bg)' : 'var(--terminal-text)',
+                  background: isFocused ? 'var(--terminal-surface)' : 'transparent',
+                  color: 'var(--terminal-text)',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '5px',
+                  gap: '7px',
                   fontSize: '13px',
-                  opacity: isDeleted && !isFocused ? 0.5 : 1,
-                  transition: 'background 0.05s',
+                  opacity: isDeleted && !isFocused ? 0.45 : 1,
+                  transition: 'background 0.1s, border-color 0.1s',
+                  borderLeft: isFocused
+                    ? '3px solid var(--terminal-accent)'
+                    : '3px solid transparent',
+                  borderRadius: '0 4px 4px 0',
+                  marginRight: '6px',
+                  position: 'relative',
                 }}
               >
                 {isFolder && (
-                  <span style={{ display: 'flex', alignItems: 'center', width: '10px', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', width: '12px', justifyContent: 'center', flexShrink: 0 }}>
                     {item.collapsed
-                      ? <ChevronRight size={10} style={{ opacity: 0.6 }} />
-                      : <ChevronDown size={10} style={{ opacity: 0.6 }} />}
+                      ? <ChevronRight size={11} style={{ opacity: 0.55 }} />
+                      : <ChevronDown size={11} style={{ opacity: 0.55 }} />}
                   </span>
                 )}
-                {!isFolder && <span style={{ width: '10px', flexShrink: 0 }} />}
+                {!isFolder && <span style={{ width: '12px', flexShrink: 0 }} />}
 
                 {/* Icon */}
                 {isFolder
-                  ? <FolderIcon open={!item.collapsed} isDeleted={item.name === 'Deleted'} size={16} />
-                  : <FileIcon isDeleted={isDeleted} focused={isFocused} size={16} />
+                  ? <FolderIcon open={!item.collapsed} isDeleted={item.name === 'Deleted'} size={18} />
+                  : <FileIcon isDeleted={isDeleted} focused={false} size={18} />
                 }
 
                 <span style={{
-                  fontWeight: isFolder ? '600' : 'normal',
+                  fontWeight: isFolder ? '600' : '400',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                   flex: 1,
-                  letterSpacing: isFolder ? '0.02em' : 'normal',
+                  letterSpacing: isFolder ? '0.03em' : 'normal',
+                  opacity: isFocused ? 1 : 0.85,
                 }}>
                   {displayName}
                 </span>
                 {!isFolder && doc && (
-                  <span style={{ fontSize: '10px', opacity: isFocused ? 0.7 : 0.35, whiteSpace: 'nowrap' }}>
+                  <span style={{
+                    fontSize: '10px',
+                    opacity: isFocused ? 0.6 : 0.3,
+                    whiteSpace: 'nowrap',
+                    fontFamily: 'var(--font-ui)',
+                    letterSpacing: '0.02em',
+                  }}>
                     {words}w
                   </span>
                 )}
@@ -613,14 +627,15 @@ export default function FileBrowser({
       {/* Action bar */}
       <div
         style={{
-          borderTop: '2px solid var(--terminal-text)',
-          padding: '6px 8px',
+          borderTop: '1px solid var(--terminal-border)',
+          padding: '8px 10px',
           fontSize: '10px',
-          opacity: 0.8,
+          opacity: 0.7,
           flexShrink: 0,
           display: 'flex',
           flexWrap: 'wrap',
-          gap: '2px 6px',
+          gap: '2px 8px',
+          fontFamily: 'var(--font-ui)',
         }}
       >
         {[
