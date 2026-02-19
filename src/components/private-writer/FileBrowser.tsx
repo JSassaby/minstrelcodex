@@ -332,68 +332,88 @@ export default function FileBrowser({
 
   const allFolders = getFolders();
 
-  const termStyle: React.CSSProperties = {
-    fontFamily: "'Courier Prime', 'Courier New', monospace",
-    color: 'var(--terminal-text)',
-  };
+  const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
 
   return (
     <div
       onClick={onFocus}
       style={{
-      width: '320px',
-        minWidth: '320px',
+        width: '280px',
+        minWidth: '280px',
         background: 'var(--terminal-bg)',
         borderRight: focused ? '1px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
-        ...termStyle,
+        fontFamily: uiFont,
+        color: 'var(--terminal-text)',
       }}
     >
       {/* Header */}
       <div
         style={{
           borderBottom: '1px solid var(--terminal-border)',
-          padding: '12px 14px',
+          padding: '10px 14px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           flexShrink: 0,
+          background: 'var(--terminal-surface)',
         }}
       >
-        <span style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'var(--font-ui)', opacity: 0.7, display: 'flex', alignItems: 'center', gap: '7px' }}>
-          <FolderIcon open size={18} /> Files
+        <span style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: uiFont, opacity: 0.65, display: 'flex', alignItems: 'center', gap: '7px' }}>
+          <FolderIcon open size={16} /> Files
         </span>
-        <span
+        <button
           onClick={onClose}
-          style={{ fontSize: '14px', opacity: 0.35, cursor: 'pointer', lineHeight: 1, padding: '2px 4px' }}
           title="Esc to close"
+          style={{
+            background: 'transparent',
+            border: '1px solid var(--terminal-border)',
+            borderRadius: '6px',
+            color: 'var(--terminal-text)',
+            opacity: 0.45,
+            cursor: 'pointer',
+            width: '22px',
+            height: '22px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '13px',
+            lineHeight: 1,
+            fontFamily: uiFont,
+            transition: 'opacity 0.15s, border-color 0.15s',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '0.9'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--terminal-accent)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.45'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--terminal-border)'; }}
         >
           ✕
-        </span>
+        </button>
       </div>
 
       {/* Search bar */}
       {inputMode === 'search' && (
-        <div style={{ padding: '7px 12px', borderBottom: '1px solid var(--terminal-border)', display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--terminal-surface)' }}>
-          <span style={{ opacity: 0.4, fontSize: '12px', fontFamily: 'var(--font-ui)' }}>/</span>
-          <input ref={inputRef} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search…" autoFocus
-            style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--terminal-text)', fontFamily: 'var(--font-ui)', fontSize: '13px' }} />
+        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--terminal-border)', display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--terminal-surface)' }}>
+          <span style={{ opacity: 0.35, fontSize: '11px', fontFamily: uiFont }}>⌕</span>
+          <input ref={inputRef} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search files…" autoFocus
+            style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--terminal-text)', fontFamily: uiFont, fontSize: '12px' }} />
         </div>
       )}
 
       {/* Inline input bar (rename / new-folder / new-file) */}
       {(inputMode === 'rename' || inputMode === 'new-folder' || inputMode === 'new-file') && (
-        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--terminal-border)', background: 'var(--terminal-surface)' }}>
-          <div style={{ fontSize: '10px', opacity: 0.45, fontFamily: 'var(--font-ui)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
-            {inputMode === 'rename' ? 'Rename' : inputMode === 'new-folder' ? 'New Folder' : 'New File'}
+        <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--terminal-border)', background: 'var(--terminal-surface)' }}>
+          <div style={{ fontSize: '10px', opacity: 0.4, fontFamily: uiFont, fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '7px' }}>
+            {inputMode === 'rename' ? 'Rename File' : inputMode === 'new-folder' ? 'New Folder' : 'New File'}
           </div>
           <input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} autoFocus
-            placeholder={inputMode === 'new-file' ? 'filename.txt' : ''}
-            style={{ width: '100%', background: 'var(--terminal-bg)', border: '1px solid var(--terminal-border)', borderRadius: '7px', color: 'var(--terminal-text)', padding: '6px 10px', fontFamily: 'var(--font-ui)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+            placeholder={inputMode === 'new-file' ? 'filename.txt' : inputMode === 'new-folder' ? 'Folder name…' : ''}
+            style={{ width: '100%', background: 'var(--terminal-bg)', border: '1px solid var(--terminal-border)', borderRadius: '8px', color: 'var(--terminal-text)', padding: '7px 10px', fontFamily: uiFont, fontSize: '12px', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s' }}
+            onFocus={e => { e.currentTarget.style.borderColor = 'var(--terminal-accent)'; }}
+            onBlur={e => { e.currentTarget.style.borderColor = 'var(--terminal-border)'; }}
+          />
           {inputMode === 'new-file' && (
-            <div style={{ fontSize: '10px', opacity: 0.4, marginTop: '4px', fontFamily: 'var(--font-ui)' }}>
+            <div style={{ fontSize: '10px', opacity: 0.35, marginTop: '5px', fontFamily: uiFont }}>
               In: {getSelectedFolderPath().join('/') || 'root'}
             </div>
           )}
@@ -402,17 +422,17 @@ export default function FileBrowser({
 
       {/* Move picker */}
       {inputMode === 'move' && (
-        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--terminal-border)', background: 'var(--terminal-surface)' }}>
-          <div style={{ fontSize: '10px', opacity: 0.45, fontFamily: 'var(--font-ui)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>Move to</div>
-          <div style={{ maxHeight: '120px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            {[{ path: [] as string[], name: 'root' }, ...allFolders].map((f, i) => (
+        <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--terminal-border)', background: 'var(--terminal-surface)' }}>
+          <div style={{ fontSize: '10px', opacity: 0.4, fontFamily: uiFont, fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '7px' }}>Move to folder</div>
+          <div style={{ maxHeight: '120px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            {[{ path: [] as string[], name: 'Root' }, ...allFolders].map((f, i) => (
               <div key={i} onClick={() => setMoveTargetIdx(i)}
-                style={{ padding: '5px 10px', borderRadius: '6px', background: moveTargetIdx === i ? 'var(--terminal-accent)' : 'transparent', color: moveTargetIdx === i ? 'var(--terminal-bg)' : 'var(--terminal-text)', cursor: 'pointer', fontSize: '12px', fontFamily: 'var(--font-ui)', transition: 'background 0.1s' }}>
-                📁 {f.name}
+                style={{ padding: '6px 10px', borderRadius: '8px', background: moveTargetIdx === i ? 'var(--terminal-accent)' : 'var(--terminal-bg)', color: moveTargetIdx === i ? 'var(--terminal-bg)' : 'var(--terminal-text)', cursor: 'pointer', fontSize: '12px', fontFamily: uiFont, transition: 'background 0.1s', border: `1px solid ${moveTargetIdx === i ? 'var(--terminal-accent)' : 'var(--terminal-border)'}`, display: 'flex', alignItems: 'center', gap: '7px' }}>
+                <FolderIcon size={14} /> {f.name}
               </div>
             ))}
           </div>
-          <div style={{ fontSize: '10px', opacity: 0.35, marginTop: '5px', fontFamily: 'var(--font-ui)' }}>↑↓ navigate · Enter confirm · Esc cancel</div>
+          <div style={{ fontSize: '10px', opacity: 0.3, marginTop: '6px', fontFamily: uiFont }}>↑↓ navigate · Enter confirm · Esc cancel</div>
         </div>
       )}
 
@@ -422,11 +442,11 @@ export default function FileBrowser({
         style={{
           flex: 1,
           overflowY: 'auto',
-          padding: '4px 0',
+          padding: '6px 6px',
         }}
       >
         {filteredItems.length === 0 ? (
-          <div style={{ padding: '20px 12px', textAlign: 'center', opacity: 0.5, fontSize: '12px' }}>
+          <div style={{ padding: '24px 12px', textAlign: 'center', opacity: 0.35, fontSize: '12px', fontFamily: uiFont }}>
             {searchQuery ? 'No matches' : 'No files yet'}
           </div>
         ) : (
@@ -449,38 +469,35 @@ export default function FileBrowser({
                 }}
                 className="file-browser-row"
                 style={{
-                  padding: '6px 12px 6px 0',
-                  paddingLeft: `${12 + item.depth * 18}px`,
+                  padding: '6px 10px',
+                  paddingLeft: `${10 + item.depth * 16}px`,
                   cursor: 'pointer',
                   background: isFocused ? 'var(--terminal-surface)' : 'transparent',
                   color: 'var(--terminal-text)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '7px',
-                  fontSize: '13px',
-                  opacity: isDeleted && !isFocused ? 0.45 : 1,
-                  transition: 'background 0.1s, border-color 0.1s',
-                  borderLeft: isFocused
-                    ? '3px solid var(--terminal-accent)'
-                    : '3px solid transparent',
-                  borderRadius: '0 4px 4px 0',
-                  marginRight: '6px',
-                  position: 'relative',
+                  fontSize: '12px',
+                  fontFamily: uiFont,
+                  opacity: isDeleted && !isFocused ? 0.4 : 1,
+                  transition: 'background 0.12s',
+                  borderLeft: isFocused ? '3px solid var(--terminal-accent)' : '3px solid transparent',
+                  borderRadius: '0 8px 8px 0',
+                  marginRight: '4px',
                 }}
               >
                 {isFolder && (
-                  <span style={{ display: 'flex', alignItems: 'center', width: '12px', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', width: '11px', justifyContent: 'center', flexShrink: 0 }}>
                     {item.collapsed
-                      ? <ChevronRight size={11} style={{ opacity: 0.55 }} />
-                      : <ChevronDown size={11} style={{ opacity: 0.55 }} />}
+                      ? <ChevronRight size={10} style={{ opacity: 0.45 }} />
+                      : <ChevronDown size={10} style={{ opacity: 0.45 }} />}
                   </span>
                 )}
-                {!isFolder && <span style={{ width: '12px', flexShrink: 0 }} />}
+                {!isFolder && <span style={{ width: '11px', flexShrink: 0 }} />}
 
-                {/* Icon */}
                 {isFolder
-                  ? <FolderIcon open={!item.collapsed} isDeleted={item.name === 'Deleted'} size={18} />
-                  : <FileIcon isDeleted={isDeleted} focused={false} size={18} />
+                  ? <FolderIcon open={!item.collapsed} isDeleted={item.name === 'Deleted'} size={16} />
+                  : <FileIcon isDeleted={isDeleted} focused={false} size={16} />
                 }
 
                 <span style={{
@@ -489,17 +506,18 @@ export default function FileBrowser({
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                   flex: 1,
-                  letterSpacing: isFolder ? '0.03em' : 'normal',
-                  opacity: isFocused ? 1 : 0.85,
+                  letterSpacing: isFolder ? '0.02em' : 'normal',
+                  opacity: isFocused ? 1 : 0.8,
+                  fontSize: isFolder ? '11px' : '12px',
                 }}>
                   {displayName}
                 </span>
                 {!isFolder && doc && (
                   <span style={{
                     fontSize: '10px',
-                    opacity: isFocused ? 0.6 : 0.3,
+                    opacity: isFocused ? 0.5 : 0.25,
                     whiteSpace: 'nowrap',
-                    fontFamily: 'var(--font-ui)',
+                    fontFamily: uiFont,
                     letterSpacing: '0.02em',
                   }}>
                     {words}w
@@ -514,14 +532,13 @@ export default function FileBrowser({
       {/* Status message */}
       {statusMessage && (
         <div style={{
-          padding: '5px 12px',
+          padding: '6px 14px',
           borderTop: '1px solid var(--terminal-border)',
           background: 'var(--terminal-surface)',
           fontSize: '11px',
           textAlign: 'center',
           flexShrink: 0,
-          fontFamily: 'var(--font-ui)',
-          opacity: 0.7,
+          fontFamily: uiFont,
           color: 'var(--terminal-accent)',
         }}>
           ✓ {statusMessage}
@@ -533,22 +550,21 @@ export default function FileBrowser({
         style={{
           borderTop: '1px solid var(--terminal-border)',
           padding: '8px 10px',
-          fontSize: '10px',
-          opacity: 0.7,
           flexShrink: 0,
           display: 'flex',
           flexWrap: 'wrap',
-          gap: '2px 8px',
-          fontFamily: 'var(--font-ui)',
+          gap: '4px',
+          fontFamily: uiFont,
+          background: 'var(--terminal-surface)',
         }}
       >
         {[
           { key: 'Enter', label: 'Open' },
-          { key: 'm', label: 'Move' },
+          { key: 'c', label: 'New File' },
+          { key: 'n', label: 'New Folder' },
           { key: 'r', label: 'Rename' },
-          { key: 'd', label: 'Del' },
-          { key: 'n', label: 'Folder' },
-          { key: 'c', label: 'File' },
+          { key: 'm', label: 'Move' },
+          { key: 'd', label: 'Delete' },
           { key: '/', label: 'Search' },
         ].map(({ key, label }) => (
           <button
@@ -557,24 +573,77 @@ export default function FileBrowser({
               e.stopPropagation();
               window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
             }}
-            style={actionBtnStyle}
             title={`${key} — ${label}`}
+            style={{
+              background: 'var(--terminal-bg)',
+              border: '1px solid var(--terminal-border)',
+              borderRadius: '7px',
+              color: 'var(--terminal-text)',
+              cursor: 'pointer',
+              padding: '3px 8px',
+              fontFamily: uiFont,
+              fontSize: '10px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              opacity: 0.75,
+              transition: 'opacity 0.12s, border-color 0.12s',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--terminal-accent)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.75'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--terminal-border)'; }}
           >
-            <span style={kbdStyle}>{key}</span>{label}
+            <span style={{
+              display: 'inline-block',
+              padding: '1px 5px',
+              background: 'var(--terminal-surface)',
+              border: '1px solid var(--terminal-border)',
+              borderRadius: '4px',
+              fontSize: '9px',
+              fontFamily: "'Courier Prime', monospace",
+              lineHeight: 1.4,
+              opacity: 0.7,
+            }}>{key === 'Enter' ? '↵' : key}</span>
+            {label}
           </button>
         ))}
         {onSyncGoogleDrive && (
           <button
-            onClick={(e) => { e.stopPropagation(); onSyncGoogleDrive(); }}
-            style={actionBtnStyle}
+            onClick={(e) => { e.stopPropagation(); onSyncGoogleDrive!(); }}
+            style={{
+              background: 'var(--terminal-bg)',
+              border: '1px solid var(--terminal-border)',
+              borderRadius: '7px',
+              color: 'var(--terminal-text)',
+              cursor: 'pointer',
+              padding: '3px 8px',
+              fontFamily: uiFont,
+              fontSize: '10px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              opacity: 0.75,
+            }}
           >
             ☁ Sync
           </button>
         )}
         {onSyncICloud && (
           <button
-            onClick={(e) => { e.stopPropagation(); onSyncICloud(); }}
-            style={actionBtnStyle}
+            onClick={(e) => { e.stopPropagation(); onSyncICloud!(); }}
+            style={{
+              background: 'var(--terminal-bg)',
+              border: '1px solid var(--terminal-border)',
+              borderRadius: '7px',
+              color: 'var(--terminal-text)',
+              cursor: 'pointer',
+              padding: '3px 8px',
+              fontFamily: uiFont,
+              fontSize: '10px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              opacity: 0.75,
+            }}
           >
             🍎 Sync
           </button>
@@ -583,24 +652,3 @@ export default function FileBrowser({
     </div>
   );
 }
-
-const kbdStyle: React.CSSProperties = {
-  display: 'inline-block',
-  padding: '1px 6px',
-  border: '1px solid var(--terminal-text)',
-  fontSize: '11px',
-  marginRight: '4px',
-  fontFamily: "'Courier Prime', monospace",
-};
-
-const actionBtnStyle: React.CSSProperties = {
-  background: 'transparent',
-  border: 'none',
-  color: 'inherit',
-  cursor: 'pointer',
-  padding: '2px 4px',
-  fontFamily: 'inherit',
-  fontSize: 'inherit',
-  display: 'inline-flex',
-  alignItems: 'center',
-};
