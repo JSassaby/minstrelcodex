@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 
+const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
+
 interface StorageMenuProps {
   visible: boolean;
   googleConnected: boolean;
@@ -22,31 +24,26 @@ export default function StorageMenu({
   const [selectedIdx, setSelectedIdx] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Build menu items dynamically
-  const items: { label: string; action: () => void; shortcut?: string; disabled?: boolean; separator?: boolean }[] = [];
+  const items: { label: string; sublabel?: string; action: () => void; shortcut?: string; disabled?: boolean; separator?: boolean; icon?: string; danger?: boolean }[] = [];
 
-  // Google Drive section
   if (googleConnected) {
-    items.push({ label: '☁ Sync to Google Drive', action: onSyncGoogleDrive, shortcut: '' });
-    items.push({ label: '📂 Browse Drive Files', action: onOpenDriveFiles });
-    items.push({ label: '🔌 Disconnect Google', action: onDisconnectGoogle });
+    items.push({ label: 'Sync to Google Drive', icon: '☁', action: onSyncGoogleDrive });
+    items.push({ label: 'Browse Drive Files', icon: '📂', action: onOpenDriveFiles });
+    items.push({ label: 'Disconnect Google', icon: '🔌', action: onDisconnectGoogle, danger: true });
   } else {
-    items.push({ label: '🔑 Connect Google Drive', action: onConnectGoogle });
+    items.push({ label: 'Connect Google Drive', icon: '🔑', sublabel: 'Not linked', action: onConnectGoogle });
   }
 
   items.push({ label: '', action: () => {}, separator: true });
 
-  // iCloud section
   if (appleConnected) {
-    items.push({ label: '🍎 Sync to iCloud', action: onSyncICloud });
+    items.push({ label: 'Sync to iCloud', icon: '🍎', action: onSyncICloud });
   } else {
-    items.push({ label: '🍎 Connect iCloud', action: onConnectApple });
+    items.push({ label: 'Connect iCloud', icon: '🍎', sublabel: 'Not linked', action: onConnectApple });
   }
 
-  items.push({ label: '', action: () => {}, separator: true });
-
-  // Info row
   if (lastSyncTime) {
+    items.push({ label: '', action: () => {}, separator: true });
     items.push({ label: `Last sync: ${lastSyncTime}`, action: () => {}, disabled: true });
   }
 
@@ -55,27 +52,16 @@ export default function StorageMenu({
   useEffect(() => {
     if (!visible) return;
     setSelectedIdx(0);
-
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { onClose(); e.preventDefault(); return; }
-      if (e.key === 'ArrowDown') {
-        setSelectedIdx(prev => (prev + 1) % actionItems.length);
-        e.preventDefault();
-      } else if (e.key === 'ArrowUp') {
-        setSelectedIdx(prev => (prev - 1 + actionItems.length) % actionItems.length);
-        e.preventDefault();
-      } else if (e.key === 'Enter') {
-        actionItems[selectedIdx]?.action();
-        onClose();
-        e.preventDefault();
-      }
+      if (e.key === 'ArrowDown') { setSelectedIdx(prev => (prev + 1) % actionItems.length); e.preventDefault(); }
+      else if (e.key === 'ArrowUp') { setSelectedIdx(prev => (prev - 1 + actionItems.length) % actionItems.length); e.preventDefault(); }
+      else if (e.key === 'Enter') { actionItems[selectedIdx]?.action(); onClose(); e.preventDefault(); }
     };
-
     window.addEventListener('keydown', handler, true);
     return () => window.removeEventListener('keydown', handler, true);
   }, [visible, selectedIdx, actionItems.length]);
 
-  // Click outside to close
   useEffect(() => {
     if (!visible) return;
     const handler = (e: MouseEvent) => {
@@ -90,76 +76,94 @@ export default function StorageMenu({
   let actionIdx = 0;
 
   return (
-    <div
-      ref={ref}
-      style={{
-        position: 'fixed',
-        top: '40px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        background: 'var(--terminal-bg)',
-        border: '2px solid var(--terminal-text)',
-        minWidth: '320px',
-        zIndex: 600,
-        boxShadow: '0 4px 24px rgba(0,0,0,0.7)',
-        fontFamily: "'Courier Prime', 'Courier New', monospace",
-      }}
-    >
-      {/* Header */}
-      <div style={{
-        padding: '8px 16px',
-        borderBottom: '1px solid var(--terminal-text)',
-        fontSize: '11px',
-        opacity: 0.6,
-        display: 'flex',
-        justifyContent: 'space-between',
-      }}>
-        <span>STORAGE</span>
-        <span>
-          {googleConnected ? '☁ Google ✓' : '☁ Google ✕'}
-          {'  '}
-          {appleConnected ? '🍎 iCloud ✓' : '🍎 iCloud ✕'}
-        </span>
-      </div>
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{ position: 'fixed', inset: 0, zIndex: 595 }}
+      />
+      <div
+        ref={ref}
+        style={{
+          position: 'fixed',
+          top: '46px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'var(--terminal-bg)',
+          border: '1px solid var(--terminal-border)',
+          borderRadius: '14px',
+          minWidth: '300px',
+          zIndex: 600,
+          boxShadow: '0 16px 48px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.1)',
+          fontFamily: uiFont,
+          overflow: 'hidden',
+          padding: '6px',
+        }}
+      >
+        {/* Header */}
+        <div style={{
+          padding: '8px 12px 6px',
+          fontSize: '10px',
+          fontWeight: '600',
+          opacity: 0.45,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          display: 'flex',
+          justifyContent: 'space-between',
+          fontFamily: uiFont,
+        }}>
+          <span>Storage</span>
+          <span style={{ display: 'flex', gap: '10px' }}>
+            <span style={{ color: googleConnected ? 'var(--terminal-accent)' : '#e05c5c' }}>
+              ☁ {googleConnected ? '✓' : '✕'}
+            </span>
+            <span style={{ color: appleConnected ? 'var(--terminal-accent)' : '#e05c5c' }}>
+              🍎 {appleConnected ? '✓' : '✕'}
+            </span>
+          </span>
+        </div>
 
-      {items.map((item, j) => {
-        if (item.separator) {
+        {items.map((item, j) => {
+          if (item.separator) {
+            return <div key={`sep-${j}`} style={{ height: '1px', background: 'var(--terminal-border)', margin: '4px 6px' }} />;
+          }
+          if (item.disabled) {
+            return (
+              <div key={`info-${j}`} style={{ padding: '6px 12px', fontSize: '11px', opacity: 0.4, fontFamily: uiFont }}>
+                {item.label}
+              </div>
+            );
+          }
+          const thisIdx = actionIdx++;
+          const isActive = thisIdx === selectedIdx;
           return (
             <div
-              key={`sep-${j}`}
-              style={{ height: '1px', background: 'var(--terminal-text)', opacity: 0.2, margin: '4px 8px' }}
-            />
-          );
-        }
-        if (item.disabled) {
-          return (
-            <div key={`info-${j}`} style={{ padding: '6px 16px', fontSize: '11px', opacity: 0.5 }}>
-              {item.label}
+              key={item.label}
+              onMouseEnter={() => setSelectedIdx(thisIdx)}
+              onClick={(e) => { e.stopPropagation(); item.action(); onClose(); }}
+              style={{
+                padding: '8px 12px',
+                borderRadius: '9px',
+                cursor: 'pointer',
+                background: isActive ? 'var(--terminal-accent)' : 'transparent',
+                color: isActive ? 'var(--terminal-bg)' : item.danger ? '#e05c5c' : 'var(--terminal-text)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                transition: 'background 0.1s, color 0.1s',
+                fontSize: '13px',
+                fontWeight: isActive ? '500' : '400',
+              }}
+            >
+              {item.icon && <span style={{ fontSize: '14px', width: '18px', textAlign: 'center' }}>{item.icon}</span>}
+              <span style={{ flex: 1 }}>{item.label}</span>
+              {item.sublabel && !isActive && (
+                <span style={{ fontSize: '11px', opacity: 0.45, fontWeight: '400' }}>{item.sublabel}</span>
+              )}
             </div>
           );
-        }
-        const thisIdx = actionIdx++;
-        const isActive = thisIdx === selectedIdx;
-        return (
-          <div
-            key={item.label}
-            onMouseEnter={() => setSelectedIdx(thisIdx)}
-            onClick={(e) => { e.stopPropagation(); item.action(); onClose(); }}
-            style={{
-              padding: '8px 16px',
-              cursor: 'pointer',
-              background: isActive ? 'var(--terminal-text)' : 'transparent',
-              color: isActive ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              transition: 'background 0.05s, color 0.05s',
-            }}
-          >
-            <span>{item.label}</span>
-            {item.shortcut && <span style={{ opacity: 0.5, fontSize: '13px' }}>{item.shortcut}</span>}
-          </div>
-        );
-      })}
-    </div>
+        })}
+      </div>
+    </>
   );
 }

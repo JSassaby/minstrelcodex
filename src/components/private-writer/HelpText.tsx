@@ -1,3 +1,5 @@
+const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
+
 interface HelpTextProps {
   visible: boolean;
   lines: string[];
@@ -10,15 +12,17 @@ export default function HelpText({ visible, lines }: HelpTextProps) {
     <div
       style={{
         position: 'absolute',
-        bottom: '60px',
+        bottom: '52px',
         right: '20px',
-        fontSize: '12px',
-        opacity: 0.5,
-        maxWidth: '300px',
+        fontSize: '11px',
+        opacity: 0.45,
+        maxWidth: '260px',
         textAlign: 'right',
-        lineHeight: 1.4,
-        fontFamily: "'VT323', monospace",
+        lineHeight: 1.6,
+        fontFamily: uiFont,
         color: 'var(--terminal-text)',
+        letterSpacing: '0.01em',
+        pointerEvents: 'none',
       }}
     >
       {lines.map((line, i) => (

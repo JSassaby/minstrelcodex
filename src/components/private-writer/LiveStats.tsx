@@ -1,3 +1,5 @@
+const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
+
 interface LiveStatsProps {
   visible: boolean;
   wpm: number;
@@ -11,21 +13,32 @@ export default function LiveStats({ visible, wpm, chars }: LiveStatsProps) {
     <div
       style={{
         position: 'fixed',
-        bottom: '60px',
+        bottom: '52px',
         right: '20px',
-        border: '2px solid var(--terminal-text)',
-        background: 'var(--terminal-bg)',
-        padding: '12px',
-        fontSize: '14px',
+        border: '1px solid var(--terminal-border)',
+        borderRadius: '12px',
+        background: 'var(--terminal-surface)',
+        padding: '12px 16px',
+        fontSize: '13px',
         zIndex: 500,
-        fontFamily: "'VT323', monospace",
+        fontFamily: uiFont,
         color: 'var(--terminal-text)',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+        minWidth: '120px',
       }}
     >
-      <div style={{ marginBottom: '4px', fontSize: '12px', opacity: 0.7 }}>LIVE STATS</div>
-      <div>{wpm} WPM</div>
-      <div>{chars} CHARS</div>
-      <div style={{ fontSize: '11px', opacity: 0.6, marginTop: '4px' }}>Ctrl+Shift+S to hide</div>
+      <div style={{ fontSize: '10px', opacity: 0.45, marginBottom: '8px', fontWeight: '600', letterSpacing: '0.07em', textTransform: 'uppercase' }}>Live Stats</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '16px' }}>
+          <span style={{ opacity: 0.55, fontSize: '11px' }}>WPM</span>
+          <span style={{ fontWeight: '600', fontSize: '15px' }}>{wpm}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '16px' }}>
+          <span style={{ opacity: 0.55, fontSize: '11px' }}>Chars</span>
+          <span style={{ fontWeight: '600', fontSize: '15px' }}>{chars}</span>
+        </div>
+      </div>
+      <div style={{ fontSize: '10px', opacity: 0.3, marginTop: '8px', borderTop: '1px solid var(--terminal-border)', paddingTop: '6px' }}>Ctrl+Shift+S to hide</div>
     </div>
   );
 }

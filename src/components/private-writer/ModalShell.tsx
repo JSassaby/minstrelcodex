@@ -1,18 +1,20 @@
 import { ReactNode, useEffect, useRef } from 'react';
 
+const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
+
 interface ModalShellProps {
   visible: boolean;
   title: string;
   children: ReactNode;
   onClose: () => void;
+  width?: string;
 }
 
-export default function ModalShell({ visible, title, children, onClose }: ModalShellProps) {
+export default function ModalShell({ visible, title, children, onClose, width = '520px' }: ModalShellProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (visible) {
-      // Focus the modal container so PageUp/PageDown scroll natively
       setTimeout(() => containerRef.current?.focus(), 50);
     }
   }, [visible]);
@@ -21,17 +23,18 @@ export default function ModalShell({ visible, title, children, onClose }: ModalS
 
   return (
     <>
-      {/* Overlay */}
+      {/* Backdrop */}
       <div
         onClick={onClose}
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0, 0, 0, 0.8)',
+          background: 'rgba(0,0,0,0.55)',
+          backdropFilter: 'blur(4px)',
           zIndex: 1999,
         }}
       />
-      {/* Modal */}
+      {/* Panel */}
       <div
         ref={containerRef}
         tabIndex={-1}
@@ -41,31 +44,62 @@ export default function ModalShell({ visible, title, children, onClose }: ModalS
           left: '50%',
           transform: 'translate(-50%, -50%)',
           backgroundColor: 'var(--terminal-bg)',
-          border: '2px solid var(--terminal-text)',
-          padding: '24px',
-          minWidth: '400px',
-          maxWidth: '600px',
-          maxHeight: '70vh',
+          border: '1px solid var(--terminal-border)',
+          borderRadius: '16px',
+          padding: '0',
+          width,
+          maxWidth: '92vw',
+          maxHeight: '80vh',
           overflowY: 'auto',
           zIndex: 2000,
-          boxShadow: '0 0 30px var(--terminal-glow)',
+          boxShadow: '0 24px 64px rgba(0,0,0,0.28), 0 4px 16px rgba(0,0,0,0.12)',
           color: 'var(--terminal-text)',
-          fontFamily: "'Courier Prime', 'Courier New', monospace",
+          fontFamily: uiFont,
           outline: 'none',
         }}
       >
-        <div
-          style={{
-            fontSize: '20px',
-            marginBottom: '16px',
-            textAlign: 'center',
-            borderBottom: '1px solid var(--terminal-text)',
-            paddingBottom: '8px',
-          }}
-        >
-          {title}
+        {/* Header */}
+        <div style={{
+          padding: '18px 22px 16px',
+          borderBottom: '1px solid var(--terminal-border)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          background: 'var(--terminal-surface)',
+          borderRadius: '16px 16px 0 0',
+        }}>
+          <div style={{
+            fontSize: '15px',
+            fontWeight: '700',
+            fontFamily: uiFont,
+            letterSpacing: '-0.01em',
+          }}>
+            {title}
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--terminal-border)',
+              borderRadius: '7px',
+              color: 'var(--terminal-text)',
+              padding: '4px 10px',
+              cursor: 'pointer',
+              fontFamily: uiFont,
+              fontSize: '12px',
+              opacity: 0.6,
+              transition: 'opacity 0.1s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+            onMouseLeave={e => (e.currentTarget.style.opacity = '0.6')}
+          >
+            ✕
+          </button>
         </div>
-        {children}
+        {/* Body */}
+        <div style={{ padding: '20px 22px' }}>
+          {children}
+        </div>
       </div>
     </>
   );
@@ -76,9 +110,10 @@ interface ModalButtonProps {
   focused?: boolean;
   onClick: () => void;
   selected?: boolean;
+  danger?: boolean;
 }
 
-export function ModalButton({ label, focused, onClick, selected }: ModalButtonProps) {
+export function ModalButton({ label, focused, onClick, selected, danger }: ModalButtonProps) {
   const ref = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -92,15 +127,24 @@ export function ModalButton({ label, focused, onClick, selected }: ModalButtonPr
       ref={ref}
       onClick={onClick}
       style={{
-        padding: '8px 24px',
-        background: focused ? 'var(--terminal-text)' : 'var(--terminal-bg)',
-        color: focused ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-        border: selected ? '2px solid var(--terminal-text)' : '1px solid var(--terminal-text)',
-        fontWeight: selected ? 'bold' : 'normal',
+        padding: '9px 20px',
+        borderRadius: '9px',
+        background: focused
+          ? (danger ? '#e05c5c' : 'var(--terminal-accent)')
+          : 'var(--terminal-surface)',
+        color: focused ? 'var(--terminal-bg)' : (danger ? '#e05c5c' : 'var(--terminal-text)'),
+        border: focused
+          ? `1.5px solid ${danger ? '#e05c5c' : 'var(--terminal-accent)'}`
+          : `1px solid ${danger ? 'rgba(224,92,92,0.4)' : 'var(--terminal-border)'}`,
+        fontWeight: focused ? '600' : '500',
         cursor: 'pointer',
-        fontFamily: "'Courier Prime', 'Courier New', monospace",
-        fontSize: '14px',
+        fontFamily: uiFont,
+        fontSize: '13px',
+        transition: 'all 0.12s',
+        opacity: focused ? 1 : 0.8,
       }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = focused ? '1' : '0.8'; }}
     >
       {label}
     </button>
@@ -134,15 +178,20 @@ export function ModalInput({
       maxLength={maxLength}
       style={{
         width: '100%',
-        background: 'var(--terminal-bg)',
-        border: '1px solid var(--terminal-text)',
+        background: 'var(--terminal-surface)',
+        border: '1px solid var(--terminal-border)',
+        borderRadius: '9px',
         color: 'var(--terminal-text)',
-        padding: '8px',
-        fontFamily: "'Courier Prime', 'Courier New', monospace",
-        fontSize: '16px',
+        padding: '10px 14px',
+        fontFamily: uiFont,
+        fontSize: '15px',
         outline: 'none',
+        transition: 'border-color 0.15s',
+        boxSizing: 'border-box',
         ...extraStyle,
       }}
+      onFocus={e => (e.currentTarget.style.borderColor = 'var(--terminal-accent)')}
+      onBlur={e => (e.currentTarget.style.borderColor = 'var(--terminal-border)')}
     />
   );
 }

@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import ModalShell, { ModalButton } from './ModalShell';
 
+const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
+
 interface DriveFile {
   id: string;
   name: string;
@@ -33,11 +35,7 @@ export default function GoogleDriveModal({
   const [status, setStatus] = useState('');
   const [view, setView] = useState<'list' | 'uploading'>('list');
 
-  // Check for existing Google session
-  useEffect(() => {
-    if (!visible) return;
-    checkAuth();
-  }, [visible]);
+  useEffect(() => { if (visible) checkAuth(); }, [visible]);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -52,108 +50,67 @@ export default function GoogleDriveModal({
   };
 
   const signIn = async () => {
-    setLoading(true);
-    setError('');
+    setLoading(true); setError('');
     const { error } = await lovable.auth.signInWithOAuth('google', {
       redirect_uri: window.location.origin,
-      extraParams: {
-        scope: 'https://www.googleapis.com/auth/drive.file',
-        access_type: 'offline',
-        prompt: 'consent',
-      },
+      extraParams: { scope: 'https://www.googleapis.com/auth/drive.file', access_type: 'offline', prompt: 'consent' },
     });
-    if (error) {
-      setError(error.message || 'Sign-in failed');
-      setLoading(false);
-    }
-    // The page will redirect, so loading stays true
+    if (error) { setError(error.message || 'Sign-in failed'); setLoading(false); }
   };
 
   const loadFiles = async (token: string) => {
-    setLoading(true);
-    setError('');
+    setLoading(true); setError('');
     try {
       const res = await fetch(FUNCTION_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'list', googleToken: token }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to list files');
-      setFiles(data.files || []);
-      setSelectedIdx(0);
-    } catch (e: any) {
-      setError(e.message);
-    }
+      setFiles(data.files || []); setSelectedIdx(0);
+    } catch (e: any) { setError(e.message); }
     setLoading(false);
   };
 
   const downloadFile = async (file: DriveFile) => {
     if (!googleToken) return;
-    setLoading(true);
-    setStatus(`Downloading ${file.name}...`);
+    setLoading(true); setStatus(`Downloading ${file.name}…`);
     try {
       const res = await fetch(FUNCTION_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'download', googleToken, fileId: file.id }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Download failed');
-      onLoadContent(data.content, data.name);
-      setStatus('');
-      onClose();
-    } catch (e: any) {
-      setError(e.message);
-      setStatus('');
-    }
+      onLoadContent(data.content, data.name); setStatus(''); onClose();
+    } catch (e: any) { setError(e.message); setStatus(''); }
     setLoading(false);
   };
 
   const uploadFile = async () => {
     if (!googleToken || !currentContent) return;
-    setView('uploading');
-    setLoading(true);
+    setView('uploading'); setLoading(true);
     const name = currentFilename || 'Untitled.html';
-    setStatus(`Uploading ${name} to Google Drive...`);
+    setStatus(`Uploading ${name}…`);
     try {
       const res = await fetch(FUNCTION_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'upload',
-          googleToken,
-          fileName: name,
-          content: currentContent,
-          mimeType: 'text/html',
-        }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'upload', googleToken, fileName: name, content: currentContent, mimeType: 'text/html' }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Upload failed');
-      setStatus(`✓ Uploaded ${name} successfully`);
-      await loadFiles(googleToken);
-      setView('list');
-    } catch (e: any) {
-      setError(e.message);
-      setView('list');
-    }
+      setStatus(`✓ Uploaded ${name}`);
+      await loadFiles(googleToken); setView('list');
+    } catch (e: any) { setError(e.message); setView('list'); }
     setLoading(false);
   };
 
-  // Keyboard navigation
   useEffect(() => {
     if (!visible || !authenticated) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowDown') {
-        setSelectedIdx(prev => Math.min(prev + 1, files.length - 1));
-        e.preventDefault();
-      } else if (e.key === 'ArrowUp') {
-        setSelectedIdx(prev => Math.max(prev - 1, 0));
-        e.preventDefault();
-      } else if (e.key === 'Enter') {
-        if (files[selectedIdx]) downloadFile(files[selectedIdx]);
-        e.preventDefault();
-      }
+      if (e.key === 'ArrowDown') { setSelectedIdx(prev => Math.min(prev + 1, files.length - 1)); e.preventDefault(); }
+      else if (e.key === 'ArrowUp') { setSelectedIdx(prev => Math.max(prev - 1, 0)); e.preventDefault(); }
+      else if (e.key === 'Enter') { if (files[selectedIdx]) downloadFile(files[selectedIdx]); e.preventDefault(); }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -162,57 +119,34 @@ export default function GoogleDriveModal({
   if (!visible) return null;
 
   return (
-    <ModalShell visible={visible} title="☁ GOOGLE DRIVE" onClose={onClose}>
-      <div style={{ margin: '16px 0', minHeight: '200px' }}>
+    <ModalShell visible={visible} title="☁ Google Drive" onClose={onClose}>
+      <div style={{ minHeight: '180px' }}>
         {error && (
-          <div style={{
-            padding: '8px 12px', marginBottom: '12px',
-            border: '1px solid var(--terminal-text)', opacity: 0.9,
-            background: 'rgba(255,0,0,0.1)',
-          }}>
+          <div style={{ padding: '10px 14px', marginBottom: '14px', borderRadius: '9px', border: '1px solid rgba(224,92,92,0.4)', background: 'rgba(224,92,92,0.08)', fontSize: '13px', fontFamily: uiFont, color: '#e05c5c' }}>
             ⚠ {error}
           </div>
         )}
-
         {status && (
-          <div style={{
-            padding: '8px 12px', marginBottom: '12px',
-            border: '1px solid var(--terminal-text)', opacity: 0.7,
-          }}>
+          <div style={{ padding: '10px 14px', marginBottom: '14px', borderRadius: '9px', border: '1px solid var(--terminal-border)', background: 'var(--terminal-surface)', fontSize: '13px', fontFamily: uiFont, opacity: 0.8 }}>
             {status}
           </div>
         )}
 
         {!authenticated ? (
-          <div style={{ textAlign: 'center', padding: '40px 0' }}>
-            <p style={{ marginBottom: '8px', fontSize: '14px' }}>
-              Sign in with Google to access your Drive files
-            </p>
-            <p style={{ marginBottom: '24px', fontSize: '12px', opacity: 0.6 }}>
-              Connect your Google account to sync files to Google Drive
-            </p>
-            <ModalButton
-              label={loading ? 'SIGNING IN...' : '🔑 SIGN IN WITH GOOGLE'}
-              focused={true}
-              onClick={signIn}
-            />
+          <div style={{ textAlign: 'center', padding: '32px 0' }}>
+            <p style={{ marginBottom: '6px', fontSize: '14px', fontFamily: uiFont }}>Sign in with Google to access your Drive</p>
+            <p style={{ marginBottom: '24px', fontSize: '12px', opacity: 0.5, fontFamily: uiFont }}>Connect to sync files across devices</p>
+            <ModalButton label={loading ? 'Signing in…' : '🔑 Sign in with Google'} focused onClick={signIn} />
           </div>
         ) : (
           <>
             {loading && files.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 0', opacity: 0.6 }}>
-                Loading files...
-              </div>
+              <div style={{ textAlign: 'center', padding: '40px 0', opacity: 0.5, fontFamily: uiFont, fontSize: '13px' }}>Loading files…</div>
             ) : (
               <>
-                <div style={{
-                  maxHeight: '300px', overflowY: 'auto',
-                  border: '1px solid var(--terminal-text)', marginBottom: '16px',
-                }}>
+                <div style={{ maxHeight: '280px', overflowY: 'auto', border: '1px solid var(--terminal-border)', borderRadius: '10px', marginBottom: '16px', overflow: 'hidden' }}>
                   {files.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '24px', opacity: 0.5 }}>
-                      No text files found in Google Drive
-                    </div>
+                    <div style={{ textAlign: 'center', padding: '24px', opacity: 0.45, fontFamily: uiFont, fontSize: '13px' }}>No text files in Google Drive</div>
                   ) : files.map((file, i) => (
                     <div
                       key={file.id}
@@ -220,34 +154,25 @@ export default function GoogleDriveModal({
                       style={{
                         padding: '10px 16px',
                         cursor: 'pointer',
-                        borderBottom: i < files.length - 1 ? '1px solid var(--terminal-text)' : 'none',
-                        background: i === selectedIdx ? 'var(--terminal-text)' : 'transparent',
+                        borderBottom: i < files.length - 1 ? '1px solid var(--terminal-border)' : 'none',
+                        background: i === selectedIdx ? 'var(--terminal-accent)' : 'transparent',
                         color: i === selectedIdx ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        fontSize: '13px', fontFamily: uiFont,
+                        transition: 'background 0.1s',
                       }}
                     >
                       <span>📄 {file.name}</span>
-                      <span style={{ fontSize: '12px', opacity: 0.6 }}>
+                      <span style={{ fontSize: '11px', opacity: 0.55 }}>
                         {file.modifiedTime ? new Date(file.modifiedTime).toLocaleDateString() : ''}
                       </span>
                     </div>
                   ))}
                 </div>
-
-                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                  <ModalButton
-                    label="📤 UPLOAD CURRENT"
-                    focused={false}
-                    onClick={uploadFile}
-                  />
-                  <ModalButton
-                    label="🔄 REFRESH"
-                    focused={false}
-                    onClick={() => googleToken && loadFiles(googleToken)}
-                  />
-                  <ModalButton label="CLOSE" focused={false} onClick={onClose} />
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <ModalButton label="📤 Upload current" focused={false} onClick={uploadFile} />
+                  <ModalButton label="🔄 Refresh" focused={false} onClick={() => googleToken && loadFiles(googleToken)} />
+                  <ModalButton label="Close" focused={false} onClick={onClose} />
                 </div>
               </>
             )}
