@@ -56,22 +56,23 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
     >
       <div
         style={{
-          fontSize: '14px',
-          letterSpacing: '6px',
+          fontSize: '11px',
+          letterSpacing: '5px',
           textTransform: 'uppercase',
-          color: '#888',
-          marginBottom: '12px',
-          fontFamily: "'Courier Prime', monospace",
+          color: 'rgba(255,255,255,0.3)',
+          marginBottom: '10px',
+          fontFamily: "'Space Grotesk', sans-serif",
+          fontWeight: 500,
         }}
       >
-        Choose your style
+        Choose your writing environment
       </div>
       <div
         style={{
-          fontSize: '10px',
-          color: '#555',
-          marginBottom: '40px',
-          fontFamily: "'Courier Prime', monospace",
+          fontSize: '12px',
+          color: 'rgba(255,255,255,0.18)',
+          marginBottom: '48px',
+          fontFamily: "'Space Grotesk', sans-serif",
         }}
       >
         You can change this anytime in Settings
@@ -80,10 +81,10 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
       <div
         style={{
           display: 'flex',
-          gap: '24px',
+          gap: '20px',
           flexWrap: 'wrap',
           justifyContent: 'center',
-          maxWidth: '900px',
+          maxWidth: '960px',
           padding: '0 20px',
         }}
       >
@@ -98,16 +99,16 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
               onMouseLeave={() => setHoveredIdx(null)}
               onClick={() => onSelect(mode)}
               style={{
-                width: '240px',
+                width: '260px',
                 cursor: 'pointer',
-                border: isActive ? `2px solid ${theme.colors.accent}` : '2px solid #333',
-                borderRadius: '0',
+                border: isActive ? `1.5px solid ${theme.colors.accent}` : '1.5px solid rgba(255,255,255,0.08)',
+                borderRadius: '12px',
                 overflow: 'hidden',
-                transition: 'all 0.3s ease',
-                transform: isActive ? 'scale(1.05)' : 'scale(1)',
+                transition: 'all 0.25s ease',
+                transform: isActive ? 'translateY(-4px)' : 'translateY(0)',
                 boxShadow: isActive
-                  ? `0 0 30px ${theme.colors.glow !== 'transparent' ? theme.colors.glow : 'rgba(99, 102, 241, 0.3)'}`
-                  : 'none',
+                  ? `0 16px 48px ${theme.colors.glow !== 'transparent' ? theme.colors.glow : 'rgba(74, 111, 165, 0.25)'}`
+                  : '0 2px 12px rgba(0,0,0,0.3)',
               }}
             >
               {/* Preview area */}
@@ -115,30 +116,28 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
                 style={{
                   background: theme.preview.bg,
                   color: theme.preview.fg,
-                  padding: '28px 20px',
+                  padding: '32px 24px',
                   fontFamily: theme.fonts.body,
-                  fontSize: '18px',
-                  lineHeight: 1.6,
-                  minHeight: '140px',
+                  fontSize: '17px',
+                  lineHeight: 1.65,
+                  minHeight: '150px',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'center',
-                  textShadow: theme.effects.textGlow ? `0 0 8px ${theme.colors.glow}` : 'none',
+                  textShadow: theme.effects.textGlow ? `0 0 12px ${theme.colors.glow}` : 'none',
                   position: 'relative',
                 }}
               >
-                {/* Scanline overlay for terminal */}
                 {theme.effects.scanlines && (
                   <div
                     style={{
                       position: 'absolute',
                       inset: 0,
-                      background: 'repeating-linear-gradient(0deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 1px, transparent 2px)',
+                      background: 'repeating-linear-gradient(0deg, rgba(0,0,0,0.12), rgba(0,0,0,0.12) 1px, transparent 1px, transparent 2px)',
                       pointerEvents: 'none',
                     }}
                   />
                 )}
-                {/* Paper texture for typewriter */}
                 {theme.effects.paperTexture && (
                   <div
                     style={{
@@ -149,10 +148,10 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
                     }}
                   />
                 )}
-                <div style={{ fontWeight: 'bold', fontSize: '22px', marginBottom: '8px' }}>
+                <div style={{ fontWeight: 600, fontSize: '20px', marginBottom: '8px', letterSpacing: '-0.3px' }}>
                   {theme.preview.sampleText}
                 </div>
-                <div style={{ fontSize: '14px', opacity: 0.7 }}>
+                <div style={{ fontSize: '14px', opacity: 0.55, fontStyle: mode === 'typewriter' ? 'italic' : 'normal' }}>
                   jumps over the lazy dog.
                 </div>
               </div>
@@ -160,31 +159,35 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
               {/* Label */}
               <div
                 style={{
-                  background: isActive ? theme.colors.accent : '#1a1a1a',
+                  background: isActive ? theme.colors.accent : 'rgba(255,255,255,0.04)',
                   color: isActive
-                    ? (mode === 'terminal' ? '#000' : '#fff')
-                    : '#999',
-                  padding: '14px 20px',
-                  textAlign: 'center',
-                  transition: 'all 0.3s',
+                    ? (mode === 'terminal' ? '#0d1117' : '#fff')
+                    : 'rgba(255,255,255,0.5)',
+                  padding: '16px 20px',
+                  textAlign: 'left',
+                  transition: 'all 0.25s',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px',
                 }}
               >
                 <div
                   style={{
-                    fontSize: '16px',
-                    fontWeight: 'bold',
-                    fontFamily: "'Courier Prime', monospace",
-                    letterSpacing: '2px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    letterSpacing: '0.5px',
+                    textTransform: 'uppercase',
                   }}
                 >
-                  {theme.icon} {theme.label.toUpperCase()}
+                  {theme.label}
                 </div>
                 <div
                   style={{
                     fontSize: '11px',
-                    marginTop: '4px',
-                    opacity: 0.8,
-                    fontFamily: "'Courier Prime', monospace",
+                    opacity: 0.75,
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    fontWeight: 400,
                   }}
                 >
                   {theme.description}
@@ -197,13 +200,14 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
 
       <div
         style={{
-          marginTop: '32px',
+          marginTop: '40px',
           fontSize: '11px',
-          color: '#444',
-          fontFamily: "'Courier Prime', monospace",
+          color: 'rgba(255,255,255,0.18)',
+          fontFamily: "'Space Grotesk', sans-serif",
+          letterSpacing: '1px',
         }}
       >
-        ← → Navigate • Enter Select
+        ← → Navigate &nbsp;·&nbsp; Enter to select
       </div>
     </div>
   );
