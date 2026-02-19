@@ -164,6 +164,9 @@ export default function MenuBar({
               }}
               onClick={(e) => {
                 e.stopPropagation();
+                // Storage and Settings fire directly — no submenu needed
+                if (menu === 'storage') { onAction('open-storage-menu'); return; }
+                if (menu === 'settings') { onAction('opensettings'); return; }
                 if (mouseActive && hoverMenuIdx === i) {
                   setHoverMenuIdx(null);
                   setMouseActive(false);
@@ -176,8 +179,8 @@ export default function MenuBar({
             >
               {t(language, `menu.${menu}`)}
 
-              {/* Dropdown */}
-              {isFocused && activeSubOpen && (
+              {/* Dropdown — not shown for direct-action menus */}
+              {isFocused && activeSubOpen && menu !== 'storage' && menu !== 'settings' && (
                 <div
                   style={{
                     position: 'absolute',
