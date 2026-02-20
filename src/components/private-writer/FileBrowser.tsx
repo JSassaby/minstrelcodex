@@ -65,6 +65,7 @@ export interface FileBrowserProps {
   onDeleteFolder: (folderPath: string[]) => void;
   onRenameFile: (oldName: string, newName: string) => void;
   onMoveFile: (filename: string, fromPath: string[], toPath: string[]) => void;
+  onMoveFolder: (folderName: string, fromPath: string[], toPath: string[]) => void;
   onToggleFolder: (path: string[]) => void;
   onRestoreFromDeleted: (itemName: string) => void;
   onEmptyDeleted: () => void;
@@ -121,6 +122,7 @@ export default function FileBrowser({
   onDeleteFolder,
   onRenameFile,
   onMoveFile,
+  onMoveFolder,
   onToggleFolder,
   onRestoreFromDeleted,
   onEmptyDeleted,
@@ -469,6 +471,9 @@ export default function FileBrowser({
           if (srcType === 'file') {
             onMoveFile(srcName, srcPath.slice(0, -1), []);
             showStatus('Moved to root');
+          } else if (srcType === 'folder') {
+            onMoveFolder(srcName, srcPath.slice(0, -1), []);
+            showStatus('Folder moved to root');
           }
           setDragState(null);
           setDropTargetPath(null);
@@ -517,8 +522,13 @@ export default function FileBrowser({
                 onDragOver={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  e.dataTransfer.dropEffect = 'move';
+                  // Don't highlight if dragging over self or a descendant
+                  const srcPath: string[] = dragState?.itemPath ?? [];
                   const target = isFolder ? item.path : item.path.slice(0, -1);
+                  const srcStr = srcPath.join('/');
+                  const destStr = target.join('/');
+                  if (destStr === srcStr || destStr.startsWith(srcStr + '/')) return;
+                  e.dataTransfer.dropEffect = 'move';
                   setDropTargetPath(target);
                 }}
                 onDragLeave={(e) => {
@@ -550,6 +560,9 @@ export default function FileBrowser({
                   if (srcType === 'file') {
                     onMoveFile(srcName, srcPath.slice(0, -1), destPath);
                     showStatus(`Moved to ${destPath.join('/') || 'root'}`);
+                  } else if (srcType === 'folder') {
+                    onMoveFolder(srcName, srcPath.slice(0, -1), destPath);
+                    showStatus(`Folder moved to ${destPath.join('/') || 'root'}`);
                   }
                   setDragState(null);
                   setDropTargetPath(null);

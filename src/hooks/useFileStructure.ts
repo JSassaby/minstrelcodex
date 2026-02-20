@@ -62,6 +62,34 @@ export function useFileStructure() {
     });
   }, []);
 
+  const moveFolder = useCallback((folderName: string, fromPath: string[], toPath: string[]) => {
+    setStructure(prev => {
+      const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
+
+      // Navigate to source parent
+      let sourceParent: FileNode = next.root;
+      for (const p of fromPath) {
+        if (!sourceParent.children?.[p]) return prev;
+        sourceParent = sourceParent.children[p];
+      }
+      if (!sourceParent.children?.[folderName]) return prev;
+      const folderData = sourceParent.children[folderName];
+      delete sourceParent.children[folderName];
+
+      // Navigate to destination
+      let dest: FileNode = next.root;
+      for (const p of toPath) {
+        if (!dest.children?.[p]) return prev;
+        dest = dest.children[p];
+      }
+      if (!dest.children) dest.children = {};
+      dest.children[folderName] = folderData;
+
+      localStorage.setItem(FS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   const moveFile = useCallback((filename: string, fromPath: string[], toPath: string[]) => {
     setStructure(prev => {
       const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
@@ -459,7 +487,7 @@ export function useFileStructure() {
   }, []);
 
   return {
-    structure, createFolder, addFileToTree, toggleFolder, moveFile, deleteFile, deleteFolder, renameFile, getFolders,
+    structure, createFolder, addFileToTree, toggleFolder, moveFile, moveFolder, deleteFile, deleteFolder, renameFile, getFolders,
     createNovelProject, saveVersion, saveSnapshot, findFilesInFolder, getNovelProjects, createFileInFolder, restoreFromDeleted, emptyDeleted,
   };
 }
