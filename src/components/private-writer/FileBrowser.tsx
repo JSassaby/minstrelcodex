@@ -2,6 +2,13 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import type { FileNode, DocumentData } from '@/lib/types';
 
+// ── Drag-and-drop state ───────────────────────────────────────────────────────
+interface DragState {
+  itemPath: string[];   // path of the dragged item
+  itemType: 'file' | 'folder';
+  itemName: string;
+}
+
 
 // ── Graphic folder icon (yellow) ──────────────────────────────────────────────
 function FolderIcon({ open = false, isDeleted = false, size = 18 }: { open?: boolean; isDeleted?: boolean; size?: number }) {
@@ -125,6 +132,8 @@ export default function FileBrowser({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [inputMode, setInputMode] = useState<InputMode>('none');
   const [inputValue, setInputValue] = useState('');
+  const [dragState, setDragState] = useState<DragState | null>(null);
+  const [dropTargetPath, setDropTargetPath] = useState<string[] | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [moveTargetIdx, setMoveTargetIdx] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');
@@ -443,6 +452,27 @@ export default function FileBrowser({
       {/* Unified file tree */}
       <div
         ref={listRef}
+        onDragOver={(e) => {
+          // Root-level drop zone — only activate when not hovering a row
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+        }}
+        onDrop={(e) => {
+          // Only fire if the drop landed on the container, not a child row
+          if ((e.target as HTMLElement).closest('.file-browser-row')) return;
+          e.preventDefault();
+          const srcPath: string[] = JSON.parse(e.dataTransfer.getData('application/x-pw-path') || '[]');
+          const srcType = e.dataTransfer.getData('application/x-pw-type') as 'file' | 'folder';
+          const srcName = e.dataTransfer.getData('application/x-pw-name');
+          if (!srcName || !srcPath.length) return;
+          if (srcPath.slice(0, -1).length === 0) return; // already at root
+          if (srcType === 'file') {
+            onMoveFile(srcName, srcPath.slice(0, -1), []);
+            showStatus('Moved to root');
+          }
+          setDragState(null);
+          setDropTargetPath(null);
+        }}
         style={{
           flex: 1,
           overflowY: 'auto',
@@ -465,11 +495,57 @@ export default function FileBrowser({
             const words = liveContent ? liveContent.replace(/<[^>]*>/g, ' ').split(/\s+/).filter(Boolean).length : 0;
             const displayName = item.name.includes('/') ? item.name.split('/').pop() || item.name : item.name;
             const isDeleted = item.path[0] === 'Deleted';
+            const isDropTarget = isFolder && dropTargetPath !== null && dropTargetPath.join('/') === item.path.join('/');
 
             return (
               <div
                 key={item.path.join('/') + item.type}
                 data-idx={i}
+                data-drop-target={isDropTarget ? 'true' : undefined}
+                draggable
+                onDragStart={(e) => {
+                  setDragState({ itemPath: item.path, itemType: item.type, itemName: item.name });
+                  e.dataTransfer.effectAllowed = 'move';
+                  // Encode path as JSON so we can read it in onDrop
+                  e.dataTransfer.setData('application/x-pw-path', JSON.stringify(item.path));
+                  e.dataTransfer.setData('application/x-pw-type', item.type);
+                  e.dataTransfer.setData('application/x-pw-name', item.name);
+                }}
+                onDragEnd={() => {
+                  setDragState(null);
+                  setDropTargetPath(null);
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                  // Drop target = this folder, or the parent folder of this file
+                  const target = isFolder ? item.path : item.path.slice(0, -1);
+                  setDropTargetPath(target);
+                }}
+                onDragLeave={() => setDropTargetPath(null)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const srcPath: string[] = JSON.parse(e.dataTransfer.getData('application/x-pw-path') || '[]');
+                  const srcType = e.dataTransfer.getData('application/x-pw-type') as 'file' | 'folder';
+                  const srcName = e.dataTransfer.getData('application/x-pw-name');
+                  if (!srcName || !srcPath.length) return;
+
+                  // Destination folder
+                  const destPath = isFolder ? item.path : item.path.slice(0, -1);
+
+                  // Prevent dropping onto itself or a child
+                  const srcStr = srcPath.join('/');
+                  const destStr = destPath.join('/');
+                  if (destStr === srcPath.slice(0, -1).join('/')) return; // already there
+                  if (destStr.startsWith(srcStr)) return; // dropping into own child
+
+                  if (srcType === 'file') {
+                    onMoveFile(srcName, srcPath.slice(0, -1), destPath);
+                    showStatus(`Moved to ${destPath.join('/') || 'root'}`);
+                  }
+                  setDragState(null);
+                  setDropTargetPath(null);
+                }}
                 onClick={() => {
                   setSelectedIndex(i);
                   if (isFolder) onToggleFolder(item.path);
@@ -479,21 +555,40 @@ export default function FileBrowser({
                 style={{
                   padding: '6px 10px',
                   paddingLeft: `${10 + item.depth * 16}px`,
-                  cursor: 'pointer',
-                  background: isFocused ? 'var(--terminal-surface)' : 'transparent',
-                  color: 'var(--terminal-text)',
+                  cursor: dragState ? 'grabbing' : 'pointer',
+                  background: isDropTarget ? 'var(--terminal-accent)' : isFocused ? 'var(--terminal-surface)' : 'transparent',
+                  color: isDropTarget ? 'var(--terminal-bg)' : 'var(--terminal-text)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '7px',
                   fontSize: '12px',
                   fontFamily: uiFont,
-                  opacity: isDeleted && !isFocused ? 0.4 : 1,
-                  transition: 'background 0.12s',
+                  opacity: dragState && dragState.itemPath.join('/') === item.path.join('/') ? 0.35 : (isDeleted && !isFocused ? 0.4 : 1),
+                  transition: 'background 0.12s, opacity 0.12s',
                   borderLeft: isFocused ? '3px solid var(--terminal-accent)' : '3px solid transparent',
                   borderRadius: '0 8px 8px 0',
                   marginRight: '4px',
                 }}
               >
+                {/* Drag handle — shown on row hover via CSS */}
+                <span
+                  className="drag-handle"
+                  title="Drag to move"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '10px',
+                    flexShrink: 0,
+                    opacity: 0,
+                    transition: 'opacity 0.15s',
+                    cursor: 'grab',
+                    fontSize: '10px',
+                    color: 'var(--terminal-text)',
+                    userSelect: 'none',
+                  }}
+                >⠿</span>
+
                 {isFolder && (
                   <span style={{ display: 'flex', alignItems: 'center', width: '11px', justifyContent: 'center', flexShrink: 0 }}>
                     {item.collapsed
