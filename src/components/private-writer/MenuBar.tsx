@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   FilePlus, BookOpen, FolderOpen, Clock, Save, FileOutput,
   Printer, PanelLeftOpen, Undo2, Redo2, Copy, ClipboardPaste,
@@ -91,6 +92,7 @@ export default function MenuBar({
   const [hoverSubIdx, setHoverSubIdx] = useState<number | null>(null);
   const [mouseActive, setMouseActive] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
+  const menuItemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -113,6 +115,28 @@ export default function MenuBar({
   const shortName = filename ? filename.split('/').pop() || filename : t(language, 'status.untitled');
 
   const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
+
+  // Compute anchor rect for the active menu item to position the dropdown via portal
+  const getDropdownStyle = useCallback((): React.CSSProperties => {
+    const idx = mouseActive ? hoverMenuIdx : (visible ? menuIndex : null);
+    if (idx === null) return {};
+    const el = menuItemRefs.current[idx];
+    if (!el) return {};
+    const rect = el.getBoundingClientRect();
+    return {
+      position: 'fixed',
+      top: `${rect.bottom + 6}px`,
+      left: `${rect.left}px`,
+      background: 'var(--terminal-surface)',
+      border: '1px solid var(--terminal-border)',
+      minWidth: '270px',
+      zIndex: 9999,
+      borderRadius: '12px',
+      overflow: 'hidden',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08)',
+      padding: '6px',
+    };
+  }, [mouseActive, hoverMenuIdx, visible, menuIndex]);
 
   return (
     <div
@@ -138,11 +162,11 @@ export default function MenuBar({
       <div style={{ display: 'flex', gap: '2px' }}>
         {MENUS.map((menu, i) => {
           const isFocused = i === activeMenuIdx;
-          const items = getSubmenuItems(menu, language, wifiOn, bluetoothOn);
 
           return (
             <div
               key={menu}
+              ref={el => { menuItemRefs.current[i] = el; }}
               style={{
                 padding: '4px 9px',
                 position: 'relative',
@@ -178,83 +202,6 @@ export default function MenuBar({
               }}
             >
               {t(language, `menu.${menu}`)}
-
-              {/* Dropdown — not shown for direct-action menus */}
-              {isFocused && activeSubOpen && menu !== 'storage' && menu !== 'settings' && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 'calc(100% + 6px)',
-                    left: 0,
-                    background: 'var(--terminal-surface)',
-                    border: '1px solid var(--terminal-border)',
-                    minWidth: '270px',
-                    zIndex: 300,
-                    borderRadius: '12px',
-                    overflow: 'hidden',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08)',
-                    padding: '6px',
-                  }}
-                >
-                  {items.map((item, j) => {
-                    if (item.action === 'separator') {
-                      return (
-                        <div
-                          key={`sep-${j}`}
-                          style={{ height: '1px', background: 'var(--terminal-border)', opacity: 0.5, margin: '4px 6px' }}
-                        />
-                      );
-                    }
-                    const isActive = j === activeSubIdx;
-                    return (
-                      <div
-                        key={item.action}
-                        onMouseEnter={() => setHoverSubIdx(j)}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onAction(item.action);
-                          setHoverMenuIdx(null);
-                          setMouseActive(false);
-                        }}
-                        style={{
-                          padding: '7px 10px',
-                          cursor: 'pointer',
-                          borderRadius: '8px',
-                          background: isActive ? 'var(--terminal-accent)' : 'transparent',
-                          color: isActive ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px',
-                          justifyContent: 'space-between',
-                          transition: 'background 0.1s, color 0.1s',
-                        }}
-                      >
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '9px', flex: 1 }}>
-                          {item.icon && (
-                            <span style={{ display: 'flex', alignItems: 'center', width: '16px', justifyContent: 'center', flexShrink: 0, opacity: isActive ? 0.85 : 1 }}>
-                              {item.icon}
-                            </span>
-                          )}
-                          <span style={{ opacity: isActive ? 1 : 0.8, fontSize: '12px', fontFamily: uiFont, fontWeight: isActive ? '500' : '400' }}>
-                            {item.label}
-                          </span>
-                        </span>
-                        {item.shortcut && (
-                          <span style={{
-                            opacity: isActive ? 0.6 : 0.3,
-                            fontSize: '10px',
-                            fontFamily: uiFont,
-                            letterSpacing: '0.03em',
-                            flexShrink: 0,
-                          }}>
-                            {item.shortcut}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           );
         })}
@@ -285,8 +232,86 @@ export default function MenuBar({
         <FileText size={11} strokeWidth={1.8} style={{ flexShrink: 0, opacity: 0.7 }} />
         {shortName}
       </div>
+
+      {/* Portal dropdown — rendered at body level to avoid clipping by toolbar */}
+      {activeSubOpen && activeMenuIdx !== null && (() => {
+        const menu = MENUS[activeMenuIdx];
+        if (menu === 'storage' || menu === 'settings') return null;
+        const items = getSubmenuItems(menu, language, wifiOn, bluetoothOn);
+        const dropStyle = getDropdownStyle();
+        return createPortal(
+          <>
+            {/* Backdrop to close on outside click */}
+            <div
+              style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
+              onClick={() => { setHoverMenuIdx(null); setMouseActive(false); }}
+            />
+            <div style={{ ...dropStyle, fontFamily: uiFont }}>
+              {items.map((item, j) => {
+                if (item.action === 'separator') {
+                  return (
+                    <div
+                      key={`sep-${j}`}
+                      style={{ height: '1px', background: 'var(--terminal-border)', opacity: 0.5, margin: '4px 6px' }}
+                    />
+                  );
+                }
+                const isActive = j === activeSubIdx;
+                return (
+                  <div
+                    key={item.action}
+                    onMouseEnter={() => setHoverSubIdx(j)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAction(item.action);
+                      setHoverMenuIdx(null);
+                      setMouseActive(false);
+                    }}
+                    style={{
+                      padding: '7px 10px',
+                      cursor: 'pointer',
+                      borderRadius: '8px',
+                      background: isActive ? 'var(--terminal-accent)' : 'transparent',
+                      color: isActive ? 'var(--terminal-bg)' : 'var(--terminal-text)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      justifyContent: 'space-between',
+                      transition: 'background 0.1s, color 0.1s',
+                    }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '9px', flex: 1 }}>
+                      {item.icon && (
+                        <span style={{ display: 'flex', alignItems: 'center', width: '16px', justifyContent: 'center', flexShrink: 0, opacity: isActive ? 0.85 : 1 }}>
+                          {item.icon}
+                        </span>
+                      )}
+                      <span style={{ opacity: isActive ? 1 : 0.8, fontSize: '12px', fontFamily: uiFont, fontWeight: isActive ? '500' : '400' }}>
+                        {item.label}
+                      </span>
+                    </span>
+                    {item.shortcut && (
+                      <span style={{
+                        opacity: isActive ? 0.6 : 0.3,
+                        fontSize: '10px',
+                        fontFamily: uiFont,
+                        letterSpacing: '0.03em',
+                        flexShrink: 0,
+                      }}>
+                        {item.shortcut}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>,
+          document.body
+        );
+      })()}
     </div>
   );
 }
 
 export { MENUS, getSubmenuItems };
+
