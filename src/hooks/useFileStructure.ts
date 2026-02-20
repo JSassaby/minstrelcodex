@@ -66,20 +66,21 @@ export function useFileStructure() {
     setStructure(prev => {
       const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
 
-      // Find and remove from source
+      // Navigate to source folder
       let source: FileNode = next.root;
-      if (fromPath.length > 1) {
-        for (let i = 0; i < fromPath.length - 1; i++) {
-          source = source.children![fromPath[i]];
-        }
+      for (const p of fromPath) {
+        if (!source.children?.[p]) return prev;
+        source = source.children[p];
       }
-      const fileData = source.children![filename];
-      delete source.children![filename];
+      if (!source.children?.[filename]) return prev;
+      const fileData = source.children[filename];
+      delete source.children[filename];
 
-      // Add to destination
+      // Navigate to destination folder
       let dest: FileNode = next.root;
       for (const p of toPath) {
-        dest = dest.children![p];
+        if (!dest.children?.[p]) return prev;
+        dest = dest.children[p];
       }
       if (!dest.children) dest.children = {};
       dest.children[filename] = fileData;
