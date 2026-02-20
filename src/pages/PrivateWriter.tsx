@@ -1026,6 +1026,8 @@ export default function PrivateWriter() {
           focused={fileBrowserFocused}
           rootNode={fileStructure.structure.root}
           allDocuments={allDocs}
+          currentFilename={docStorage.currentDocument.filename}
+          currentContent={editorContent}
           onClose={() => {
             setFileBrowserOpen(false);
             setTimeout(() => editorRef.current?.focus(), 50);

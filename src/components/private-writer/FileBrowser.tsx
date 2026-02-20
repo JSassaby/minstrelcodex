@@ -47,6 +47,8 @@ export interface FileBrowserProps {
   focused: boolean;
   rootNode: FileNode;
   allDocuments: Record<string, DocumentData>;
+  currentFilename?: string;
+  currentContent?: string;
   onClose: () => void;
   onOpenFile: (filename: string) => void;
   onNewFile: () => void;
@@ -102,6 +104,8 @@ export default function FileBrowser({
   focused,
   rootNode,
   allDocuments,
+  currentFilename,
+  currentContent,
   onClose,
   onOpenFile,
   onCreateFile,
@@ -454,7 +458,11 @@ export default function FileBrowser({
             const isFocused = selectedIndex === i;
             const isFolder = item.type === 'folder';
             const doc = !isFolder ? allDocuments[item.name] : null;
-            const words = doc?.content ? doc.content.split(/\s+/).filter(Boolean).length : 0;
+            // Use live content for the currently open file, otherwise use saved content
+            const liveContent = (!isFolder && item.name === currentFilename && currentContent != null)
+              ? currentContent
+              : doc?.content;
+            const words = liveContent ? liveContent.replace(/<[^>]*>/g, ' ').split(/\s+/).filter(Boolean).length : 0;
             const displayName = item.name.includes('/') ? item.name.split('/').pop() || item.name : item.name;
             const isDeleted = item.path[0] === 'Deleted';
 
@@ -512,7 +520,7 @@ export default function FileBrowser({
                 }}>
                   {displayName}
                 </span>
-                {!isFolder && doc && (
+                {!isFolder && (doc || item.name === currentFilename) && (
                   <span style={{
                     fontSize: '10px',
                     opacity: isFocused ? 0.5 : 0.25,
