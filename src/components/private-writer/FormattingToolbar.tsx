@@ -60,15 +60,17 @@ export default function FormattingToolbar({
   const buttons: ToolbarButton[] = [
     { label: 'H1', shortcut: 'Ctrl+Alt+1', action: () => editor.chain().focus().toggleHeading({ level: 1 }).run(), isActive: editor.isActive('heading', { level: 1 }) },
     { label: 'H2', shortcut: 'Ctrl+Alt+2', action: () => editor.chain().focus().toggleHeading({ level: 2 }).run(), isActive: editor.isActive('heading', { level: 2 }) },
-    { label: 'H3', shortcut: 'Ctrl+Alt+3', action: () => editor.chain().focus().toggleHeading({ level: 3 }).run(), isActive: editor.isActive('heading', { level: 3 }) },
-    { label: 'H4', shortcut: 'Ctrl+Alt+4', action: () => editor.chain().focus().toggleHeading({ level: 4 }).run(), isActive: editor.isActive('heading', { level: 4 }) },
+    ...(!sidebarOpen ? [
+      { label: 'H3', shortcut: 'Ctrl+Alt+3', action: () => editor.chain().focus().toggleHeading({ level: 3 }).run(), isActive: editor.isActive('heading', { level: 3 }) },
+      { label: 'H4', shortcut: 'Ctrl+Alt+4', action: () => editor.chain().focus().toggleHeading({ level: 4 }).run(), isActive: editor.isActive('heading', { level: 4 }) },
+    ] : []),
     { label: '|', shortcut: '', action: () => {}, isActive: false },
     { label: 'B', shortcut: 'Ctrl+B', action: () => editor.chain().focus().toggleBold().run(), isActive: editor.isActive('bold') },
     { label: 'I', shortcut: 'Ctrl+I', action: () => editor.chain().focus().toggleItalic().run(), isActive: editor.isActive('italic') },
     { label: 'U', shortcut: 'Ctrl+U', action: () => editor.chain().focus().toggleUnderline().run(), isActive: editor.isActive('underline') },
     { label: '|', shortcut: '', action: () => {}, isActive: false },
     { label: '• List', shortcut: 'Ctrl+Shift+8', action: () => editor.chain().focus().toggleBulletList().run(), isActive: editor.isActive('bulletList') },
-    { label: '1. List', shortcut: 'Ctrl+Shift+7', action: () => editor.chain().focus().toggleOrderedList().run(), isActive: editor.isActive('orderedList') },
+    ...(!sidebarOpen ? [{ label: '1. List', shortcut: 'Ctrl+Shift+7', action: () => editor.chain().focus().toggleOrderedList().run(), isActive: editor.isActive('orderedList') }] : []),
   ];
 
   const divider = (key: string) => (
