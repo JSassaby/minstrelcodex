@@ -506,7 +506,6 @@ export default function FileBrowser({
                 onDragStart={(e) => {
                   setDragState({ itemPath: item.path, itemType: item.type, itemName: item.name });
                   e.dataTransfer.effectAllowed = 'move';
-                  // Encode path as JSON so we can read it in onDrop
                   e.dataTransfer.setData('application/x-pw-path', JSON.stringify(item.path));
                   e.dataTransfer.setData('application/x-pw-type', item.type);
                   e.dataTransfer.setData('application/x-pw-name', item.name);
@@ -517,27 +516,36 @@ export default function FileBrowser({
                 }}
                 onDragOver={(e) => {
                   e.preventDefault();
+                  e.stopPropagation();
                   e.dataTransfer.dropEffect = 'move';
-                  // Drop target = this folder, or the parent folder of this file
                   const target = isFolder ? item.path : item.path.slice(0, -1);
                   setDropTargetPath(target);
                 }}
-                onDragLeave={() => setDropTargetPath(null)}
+                onDragLeave={(e) => {
+                  // Only clear if we're actually leaving this row, not moving to a child element
+                  const related = e.relatedTarget as Node | null;
+                  if (!related || !e.currentTarget.contains(related)) {
+                    setDropTargetPath(null);
+                  }
+                }}
                 onDrop={(e) => {
                   e.preventDefault();
+                  e.stopPropagation();
+                  // Read from dragState ref to avoid stale-closure issues
                   const srcPath: string[] = JSON.parse(e.dataTransfer.getData('application/x-pw-path') || '[]');
                   const srcType = e.dataTransfer.getData('application/x-pw-type') as 'file' | 'folder';
                   const srcName = e.dataTransfer.getData('application/x-pw-name');
-                  if (!srcName || !srcPath.length) return;
+                  if (!srcName || !srcPath.length) { setDragState(null); setDropTargetPath(null); return; }
 
-                  // Destination folder
+                  // Destination folder: drop onto folder = move into it; drop onto file = move into its parent
                   const destPath = isFolder ? item.path : item.path.slice(0, -1);
 
-                  // Prevent dropping onto itself or a child
-                  const srcStr = srcPath.join('/');
+                  const srcParentStr = srcPath.slice(0, -1).join('/');
                   const destStr = destPath.join('/');
-                  if (destStr === srcPath.slice(0, -1).join('/')) return; // already there
-                  if (destStr.startsWith(srcStr)) return; // dropping into own child
+
+                  // Skip if already in that folder, or dropping a folder into itself/child
+                  if (destStr === srcParentStr) { setDragState(null); setDropTargetPath(null); return; }
+                  if (destStr.startsWith(srcPath.join('/'))) { setDragState(null); setDropTargetPath(null); return; }
 
                   if (srcType === 'file') {
                     onMoveFile(srcName, srcPath.slice(0, -1), destPath);
