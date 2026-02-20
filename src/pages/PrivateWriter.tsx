@@ -1021,6 +1021,45 @@ export default function PrivateWriter() {
       />
 
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        {/* Settings Sidebar */}
+        <SettingsPanel
+          visible={settingsPanelOpen}
+          language={language}
+          colors={theme.colors}
+          wifiOn={wifiOn}
+          bluetoothOn={bluetoothOn}
+          pinConfig={pinConfig}
+          themeMode={theme.themeMode}
+          onClose={() => {
+            setSettingsPanelOpen(false);
+            setTimeout(() => editorRef.current?.focus(), 50);
+          }}
+          onAction={(action) => executeAction(action)}
+          onUpdateColors={(c) => theme.updateColors(c)}
+          onResetColors={() => theme.resetColors()}
+          onSetLanguage={(lang) => {
+            setLanguage(lang);
+            localStorage.setItem('pw-language', lang);
+          }}
+          onOpenPinSetup={() => {
+            setSettingsPanelOpen(false);
+            executeAction('pinsetup');
+          }}
+          onOpenTypingChallenge={() => {
+            setSettingsPanelOpen(false);
+            executeAction('typingchallenge');
+          }}
+          onConnectGoogle={() => {
+            setSettingsPanelOpen(false);
+            connectGoogle();
+          }}
+          onConnectApple={() => {
+            setSettingsPanelOpen(false);
+            executeAction('apple-signin');
+          }}
+          onSwitchTheme={(mode) => theme.switchTheme(mode)}
+        />
+
         <FileBrowser
           visible={fileBrowserOpen}
           focused={fileBrowserFocused}
@@ -1062,7 +1101,7 @@ export default function PrivateWriter() {
             fontFamily={fontFamily}
             placeholder={t(language, 'placeholder')}
             ref={editorRef}
-            readOnly={settingsPanelOpen || !!activeModal || menuOpen}
+            readOnly={!!activeModal || menuOpen}
             sidebarOpen={fileBrowserOpen}
             onChangeFontSize={(delta) => theme.changeFontSize(delta)}
             onChangeFontFamily={(font) => {
@@ -1266,44 +1305,6 @@ export default function PrivateWriter() {
         </div>
       </ModalShell>
 
-      {/* Settings Panel */}
-      <SettingsPanel
-        visible={settingsPanelOpen}
-        language={language}
-        colors={theme.colors}
-        wifiOn={wifiOn}
-        bluetoothOn={bluetoothOn}
-        pinConfig={pinConfig}
-        themeMode={theme.themeMode}
-        onClose={() => {
-          setSettingsPanelOpen(false);
-          setTimeout(() => editorRef.current?.focus(), 50);
-        }}
-        onAction={(action) => executeAction(action)}
-        onUpdateColors={(c) => theme.updateColors(c)}
-        onResetColors={() => theme.resetColors()}
-        onSetLanguage={(lang) => {
-          setLanguage(lang);
-          localStorage.setItem('pw-language', lang);
-        }}
-        onOpenPinSetup={() => {
-          setSettingsPanelOpen(false);
-          executeAction('pinsetup');
-        }}
-        onOpenTypingChallenge={() => {
-          setSettingsPanelOpen(false);
-          executeAction('typingchallenge');
-        }}
-        onConnectGoogle={() => {
-          setSettingsPanelOpen(false);
-          connectGoogle();
-        }}
-        onConnectApple={() => {
-          setSettingsPanelOpen(false);
-          executeAction('apple-signin');
-        }}
-        onSwitchTheme={(mode) => theme.switchTheme(mode)}
-      />
 
       {/* Typing Challenge Modal */}
       <ModalShell visible={activeModal === 'typing'} title="TYPING CHALLENGE" onClose={closeModal}>

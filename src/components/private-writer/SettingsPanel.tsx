@@ -234,10 +234,11 @@ export default function SettingsPanel({
   return (
     <div
       style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 500,
+        width: '340px',
+        minWidth: '340px',
+        height: '100%',
         background: 'var(--terminal-bg)',
+        borderRight: '1px solid var(--terminal-border)',
         color: 'var(--terminal-text)',
         fontFamily: uiFont,
         display: 'flex',
@@ -247,7 +248,7 @@ export default function SettingsPanel({
     >
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div style={{
-        padding: '14px 24px',
+        padding: '10px 14px',
         borderBottom: '1px solid var(--terminal-border)',
         display: 'flex',
         justifyContent: 'space-between',
@@ -255,48 +256,44 @@ export default function SettingsPanel({
         flexShrink: 0,
         background: 'var(--terminal-surface)',
       }}>
-        <div style={{
-          fontSize: '18px',
-          fontWeight: '700',
-          fontFamily: uiFont,
-          letterSpacing: '-0.01em',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-        }}>
-          <span style={{ fontSize: '14px', opacity: 0.6 }}>⚙</span>
-          Settings
-        </div>
+        <span style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: uiFont, opacity: 0.65, display: 'flex', alignItems: 'center', gap: '7px' }}>
+          ⚙ Settings
+        </span>
         <button
           onClick={onClose}
+          title="Esc to close"
           style={{
-            cursor: 'pointer',
-            padding: '6px 14px',
-            borderRadius: '8px',
-            border: '1px solid var(--terminal-border)',
             background: 'transparent',
+            border: '1px solid var(--terminal-border)',
+            borderRadius: '6px',
             color: 'var(--terminal-text)',
+            opacity: 0.45,
+            cursor: 'pointer',
+            width: '22px',
+            height: '22px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             fontSize: '13px',
+            lineHeight: 1,
             fontFamily: uiFont,
-            fontWeight: '500',
-            opacity: 0.7,
-            transition: 'opacity 0.1s, background 0.1s',
+            transition: 'opacity 0.15s, border-color 0.15s',
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; (e.currentTarget as HTMLElement).style.background = 'var(--terminal-border)'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.7'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '0.9'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--terminal-accent)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.45'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--terminal-border)'; }}
         >
-          ESC  ✕
+          ✕
         </button>
       </div>
 
       {/* ── Tab bar ────────────────────────────────────────────────────── */}
       <div style={{
-        display: 'flex',
-        gap: '4px',
-        padding: '10px 24px',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: '3px',
+        padding: '8px',
         borderBottom: '1px solid var(--terminal-border)',
         flexShrink: 0,
-        overflowX: 'auto',
         background: 'var(--terminal-surface)',
       }}>
         {TABS.map((tab, i) => {
@@ -306,12 +303,12 @@ export default function SettingsPanel({
               key={tab.id}
               onClick={() => setActiveTabIdx(i)}
               style={{
-                padding: '6px 14px',
-                borderRadius: '8px',
+                padding: '6px 4px',
+                borderRadius: '7px',
                 border: active ? '1.5px solid var(--terminal-accent)' : '1px solid transparent',
                 background: active ? 'var(--terminal-accent)' : 'transparent',
                 color: active ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-                fontSize: '13px',
+                fontSize: '11px',
                 fontFamily: uiFont,
                 fontWeight: active ? '600' : '400',
                 cursor: 'pointer',
@@ -319,21 +316,22 @@ export default function SettingsPanel({
                 transition: 'all 0.15s',
                 opacity: active ? 1 : 0.65,
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
-                gap: '6px',
+                gap: '3px',
               }}
               onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.opacity = '1'; (e.currentTarget as HTMLElement).style.background = 'var(--terminal-border)'; } }}
               onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.opacity = '0.65'; (e.currentTarget as HTMLElement).style.background = 'transparent'; } }}
             >
-              <span style={{ fontSize: '12px' }}>{tab.icon}</span>
-              {tab.label}
+              <span style={{ fontSize: '14px' }}>{tab.icon}</span>
+              <span style={{ fontSize: '10px' }}>{tab.label}</span>
             </button>
           );
         })}
       </div>
 
       {/* ── Content ────────────────────────────────────────────────────── */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '24px', maxWidth: '800px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
+      <div style={{ flex: 1, overflow: 'auto', padding: '16px', width: '100%', boxSizing: 'border-box' }}>
 
         {/* APPEARANCE */}
         {activeTab === 'appearance' && (
