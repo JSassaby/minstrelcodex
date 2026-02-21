@@ -375,12 +375,15 @@ export default function PrivateWriter() {
         theme.changeFontSize(-2);
         break;
       case 'customizecolors':
+        setMusicPlayerOpen(false);
         setSettingsPanelOpen(true);
         break;
       case 'opensettings':
+        setMusicPlayerOpen(false);
         setSettingsPanelOpen(true);
         break;
       case 'openmusic':
+        setSettingsPanelOpen(false);
         setMusicPlayerOpen(prev => !prev);
         break;
       case 'togglesidebar':
