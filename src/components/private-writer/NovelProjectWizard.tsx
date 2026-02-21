@@ -174,8 +174,9 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
     }
   }, [visible]);
 
-  // Use the shared Google token hook for consistent connected status
-  const { isConnected: isGoogleConnected } = useGoogleToken();
+  // Use googleToken (not isConnected) — isConnected includes Google identity without Drive access
+  const { googleToken } = useGoogleToken();
+  const isGoogleConnected = !!googleToken;
 
   const abr = abbreviation || 'ABR';
 
