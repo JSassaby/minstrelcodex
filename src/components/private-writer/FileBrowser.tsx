@@ -87,6 +87,7 @@ type InputMode = 'none' | 'search' | 'rename' | 'new-folder' | 'new-file' | 'mov
 
 interface FlatItem {
   name: string;
+  docKey?: string; // The document storage key (FileNode.name) — may differ from tree key for files in subfolders
   type: 'file' | 'folder';
   path: string[];
   depth: number;
@@ -117,7 +118,7 @@ function flattenTree(node: FileNode, path: string[] = [], depth: number = 0): Fl
   for (const name of keys) {
     const item = children[name];
     const itemPath = [...path, name];
-    result.push({ name, type: item.type, path: itemPath, depth, collapsed: item.collapsed });
+    result.push({ name, docKey: item.type === 'file' ? item.name : undefined, type: item.type, path: itemPath, depth, collapsed: item.collapsed });
     if (item.type === 'folder' && !item.collapsed) {
       result.push(...flattenTree(item, itemPath, depth + 1));
     }
@@ -303,7 +304,7 @@ export default function FileBrowser({
           if (item.type === 'folder') {
             onToggleFolder(item.path);
           } else {
-            onOpenFile(item.name);
+            onOpenFile(item.docKey || item.name);
           }
         }
         e.preventDefault();
@@ -519,9 +520,10 @@ export default function FileBrowser({
           filteredItems.map((item, i) => {
             const isFocused = selectedIndex === i;
             const isFolder = item.type === 'folder';
-            const doc = !isFolder ? allDocuments[item.name] : null;
+            const fileKey = item.docKey || item.name;
+            const doc = !isFolder ? allDocuments[fileKey] : null;
             // Use live content for the currently open file, otherwise use saved content
-            const liveContent = (!isFolder && item.name === currentFilename && currentContent != null)
+            const liveContent = (!isFolder && fileKey === currentFilename && currentContent != null)
               ? currentContent
               : doc?.content;
             const words = liveContent ? liveContent.replace(/<[^>]*>/g, ' ').split(/\s+/).filter(Boolean).length : 0;
@@ -672,7 +674,7 @@ export default function FileBrowser({
                 onClick={() => {
                   setSelectedIndex(i);
                   if (isFolder) onToggleFolder(item.path);
-                  else onOpenFile(item.name);
+                  else onOpenFile(item.docKey || item.name);
                 }}
                 className="file-browser-row"
                 style={{

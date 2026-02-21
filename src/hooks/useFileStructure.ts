@@ -535,7 +535,7 @@ export function useFileStructure() {
       const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
       const item = deleted.children[itemKey];
       if (item.type === 'file') {
-        delete docs[itemKey];
+        delete docs[item.name]; // Use docKey (FileNode.name), not tree key
       } else {
         // Recursively remove all docs in folder
         const collectAndDelete = (node: FileNode) => {
