@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { lovable } from '@/integrations/lovable/index';
 import { supabase } from '@/integrations/supabase/client';
 import { useGoogleToken } from '@/hooks/useGoogleToken';
 import ModalShell, { ModalButton } from './ModalShell';
@@ -82,73 +83,44 @@ export default function GoogleDriveModal({
   const signIn = async () => {
     setLoading(true); setError(''); setNeedsReauth(false);
     try {
-      // Use direct Supabase OAuth with Drive scopes + popup to capture provider_token
-      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          scopes: 'https://www.googleapis.com/auth/drive.file',
-          skipBrowserRedirect: true,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
+      const result = await lovable.auth.signInWithOAuth('google', {
+        redirect_uri: window.location.origin,
+        extraParams: {
+          scope: 'https://www.googleapis.com/auth/drive.file',
+          access_type: 'offline',
+          prompt: 'consent',
         },
       });
-
-      if (oauthError) {
-        setError(oauthError.message || 'Sign-in failed');
+      if (result.error) {
+        setError((result.error as any).message || 'Sign-in failed');
         setLoading(false);
         return;
       }
-
-      if (data?.url) {
-        // Open OAuth in a popup window to avoid iframe issues
-        const popup = window.open(data.url, 'google-drive-auth', 'width=500,height=700,scrollbars=yes');
-        if (!popup) {
-          setError('Popup blocked — please allow popups for this site and try again.');
-          setLoading(false);
+      // After auth completes (redirect or bridge), check for provider_token
+      if (!result.redirected) {
+        await new Promise(r => setTimeout(r, 800));
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.provider_token) {
+          localStorage.setItem('pw-google-token', session.provider_token);
+          window.location.reload();
           return;
         }
-
-        // Poll for popup close and then check for session
-        const pollInterval = setInterval(async () => {
-          try {
-            if (popup.closed) {
-              clearInterval(pollInterval);
-              // Check if we got a session with provider_token
-              const { data: { session } } = await supabase.auth.getSession();
-              if (session?.provider_token) {
-                localStorage.setItem('pw-google-token', session.provider_token);
-                setLoading(false);
-                window.location.reload();
-                return;
-              }
-              // Try refreshing
-              const { data: refreshData } = await supabase.auth.refreshSession();
-              if (refreshData.session?.provider_token) {
-                localStorage.setItem('pw-google-token', refreshData.session.provider_token);
-                setLoading(false);
-                window.location.reload();
-                return;
-              }
-              if (session) {
-                // Signed in but no Drive token
-                setError('Signed in but Drive access token was not returned. Please try again.');
-              }
-              setLoading(false);
-            }
-          } catch {
-            // popup cross-origin — keep polling
-          }
-        }, 500);
-
-        // Timeout after 2 minutes
-        setTimeout(() => {
-          clearInterval(pollInterval);
-          if (!popup.closed) popup.close();
-          setLoading(false);
-        }, 120000);
+        const { data: refreshData } = await supabase.auth.refreshSession();
+        if (refreshData.session?.provider_token) {
+          localStorage.setItem('pw-google-token', refreshData.session.provider_token);
+          window.location.reload();
+          return;
+        }
+        // Auth succeeded but no Drive token — this is the managed auth limitation
+        // The user is authenticated with Google identity but we can't get the Drive API token
+        setError(
+          'Google sign-in succeeded, but Drive API access requires custom OAuth credentials. ' +
+          'Go to Lovable Cloud → Users → Authentication Settings → Google, and add your own Google OAuth Client ID & Secret with the drive.file scope enabled.'
+        );
+        setLoading(false);
+        return;
       }
+      setTimeout(() => { setLoading(false); }, 5000);
     } catch (e: any) {
       setError(e.message || 'Sign-in failed');
       setLoading(false);
