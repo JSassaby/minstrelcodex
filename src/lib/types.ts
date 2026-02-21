@@ -14,6 +14,7 @@ export interface FileNode {
   type: 'file' | 'folder';
   name: string;
   children?: Record<string, FileNode>;
+  childOrder?: string[];
   collapsed?: boolean;
 }
 

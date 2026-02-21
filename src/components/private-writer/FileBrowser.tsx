@@ -9,6 +9,12 @@ interface DragState {
   itemName: string;
 }
 
+// Drop position: 'into' means move into folder, 'before'/'after' means reorder
+interface DropIndicator {
+  index: number;
+  position: 'before' | 'after' | 'into';
+}
+
 
 // ── Graphic folder icon (yellow) ──────────────────────────────────────────────
 function FolderIcon({ open = false, isDeleted = false, size = 18 }: { open?: boolean; isDeleted?: boolean; size?: number }) {
@@ -66,6 +72,7 @@ export interface FileBrowserProps {
   onRenameFile: (oldName: string, newName: string) => void;
   onMoveFile: (filename: string, fromPath: string[], toPath: string[]) => void;
   onMoveFolder: (folderName: string, fromPath: string[], toPath: string[]) => void;
+  onReorderItem: (itemName: string, parentPath: string[], targetName: string, position: 'before' | 'after') => void;
   onToggleFolder: (path: string[]) => void;
   onRestoreFromDeleted: (itemName: string) => void;
   onEmptyDeleted: () => void;
@@ -88,16 +95,26 @@ interface FlatItem {
 function flattenTree(node: FileNode, path: string[] = [], depth: number = 0): FlatItem[] {
   const result: FlatItem[] = [];
   const children = node.children || {};
-  const entries = Object.entries(children).sort((a, b) => {
-    // Folders first, then files
-    const aFolder = a[1].type === 'folder';
-    const bFolder = b[1].type === 'folder';
-    if (aFolder && !bFolder) return -1;
-    if (!aFolder && bFolder) return 1;
-    return a[0].localeCompare(b[0]);
-  });
 
-  for (const [name, item] of entries) {
+  // Use childOrder if available, otherwise sort folders first then alphabetically
+  let keys: string[];
+  if (node.childOrder && node.childOrder.length > 0) {
+    // Start with ordered keys, then append any missing ones
+    const ordered = node.childOrder.filter(k => k in children);
+    const remaining = Object.keys(children).filter(k => !ordered.includes(k));
+    keys = [...ordered, ...remaining];
+  } else {
+    keys = Object.keys(children).sort((a, b) => {
+      const aFolder = children[a].type === 'folder';
+      const bFolder = children[b].type === 'folder';
+      if (aFolder && !bFolder) return -1;
+      if (!aFolder && bFolder) return 1;
+      return a.localeCompare(b);
+    });
+  }
+
+  for (const name of keys) {
+    const item = children[name];
     const itemPath = [...path, name];
     result.push({ name, type: item.type, path: itemPath, depth, collapsed: item.collapsed });
     if (item.type === 'folder' && !item.collapsed) {
@@ -123,6 +140,7 @@ export default function FileBrowser({
   onRenameFile,
   onMoveFile,
   onMoveFolder,
+  onReorderItem,
   onToggleFolder,
   onRestoreFromDeleted,
   onEmptyDeleted,
@@ -136,6 +154,7 @@ export default function FileBrowser({
   const [inputValue, setInputValue] = useState('');
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [dropTargetPath, setDropTargetPath] = useState<string[] | null>(null);
+  const [dropIndicator, setDropIndicator] = useState<DropIndicator | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [moveTargetIdx, setMoveTargetIdx] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');
@@ -501,12 +520,25 @@ export default function FileBrowser({
             const displayName = item.name.includes('/') ? item.name.split('/').pop() || item.name : item.name;
             const isDeleted = item.path[0] === 'Deleted';
             const isDropTarget = isFolder && dropTargetPath !== null && dropTargetPath.join('/') === item.path.join('/');
+            const showDropBefore = dropIndicator?.index === i && dropIndicator.position === 'before';
+            const showDropAfter = dropIndicator?.index === i && dropIndicator.position === 'after';
 
             return (
               <div
                 key={item.path.join('/') + item.type}
                 data-idx={i}
                 data-drop-target={isDropTarget ? 'true' : undefined}
+                style={{ position: 'relative' }}
+              >
+                {/* Drop indicator line — before */}
+                {showDropBefore && (
+                  <div style={{
+                    position: 'absolute', top: 0, left: `${10 + item.depth * 16}px`, right: '8px',
+                    height: '2px', background: 'var(--terminal-accent)', borderRadius: '1px', zIndex: 10,
+                  }} />
+                )}
+              <div
+                data-idx={i}
                 draggable
                 onDragStart={(e) => {
                   setDragState({ itemPath: item.path, itemType: item.type, itemName: item.name });
@@ -518,44 +550,105 @@ export default function FileBrowser({
                 onDragEnd={() => {
                   setDragState(null);
                   setDropTargetPath(null);
+                  setDropIndicator(null);
                 }}
                 onDragOver={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  // Don't highlight if dragging over self or a descendant
                   const srcPath: string[] = dragState?.itemPath ?? [];
-                  const target = isFolder ? item.path : item.path.slice(0, -1);
                   const srcStr = srcPath.join('/');
-                  const destStr = target.join('/');
-                  if (destStr === srcStr || destStr.startsWith(srcStr + '/')) return;
-                  e.dataTransfer.dropEffect = 'move';
-                  setDropTargetPath(target);
+
+                  // Determine drop position based on mouse Y within the row
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const y = e.clientY - rect.top;
+                  const ratio = y / rect.height;
+
+                  // Check if same parent (reorder scenario)
+                  const srcParent = srcPath.slice(0, -1).join('/');
+                  const itemParent = item.path.slice(0, -1).join('/');
+                  const sameParent = srcParent === itemParent;
+                  const isSelf = srcStr === item.path.join('/');
+
+                  if (isSelf) return;
+
+                  if (sameParent && !isFolder) {
+                    // Reorder: show before/after indicator
+                    const pos = ratio < 0.5 ? 'before' : 'after';
+                    setDropIndicator({ index: i, position: pos });
+                    setDropTargetPath(null);
+                    e.dataTransfer.dropEffect = 'move';
+                  } else if (sameParent && isFolder) {
+                    // Folder in same parent: top third = before, bottom third = after, middle = into
+                    if (ratio < 0.3) {
+                      setDropIndicator({ index: i, position: 'before' });
+                      setDropTargetPath(null);
+                    } else if (ratio > 0.7) {
+                      setDropIndicator({ index: i, position: 'after' });
+                      setDropTargetPath(null);
+                    } else {
+                      setDropIndicator(null);
+                      const target = item.path;
+                      const destStr = target.join('/');
+                      if (destStr === srcStr || destStr.startsWith(srcStr + '/')) return;
+                      setDropTargetPath(target);
+                    }
+                    e.dataTransfer.dropEffect = 'move';
+                  } else {
+                    // Different parent: move into folder or reorder
+                    if (isFolder) {
+                      const target = item.path;
+                      const destStr = target.join('/');
+                      if (destStr === srcStr || destStr.startsWith(srcStr + '/')) return;
+                      setDropTargetPath(target);
+                      setDropIndicator(null);
+                    } else {
+                      // Drop onto a file in different folder = move into that file's parent
+                      const target = item.path.slice(0, -1);
+                      const destStr = target.join('/');
+                      if (destStr === srcStr || destStr.startsWith(srcStr + '/')) return;
+                      setDropTargetPath(target);
+                      setDropIndicator(null);
+                    }
+                    e.dataTransfer.dropEffect = 'move';
+                  }
                 }}
                 onDragLeave={(e) => {
-                  // Only clear if we're actually leaving this row, not moving to a child element
                   const related = e.relatedTarget as Node | null;
                   if (!related || !e.currentTarget.contains(related)) {
                     setDropTargetPath(null);
+                    setDropIndicator(null);
                   }
                 }}
                 onDrop={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  // Read from dragState ref to avoid stale-closure issues
                   const srcPath: string[] = JSON.parse(e.dataTransfer.getData('application/x-pw-path') || '[]');
                   const srcType = e.dataTransfer.getData('application/x-pw-type') as 'file' | 'folder';
                   const srcName = e.dataTransfer.getData('application/x-pw-name');
-                  if (!srcName || !srcPath.length) { setDragState(null); setDropTargetPath(null); return; }
+                  if (!srcName || !srcPath.length) { setDragState(null); setDropTargetPath(null); setDropIndicator(null); return; }
+
+                  // Check if this is a reorder operation
+                  if (dropIndicator && dropIndicator.index === i && (dropIndicator.position === 'before' || dropIndicator.position === 'after')) {
+                    const srcParent = srcPath.slice(0, -1).join('/');
+                    const itemParent = item.path.slice(0, -1).join('/');
+                    if (srcParent === itemParent) {
+                      // Same parent — reorder
+                      const parentPath = item.path.slice(0, -1);
+                      const targetKey = item.path[item.path.length - 1];
+                      onReorderItem(srcName, parentPath, targetKey, dropIndicator.position);
+                      showStatus('Reordered');
+                      setDragState(null); setDropTargetPath(null); setDropIndicator(null);
+                      return;
+                    }
+                  }
 
                   // Destination folder: drop onto folder = move into it; drop onto file = move into its parent
                   const destPath = isFolder ? item.path : item.path.slice(0, -1);
-
                   const srcParentStr = srcPath.slice(0, -1).join('/');
                   const destStr = destPath.join('/');
 
-                  // Skip if already in that folder, or dropping a folder into itself/child
-                  if (destStr === srcParentStr) { setDragState(null); setDropTargetPath(null); return; }
-                  if (destStr.startsWith(srcPath.join('/'))) { setDragState(null); setDropTargetPath(null); return; }
+                  if (destStr === srcParentStr) { setDragState(null); setDropTargetPath(null); setDropIndicator(null); return; }
+                  if (destStr.startsWith(srcPath.join('/'))) { setDragState(null); setDropTargetPath(null); setDropIndicator(null); return; }
 
                   if (srcType === 'file') {
                     onMoveFile(srcName, srcPath.slice(0, -1), destPath);
@@ -566,6 +659,7 @@ export default function FileBrowser({
                   }
                   setDragState(null);
                   setDropTargetPath(null);
+                  setDropIndicator(null);
                 }}
                 onClick={() => {
                   setSelectedIndex(i);
@@ -646,6 +740,14 @@ export default function FileBrowser({
                   }}>
                     {words}w
                   </span>
+                )}
+              </div>
+                {/* Drop indicator line — after */}
+                {showDropAfter && (
+                  <div style={{
+                    position: 'absolute', bottom: 0, left: `${10 + item.depth * 16}px`, right: '8px',
+                    height: '2px', background: 'var(--terminal-accent)', borderRadius: '1px', zIndex: 10,
+                  }} />
                 )}
               </div>
             );

@@ -27,7 +27,7 @@ export const languages = {
     view: { increase: 'Increase Text Size', decrease: 'Decrease Text Size', customise: 'Customise Colours' },
     network: { wifi: 'Wi-Fi:', bluetooth: 'Bluetooth:', on: 'ON', off: 'OFF' },
     storage: { local: 'Local Storage', usb: 'USB Drive (simulated)', dropbox: '☁ Dropbox', gdrive: '☁ Google Drive', icloud: '☁ iCloud' },
-    power: { update: 'Software Update', shutdown: 'Shut Down' },
+    power: { update: 'Software Update', shutdown: 'Restart' },
     language: { select: 'Select Language', englishGB: 'English (UK)', englishUS: 'English (US)', afrikaans: 'Afrikaans' },
     status: { untitled: 'UNTITLED.TXT', saved: 'SAVED', words: 'WORDS', chars: 'CHARS', battery: 'BATTERY:' },
     modals: {
@@ -42,7 +42,7 @@ export const languages = {
     },
     help: { line1: 'Press ESC to open menu', line2: 'Ctrl+S to save | Ctrl+N for new file', line3: 'Ctrl+Z/R for undo/redo' },
     placeholder: 'Press any key to begin writing...',
-    shutdownConfirm: 'Shut down Private Writer?',
+    shutdownConfirm: 'Restart Private Writer?',
     pin: {
       setupTitle: 'SET UP PIN LOCK',
       setupDesc: 'Protect your writing with a PIN code',
@@ -88,7 +88,7 @@ export const languages = {
     view: { increase: 'Increase Text Size', decrease: 'Decrease Text Size', customise: 'Customize Colors' },
     network: { wifi: 'Wi-Fi:', bluetooth: 'Bluetooth:', on: 'ON', off: 'OFF' },
     storage: { local: 'Local Storage', usb: 'USB Drive (simulated)', dropbox: '☁ Dropbox', gdrive: '☁ Google Drive', icloud: '☁ iCloud' },
-    power: { update: 'Software Update', shutdown: 'Shut Down' },
+    power: { update: 'Software Update', shutdown: 'Restart' },
     language: { select: 'Select Language', englishGB: 'English (UK)', englishUS: 'English (US)', afrikaans: 'Afrikaans' },
     status: { untitled: 'UNTITLED.TXT', saved: 'SAVED', words: 'WORDS', chars: 'CHARS', battery: 'BATTERY:' },
     modals: {
@@ -103,7 +103,7 @@ export const languages = {
     },
     help: { line1: 'Press ESC to open menu', line2: 'Ctrl+S to save | Ctrl+N for new file', line3: 'Ctrl+Z/R for undo/redo' },
     placeholder: 'Press any key to begin writing...',
-    shutdownConfirm: 'Shut down Private Writer?',
+    shutdownConfirm: 'Restart Private Writer?',
     pin: {
       setupTitle: 'SET UP PIN LOCK',
       setupDesc: 'Protect your writing with a PIN code',
@@ -149,7 +149,7 @@ export const languages = {
     view: { increase: 'Vergroot Teksgrootte', decrease: 'Verklein Teksgrootte', customise: 'Pasmaak Kleure' },
     network: { wifi: 'Wi-Fi:', bluetooth: 'Bluetooth:', on: 'AAN', off: 'AF' },
     storage: { local: 'Plaaslike Berging', usb: 'USB-skyf (gesimuleer)', dropbox: '☁ Dropbox', gdrive: '☁ Google Drive', icloud: '☁ iCloud' },
-    power: { update: 'Sagteware-opdatering', shutdown: 'Skakel Af' },
+    power: { update: 'Sagteware-opdatering', shutdown: 'Herbegin' },
     language: { select: 'Kies Taal', englishGB: 'Engels (VK)', englishUS: 'Engels (VSA)', afrikaans: 'Afrikaans' },
     status: { untitled: 'ONGETITELD.TXT', saved: 'GESTOOR', words: 'WOORDE', chars: 'KARAKTERS', battery: 'BATTERY:' },
     modals: {
@@ -164,7 +164,7 @@ export const languages = {
     },
     help: { line1: 'Druk ESC om kieslys oop te maak', line2: 'Ctrl+S om te stoor | Ctrl+N vir nuwe lêer', line3: 'Ctrl+Z/R vir ontdoen/herdoen' },
     placeholder: 'Druk enige sleutel om te begin skryf...',
-    shutdownConfirm: 'Skakel Private Writer af?',
+    shutdownConfirm: 'Herbegin Private Writer?',
     pin: {
       setupTitle: 'STEL PIN-SLOT OP',
       setupDesc: 'Beskerm jou skryfwerk met \'n PIN-kode',
