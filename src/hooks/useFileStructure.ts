@@ -526,10 +526,26 @@ export function useFileStructure() {
     });
   }, []);
 
+  const permanentlyDeleteFile = useCallback((filename: string) => {
+    setStructure(prev => {
+      const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
+      const deleted = next.root.children?.['Deleted'];
+      if (!deleted?.children?.[filename]) return prev;
+      // Remove associated document
+      const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
+      delete docs[filename];
+      localStorage.setItem('pw-documents', JSON.stringify(docs));
+      // Remove from Deleted folder
+      delete deleted.children[filename];
+      localStorage.setItem(FS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   return {
     structure, createFolder, addFileToTree, toggleFolder, moveFile, moveFolder, deleteFile, deleteFolder, renameFile, getFolders,
     createNovelProject, saveVersion, saveSnapshot, findFilesInFolder, getNovelProjects, createFileInFolder, restoreFromDeleted, emptyDeleted,
-    reorderItem,
+    reorderItem, permanentlyDeleteFile,
   };
 }
 
