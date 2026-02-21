@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useGoogleToken } from '@/hooks/useGoogleToken';
 
 export type NamingFormat = 'ch-abr' | 'abr-ch' | 'abr_ch';
 export type GenrePreset = 'novel' | 'screenplay' | 'short-stories' | 'custom';
-export type StorageLocation = 'local' | 'google-drive' | 'icloud' | 'dropbox';
+export type StorageLocation = 'local' | 'google-drive';
 export type CloudSyncMode = 'direct' | 'periodic';
 export interface NovelProjectConfig {
   title: string;
@@ -174,25 +174,8 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
     }
   }, [visible]);
 
-  // Check connected providers
-  const [connectedProviders, setConnectedProviders] = useState<{ google: boolean; apple: boolean }>({ google: false, apple: false });
-
-  useEffect(() => {
-    if (!visible) return;
-    const checkProviders = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const provider = session.user?.app_metadata?.provider;
-        setConnectedProviders({
-          google: provider === 'google' || !!session.provider_token,
-          apple: provider === 'apple',
-        });
-      } else {
-        setConnectedProviders({ google: false, apple: false });
-      }
-    };
-    checkProviders();
-  }, [visible]);
+  // Use the shared Google token hook for consistent connected status
+  const { isConnected: isGoogleConnected } = useGoogleToken();
 
   const abr = abbreviation || 'ABR';
 
@@ -538,9 +521,7 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {([
                 { value: 'local' as StorageLocation, label: '💾 Local Storage', desc: 'Files saved in your browser. No account needed.', linked: true },
-                { value: 'google-drive' as StorageLocation, label: '☁ Google Drive', desc: 'Sync to your Google Drive account.', linked: connectedProviders.google },
-                { value: 'icloud' as StorageLocation, label: '🍎 iCloud', desc: 'Sync to your iCloud account.', linked: connectedProviders.apple },
-                { value: 'dropbox' as StorageLocation, label: '☁ Dropbox', desc: 'Sync to your Dropbox account.', linked: false },
+                { value: 'google-drive' as StorageLocation, label: '☁ Google Drive', desc: 'Sync to your Google Drive account.', linked: isGoogleConnected },
               ]).map(opt => (
                 <button
                   key={opt.value}
@@ -623,18 +604,17 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
               </div>
             )}
 
-            {storageLocation !== 'local' && (() => {
-              const isLinked = storageLocation === 'google-drive' ? connectedProviders.google : storageLocation === 'icloud' ? connectedProviders.apple : false;
-              return isLinked ? (
+            {storageLocation === 'google-drive' && (
+              isGoogleConnected ? (
                 <div style={{ marginTop: '12px', padding: '12px', border: '1px solid var(--terminal-text)' }}>
                   <div style={{ fontSize: '13px' }}>
-                    ✓ Your {storageLocation === 'google-drive' ? 'Google Drive' : 'iCloud'} account is connected and ready.
+                    ✓ Your Google Drive account is connected and ready.
                   </div>
                 </div>
               ) : (
                 <div style={{ marginTop: '12px', padding: '12px', border: '1px solid var(--terminal-text)' }}>
                   <div style={{ fontSize: '13px', marginBottom: '8px' }}>
-                    ⚠ You need to link your {storageLocation === 'google-drive' ? 'Google Drive' : storageLocation === 'icloud' ? 'iCloud' : 'Dropbox'} account to use cloud storage.
+                    ⚠ You need to link your Google Drive account to use cloud storage.
                   </div>
                   <div style={{ fontSize: '11px', marginBottom: '8px', opacity: 0.7 }}>
                     You can link accounts in Settings → Storage at any time.
@@ -646,8 +626,8 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
                     LINK ACCOUNT →
                   </button>
                 </div>
-              );
-            })()}
+              )
+            )}
             <div style={HINT_STYLE}>Storage location and sync mode can be changed later in settings.</div>
           </div>
 
@@ -681,7 +661,7 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
               <div>🎯 {targetWordCount.toLocaleString()} word target</div>
               {pov && <div>👁 POV: {pov}</div>}
               {tense && <div>⏱ Tense: {tense}</div>}
-              <div>💾 {storageLocation === 'local' ? 'Local' : storageLocation === 'google-drive' ? 'Google Drive' : storageLocation === 'icloud' ? 'iCloud' : 'Dropbox'}</div>
+              <div>💾 {storageLocation === 'local' ? 'Local' : 'Google Drive'}</div>
             </div>
           </div>
 
