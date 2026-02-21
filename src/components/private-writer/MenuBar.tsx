@@ -20,7 +20,7 @@ interface MenuBarProps {
   onMenuStateChange?: (open: boolean, menuIdx: number, subOpen: boolean, subIdx: number) => void;
 }
 
-const MENUS = ['file', 'edit', 'network', 'storage', 'settings'] as const;
+const MENUS = ['file', 'edit', 'network', 'settings'] as const;
 
 // Accent colours per icon category — use CSS vars so they adapt per theme
 const ICON_ACCENT = {
@@ -57,6 +57,7 @@ function getSubmenuItems(menu: string, language: string, wifiOn: boolean, blueto
         { action: 'export',        label: 'Export / Combine…',                  shortcut: '',             icon: <FileOutput size={13} color={ICON_ACCENT.green} strokeWidth={1.8} /> },
         { action: 'separator',     label: '' },
         { action: 'togglesidebar', label: 'File Browser',                       shortcut: 'Ctrl+Shift+B', icon: <PanelLeftOpen size={13} color={ICON_ACCENT.muted} strokeWidth={1.8} /> },
+        { action: 'gdrive',        label: 'Google Drive…',                      shortcut: '',             icon: <Cloud size={13} color={ICON_ACCENT.blue} strokeWidth={1.8} /> },
       ];
     case 'edit':
       return [
@@ -71,10 +72,7 @@ function getSubmenuItems(menu: string, language: string, wifiOn: boolean, blueto
         { action: 'wifi',      label: `Wi-Fi — ${wifiOn ? 'On' : 'Off'}`,           icon: wifiOn ? <Wifi size={13} color={ICON_ACCENT.green} strokeWidth={1.8} /> : <WifiOff size={13} color={ICON_ACCENT.red} strokeWidth={1.8} /> },
         { action: 'bluetooth', label: `Bluetooth — ${bluetoothOn ? 'On' : 'Off'}`,  icon: <Bluetooth size={13} color={bluetoothOn ? ICON_ACCENT.blue : ICON_ACCENT.red} strokeWidth={1.8} /> },
       ];
-    case 'storage':
-      return [
-        { action: 'open-storage-menu', label: 'Open Storage Menu…', icon: <Cloud size={13} color={ICON_ACCENT.blue} strokeWidth={1.8} /> },
-      ];
+    // storage menu removed — Drive access via File menu
     case 'settings':
       return [
         { action: 'opensettings', label: 'Open Settings Panel…', icon: <Settings size={13} color={ICON_ACCENT.muted} strokeWidth={1.8} /> },
@@ -188,8 +186,7 @@ export default function MenuBar({
               }}
               onClick={(e) => {
                 e.stopPropagation();
-                // Storage and Settings fire directly — no submenu needed
-                if (menu === 'storage') { onAction('open-storage-menu'); return; }
+                // Settings fires directly — no submenu needed
                 if (menu === 'settings') { onAction('opensettings'); return; }
                 if (mouseActive && hoverMenuIdx === i) {
                   setHoverMenuIdx(null);
@@ -236,7 +233,7 @@ export default function MenuBar({
       {/* Portal dropdown — rendered at body level to avoid clipping by toolbar */}
       {activeSubOpen && activeMenuIdx !== null && (() => {
         const menu = MENUS[activeMenuIdx];
-        if (menu === 'storage' || menu === 'settings') return null;
+        if (menu === 'settings') return null;
         const items = getSubmenuItems(menu, language, wifiOn, bluetoothOn);
         const dropStyle = getDropdownStyle();
         return createPortal(

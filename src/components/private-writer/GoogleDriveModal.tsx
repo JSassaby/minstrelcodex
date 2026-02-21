@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect } from 'react';
 import { lovable } from '@/integrations/lovable/index';
+import { useGoogleToken } from '@/hooks/useGoogleToken';
 import ModalShell, { ModalButton } from './ModalShell';
 
 const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
@@ -36,8 +36,7 @@ export default function GoogleDriveModal({
   visible, onClose, onLoadContent, currentContent, currentFilename,
   localFolders, onSyncFolder,
 }: GoogleDriveModalProps) {
-  const [authenticated, setAuthenticated] = useState(false);
-  const [googleToken, setGoogleToken] = useState<string | null>(null);
+  const { googleToken, isConnected, clearToken } = useGoogleToken();
   const [files, setFiles] = useState<DriveFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -51,29 +50,16 @@ export default function GoogleDriveModal({
 
   const currentFolderId = breadcrumbs[breadcrumbs.length - 1]?.id || 'root';
 
-  useEffect(() => { if (visible) { checkAuth(); setTab('browse'); } }, [visible]);
-
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.provider_token) {
-      setGoogleToken(session.provider_token);
-      setAuthenticated(true);
-      loadFiles(session.provider_token, 'root');
+  // When modal opens and we have a token, load root files
+  useEffect(() => {
+    if (visible && isConnected && googleToken) {
       setBreadcrumbs([{ id: 'root', name: 'My Drive' }]);
-    } else {
-      // Check localStorage fallback
-      const saved = localStorage.getItem('pw-google-token');
-      if (saved) {
-        setGoogleToken(saved);
-        setAuthenticated(true);
-        loadFiles(saved, 'root');
-        setBreadcrumbs([{ id: 'root', name: 'My Drive' }]);
-      } else {
-        setAuthenticated(false);
-        setGoogleToken(null);
-      }
+      setTab('browse');
+      setError('');
+      setStatus('');
+      loadFiles(googleToken, 'root');
     }
-  };
+  }, [visible, isConnected]);
 
   const signIn = async () => {
     setLoading(true); setError('');
@@ -82,6 +68,7 @@ export default function GoogleDriveModal({
       extraParams: { scope: 'https://www.googleapis.com/auth/drive.file', access_type: 'offline', prompt: 'consent' },
     });
     if (error) { setError(error.message || 'Sign-in failed'); setLoading(false); }
+    // On success the page redirects; useGoogleToken captures the token on return
   };
 
   const loadFiles = async (token: string, folderId: string) => {
@@ -92,8 +79,17 @@ export default function GoogleDriveModal({
         body: JSON.stringify({ action: 'list', googleToken: token, folderId }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to list files');
-      // Sort: folders first, then files
+      if (!res.ok) {
+        // If 401, token is expired — clear it
+        if (res.status === 401) {
+          clearToken();
+          setError('Google session expired. Please sign in again.');
+          setFiles([]);
+          setLoading(false);
+          return;
+        }
+        throw new Error(data.error || 'Failed to list files');
+      }
       const sorted = (data.files || []).sort((a: DriveFile, b: DriveFile) => {
         const aIsFolder = a.mimeType === FOLDER_MIME ? 0 : 1;
         const bIsFolder = b.mimeType === FOLDER_MIME ? 0 : 1;
@@ -148,6 +144,7 @@ export default function GoogleDriveModal({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Upload failed');
       setStatus(`✓ Uploaded ${name}`);
+      setTimeout(() => setStatus(''), 3000);
       await loadFiles(googleToken, currentFolderId);
     } catch (e: any) { setError(e.message); }
     setLoading(false);
@@ -187,8 +184,16 @@ export default function GoogleDriveModal({
     setSyncTargetFolder({ id: current.id, name: breadcrumbs.map(b => b.name).join(' / ') });
   };
 
+  const handleDisconnect = () => {
+    clearToken();
+    setFiles([]);
+    setBreadcrumbs([{ id: 'root', name: 'My Drive' }]);
+    setStatus('');
+    setError('');
+  };
+
   useEffect(() => {
-    if (!visible || !authenticated) return;
+    if (!visible || !isConnected) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'ArrowDown') { setSelectedIdx(prev => Math.min(prev + 1, files.length - 1)); e.preventDefault(); }
       else if (e.key === 'ArrowUp') { setSelectedIdx(prev => Math.max(prev - 1, 0)); e.preventDefault(); }
@@ -196,19 +201,16 @@ export default function GoogleDriveModal({
         handleItemClick(files[selectedIdx], selectedIdx);
         e.preventDefault();
       }
-      else if (e.key === 'Backspace' && breadcrumbs.length > 1) {
+      else if (e.key === 'Backspace' && breadcrumbs.length > 1 && !showNewFolder) {
         navigateToBreadcrumb(breadcrumbs.length - 2);
         e.preventDefault();
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [visible, authenticated, files, selectedIdx, googleToken, breadcrumbs]);
+  }, [visible, isConnected, files, selectedIdx, googleToken, breadcrumbs, showNewFolder]);
 
   if (!visible) return null;
-
-  const folders = files.filter(f => f.mimeType === FOLDER_MIME);
-  const nonFolders = files.filter(f => f.mimeType !== FOLDER_MIME);
 
   return (
     <ModalShell visible={visible} title="☁ Google Drive" onClose={onClose} width="520px">
@@ -225,14 +227,30 @@ export default function GoogleDriveModal({
           </div>
         )}
 
-        {!authenticated ? (
+        {!isConnected ? (
           <div style={{ textAlign: 'center', padding: '32px 0' }}>
-            <p style={{ marginBottom: '6px', fontSize: '14px', fontFamily: uiFont }}>Sign in with Google to access your Drive</p>
-            <p style={{ marginBottom: '24px', fontSize: '12px', opacity: 0.5, fontFamily: uiFont }}>Browse folders, sync files across devices</p>
-            <ModalButton label={loading ? 'Signing in…' : '🔑 Sign in with Google'} focused onClick={signIn} />
+            <div style={{ fontSize: '36px', marginBottom: '12px' }}>☁️</div>
+            <p style={{ marginBottom: '6px', fontSize: '14px', fontFamily: uiFont, fontWeight: '500' }}>Connect to Google Drive</p>
+            <p style={{ marginBottom: '24px', fontSize: '12px', opacity: 0.5, fontFamily: uiFont }}>Browse folders, upload files, and sync your work</p>
+            <ModalButton label={loading ? 'Connecting…' : '🔑 Sign in with Google'} focused onClick={signIn} />
           </div>
         ) : (
           <>
+            {/* Connection status bar */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '8px 12px', marginBottom: '10px', borderRadius: '9px',
+              background: 'var(--terminal-surface)', fontSize: '11px', fontFamily: uiFont,
+            }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--terminal-accent)', fontWeight: '500' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--terminal-accent)', display: 'inline-block' }} />
+                Connected to Google Drive
+              </span>
+              <span onClick={handleDisconnect} style={{ cursor: 'pointer', opacity: 0.5, fontSize: '11px' }}>
+                Disconnect
+              </span>
+            </div>
+
             {/* Tab bar */}
             <div style={{ display: 'flex', gap: '2px', marginBottom: '12px', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--terminal-border)' }}>
               {(['browse', 'sync'] as const).map(t => (
@@ -261,7 +279,7 @@ export default function GoogleDriveModal({
                   fontSize: '12px', fontFamily: uiFont, overflowX: 'auto', whiteSpace: 'nowrap',
                 }}>
                   {breadcrumbs.map((crumb, i) => (
-                    <span key={crumb.id} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span key={crumb.id + i} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       {i > 0 && <span style={{ opacity: 0.35 }}>›</span>}
                       <span
                         onClick={() => navigateToBreadcrumb(i)}
@@ -284,12 +302,11 @@ export default function GoogleDriveModal({
                   <div style={{ textAlign: 'center', padding: '40px 0', opacity: 0.5, fontFamily: uiFont, fontSize: '13px' }}>Loading…</div>
                 ) : (
                   <>
-                    {/* File/folder list */}
                     <div style={{
                       maxHeight: '260px', overflowY: 'auto', border: '1px solid var(--terminal-border)',
                       borderRadius: '10px', marginBottom: '12px', overflow: 'hidden',
                     }}>
-                      {files.length === 0 ? (
+                      {files.length === 0 && !loading ? (
                         <div style={{ textAlign: 'center', padding: '24px', opacity: 0.45, fontFamily: uiFont, fontSize: '13px' }}>
                           Empty folder
                         </div>
@@ -322,7 +339,6 @@ export default function GoogleDriveModal({
                       })}
                     </div>
 
-                    {/* New folder inline */}
                     {showNewFolder && (
                       <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
                         <input
@@ -345,7 +361,6 @@ export default function GoogleDriveModal({
                       </div>
                     )}
 
-                    {/* Actions */}
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                       <ModalButton label="📤 Upload here" focused={false} onClick={uploadFile} />
                       <ModalButton label="📁 New folder" focused={false} onClick={() => { setShowNewFolder(!showNewFolder); setNewFolderName(''); }} />
@@ -358,7 +373,6 @@ export default function GoogleDriveModal({
 
             {tab === 'sync' && (
               <div style={{ fontFamily: uiFont }}>
-                {/* Current Drive target */}
                 <div style={{
                   padding: '14px 16px', marginBottom: '14px', borderRadius: '10px',
                   border: '1px solid var(--terminal-border)', background: 'var(--terminal-surface)',
@@ -374,11 +388,11 @@ export default function GoogleDriveModal({
                     </div>
                   ) : (
                     <div style={{ fontSize: '13px', opacity: 0.5 }}>
-                      No target set — navigate to a folder in Browse tab, then select it here
+                      No target set — navigate to a folder in Browse tab, then set it here
                     </div>
                   )}
                   <button
-                    onClick={() => { selectSyncTarget(); }}
+                    onClick={selectSyncTarget}
                     style={{
                       marginTop: '10px', padding: '7px 14px', borderRadius: '8px', border: '1px solid var(--terminal-border)',
                       background: 'transparent', color: 'var(--terminal-text)', cursor: 'pointer',
@@ -389,7 +403,6 @@ export default function GoogleDriveModal({
                   </button>
                 </div>
 
-                {/* Local folders */}
                 <div style={{ fontSize: '10px', fontWeight: '600', opacity: 0.45, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>
                   Local Folders
                 </div>

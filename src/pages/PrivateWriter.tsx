@@ -10,7 +10,7 @@ import LiveStats from '@/components/private-writer/LiveStats';
 import GoogleDriveModal from '@/components/private-writer/GoogleDriveModal';
 import AppleSignInModal from '@/components/private-writer/AppleSignInModal';
 import NovelProjectWizard from '@/components/private-writer/NovelProjectWizard';
-import StorageMenu from '@/components/private-writer/StorageMenu';
+// StorageMenu removed — Drive access is now via File menu → Google Drive
 import type { NovelProjectConfig, StorageLocation } from '@/components/private-writer/NovelProjectWizard';
 import ExportModal from '@/components/private-writer/ExportModal';
 import ModalShell, { ModalButton, ModalInput } from '@/components/private-writer/ModalShell';
@@ -134,8 +134,8 @@ export default function PrivateWriter() {
   const { googleToken, isConnected: googleConnected, clearToken: clearGoogleToken } = useGoogleToken();
   const editorRef = useRef<EditorHandle>(null);
 
-  // Storage menu state
-  const [storageMenuOpen, setStorageMenuOpen] = useState(false);
+   // Storage menu removed
+  const [_storageMenuOpen, _setStorageMenuOpen] = useState(false); // kept for compat
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(() => localStorage.getItem('pw-last-sync'));
 
   // Content state managed locally for editor
@@ -418,7 +418,8 @@ export default function PrivateWriter() {
         setActiveModal('gdrive');
         break;
       case 'open-storage-menu':
-        setStorageMenuOpen(prev => !prev);
+        // Legacy — now handled via File → Google Drive
+        setActiveModal('gdrive');
         break;
       case 'apple-signin':
         setActiveModal('apple-signin');
@@ -1005,20 +1006,7 @@ export default function PrivateWriter() {
         }}
       />
 
-      {/* Storage Menu - dedicated dropdown */}
-      <StorageMenu
-        visible={storageMenuOpen}
-        googleConnected={googleConnected}
-        appleConnected={false}
-        lastSyncTime={lastSyncTime}
-        onSyncGoogleDrive={() => { setStorageMenuOpen(false); syncToGoogleDrive(); }}
-        onSyncICloud={() => { setStorageMenuOpen(false); showToast('iCloud sync requires Apple CloudKit — coming soon.'); }}
-        onConnectGoogle={() => { setStorageMenuOpen(false); connectGoogle(); }}
-        onConnectApple={() => { setStorageMenuOpen(false); executeAction('apple-signin'); }}
-        onDisconnectGoogle={() => { setStorageMenuOpen(false); clearGoogleToken(); showToast('Google Drive disconnected.'); }}
-        onOpenDriveFiles={() => { setStorageMenuOpen(false); executeAction('gdrive'); }}
-        onClose={() => setStorageMenuOpen(false)}
-      />
+      {/* Storage menu removed — Google Drive accessible via File → Google Drive */}
 
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* Settings Sidebar */}
