@@ -77,28 +77,36 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
-async function loadUserTracks(): Promise<MusicTrack[]> {
+async function loadUserTracks(): Promise<{ tracks: MusicTrack[], objectUrls: string[] }> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
     const store = tx.objectStore(STORE_NAME);
     const req = store.getAll();
-    req.onsuccess = () => resolve(req.result.map((r: any) => ({
-      id: r.id,
-      name: r.name,
-      category: 'user' as const,
-      src: r.dataUrl,
-    })));
+    req.onsuccess = () => {
+      const objectUrls: string[] = [];
+      const tracks = req.result.map((r: any) => {
+        const url = URL.createObjectURL(r.blob);
+        objectUrls.push(url);
+        return {
+          id: r.id,
+          name: r.name,
+          category: 'user' as const,
+          src: url,
+        };
+      });
+      resolve({ tracks, objectUrls });
+    };
     req.onerror = () => reject(req.error);
   });
 }
 
-async function saveUserTrack(id: string, name: string, dataUrl: string): Promise<void> {
+async function saveUserTrack(id: string, name: string, blob: Blob): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
-    store.put({ id, name, dataUrl });
+    store.put({ id, name, blob });
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
@@ -119,6 +127,8 @@ async function deleteUserTrack(id: string): Promise<void> {
 
 export function useMusicPlayer() {
   const [tracks, setTracks] = useState<MusicTrack[]>(BUILT_IN_TRACKS);
+  const objectUrlsRef = useRef<string[]>([]);
+
   const [currentTrackId, setCurrentTrackId] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [volume, setVolume] = useState(() => {
@@ -134,9 +144,13 @@ export function useMusicPlayer() {
 
   // Load user tracks from IndexedDB on mount
   useEffect(() => {
-    loadUserTracks().then(userTracks => {
+    loadUserTracks().then(({ tracks: userTracks, objectUrls }) => {
+      objectUrlsRef.current = objectUrls;
       setTracks([...BUILT_IN_TRACKS, ...userTracks]);
     }).catch(() => {});
+    return () => {
+      objectUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
+    };
   }, []);
 
   // Save prefs
@@ -227,13 +241,10 @@ export function useMusicPlayer() {
   const addUserFile = useCallback(async (file: File) => {
     const id = `user-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const name = file.name.replace(/\.[^.]+$/, '');
-    const dataUrl = await new Promise<string>((resolve) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.readAsDataURL(file);
-    });
-    await saveUserTrack(id, name, dataUrl);
-    const newTrack: MusicTrack = { id, name, category: 'user', src: dataUrl };
+    await saveUserTrack(id, name, file);
+    const objectUrl = URL.createObjectURL(file);
+    objectUrlsRef.current.push(objectUrl);
+    const newTrack: MusicTrack = { id, name, category: 'user', src: objectUrl };
     setTracks(prev => [...prev, newTrack]);
     return newTrack;
   }, []);
