@@ -36,7 +36,7 @@ export default function GoogleDriveModal({
   visible, onClose, onLoadContent, currentContent, currentFilename,
   localFolders, onSyncFolder,
 }: GoogleDriveModalProps) {
-  const { googleToken, isConnected, clearToken, justConnected, dismissJustConnected, userEmail } = useGoogleToken();
+  const { googleToken, isConnected, clearToken, justConnected, dismissJustConnected, userEmail, hasGoogleIdentity, refreshToken } = useGoogleToken();
   const [files, setFiles] = useState<DriveFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -47,17 +47,35 @@ export default function GoogleDriveModal({
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [tab, setTab] = useState<'browse' | 'sync'>('browse');
   const [syncTargetFolder, setSyncTargetFolder] = useState<{ id: string; name: string } | null>(null);
+  const [needsReauth, setNeedsReauth] = useState(false);
 
   const currentFolderId = breadcrumbs[breadcrumbs.length - 1]?.id || 'root';
 
-  // When modal opens and we have a token, load root files
+  // Get a valid token — try stored, then refresh
+  const getToken = async (): Promise<string | null> => {
+    if (googleToken) return googleToken;
+    // Try refreshing the session to get a new provider_token
+    const refreshed = await refreshToken();
+    if (refreshed) return refreshed;
+    // No token available — user needs to re-authenticate with Drive scope
+    setNeedsReauth(true);
+    return null;
+  };
+
+  // When modal opens and we're connected, try to load files
   useEffect(() => {
-    if (visible && isConnected && googleToken) {
+    if (visible && isConnected) {
       setBreadcrumbs([{ id: 'root', name: 'My Drive' }]);
-      setTab('browse');
       setError('');
       setStatus('');
-      loadFiles(googleToken, 'root');
+      setNeedsReauth(false);
+      if (!justConnected) {
+        setTab('browse');
+        (async () => {
+          const token = await getToken();
+          if (token) loadFiles(token, 'root');
+        })();
+      }
     }
   }, [visible, isConnected]);
 
@@ -69,11 +87,8 @@ export default function GoogleDriveModal({
         extraParams: { scope: 'https://www.googleapis.com/auth/drive.file', access_type: 'offline', prompt: 'consent' },
       });
       if (error) { setError(error.message || 'Sign-in failed'); setLoading(false); return; }
-      // If we're still here after 5s, the redirect likely didn't work (e.g. iframe)
-      setTimeout(() => {
-        setLoading(false);
-        setError('Redirect did not occur. Try opening the app in a new tab.');
-      }, 5000);
+      // OAuth will redirect the page — the token is captured on return
+      setTimeout(() => { setLoading(false); }, 5000);
     } catch (e: any) {
       setError(e.message || 'Sign-in failed');
       setLoading(false);
@@ -89,10 +104,9 @@ export default function GoogleDriveModal({
       });
       const data = await res.json();
       if (!res.ok) {
-        // If 401, token is expired — clear it
         if (res.status === 401) {
           clearToken();
-          setError('Google session expired. Please sign in again.');
+          setNeedsReauth(true);
           setFiles([]);
           setLoading(false);
           return;
@@ -111,24 +125,27 @@ export default function GoogleDriveModal({
     setLoading(false);
   };
 
-  const navigateToFolder = (folder: DriveFile) => {
+  const navigateToFolder = async (folder: DriveFile) => {
     setBreadcrumbs(prev => [...prev, { id: folder.id, name: folder.name }]);
-    if (googleToken) loadFiles(googleToken, folder.id);
+    const token = await getToken();
+    if (token) loadFiles(token, folder.id);
   };
 
-  const navigateToBreadcrumb = (idx: number) => {
+  const navigateToBreadcrumb = async (idx: number) => {
     const target = breadcrumbs[idx];
     setBreadcrumbs(prev => prev.slice(0, idx + 1));
-    if (googleToken) loadFiles(googleToken, target.id);
+    const token = await getToken();
+    if (token) loadFiles(token, target.id);
   };
 
   const downloadFile = async (file: DriveFile) => {
-    if (!googleToken) return;
+    const token = await getToken();
+    if (!token) return;
     setLoading(true); setStatus(`Downloading ${file.name}…`);
     try {
       const res = await fetch(FUNCTION_URL, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'download', googleToken, fileId: file.id }),
+        body: JSON.stringify({ action: 'download', googleToken: token, fileId: file.id }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Download failed');
@@ -138,7 +155,8 @@ export default function GoogleDriveModal({
   };
 
   const uploadFile = async () => {
-    if (!googleToken || !currentContent) return;
+    const token = await getToken();
+    if (!token || !currentContent) return;
     setLoading(true);
     const name = currentFilename || 'Untitled.html';
     setStatus(`Uploading ${name} to ${breadcrumbs[breadcrumbs.length - 1].name}…`);
@@ -146,7 +164,7 @@ export default function GoogleDriveModal({
       const res = await fetch(FUNCTION_URL, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'upload', googleToken, fileName: name, content: currentContent,
+          action: 'upload', googleToken: token, fileName: name, content: currentContent,
           mimeType: 'text/html', parentId: currentFolderId === 'root' ? undefined : currentFolderId,
         }),
       });
@@ -154,19 +172,20 @@ export default function GoogleDriveModal({
       if (!res.ok) throw new Error(data.error || 'Upload failed');
       setStatus(`✓ Uploaded ${name}`);
       setTimeout(() => setStatus(''), 3000);
-      await loadFiles(googleToken, currentFolderId);
+      await loadFiles(token, currentFolderId);
     } catch (e: any) { setError(e.message); }
     setLoading(false);
   };
 
   const createFolder = async () => {
-    if (!googleToken || !newFolderName.trim()) return;
+    const token = await getToken();
+    if (!token || !newFolderName.trim()) return;
     setLoading(true);
     try {
       const res = await fetch(FUNCTION_URL, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'create-folder', googleToken, folderName: newFolderName.trim(),
+          action: 'create-folder', googleToken: token, folderName: newFolderName.trim(),
           parentId: currentFolderId === 'root' ? undefined : currentFolderId,
         }),
       });
@@ -174,11 +193,10 @@ export default function GoogleDriveModal({
       if (!res.ok) throw new Error(data.error || 'Failed to create folder');
       setNewFolderName('');
       setShowNewFolder(false);
-      await loadFiles(googleToken, currentFolderId);
+      await loadFiles(token, currentFolderId);
     } catch (e: any) { setError(e.message); }
     setLoading(false);
   };
-
   const handleItemClick = (file: DriveFile, idx: number) => {
     setSelectedIdx(idx);
     if (file.mimeType === FOLDER_MIME) {
@@ -240,8 +258,20 @@ export default function GoogleDriveModal({
           <div style={{ textAlign: 'center', padding: '32px 0' }}>
             <div style={{ fontSize: '36px', marginBottom: '12px' }}>☁️</div>
             <p style={{ marginBottom: '6px', fontSize: '14px', fontFamily: uiFont, fontWeight: '500' }}>Connect to Google Drive</p>
-            <p style={{ marginBottom: '24px', fontSize: '12px', opacity: 0.5, fontFamily: uiFont }}>Browse folders, upload files, and sync your work</p>
+            <p style={{ marginBottom: '24px', fontSize: '12px', opacity: 0.5, fontFamily: uiFont }}>Sign in to browse, upload, and sync</p>
             <ModalButton label={loading ? 'Connecting…' : '🔑 Sign in with Google'} focused onClick={signIn} />
+          </div>
+        ) : needsReauth ? (
+          <div style={{ textAlign: 'center', padding: '32px 0' }}>
+            <div style={{ fontSize: '36px', marginBottom: '12px' }}>🔄</div>
+            <p style={{ marginBottom: '6px', fontSize: '14px', fontFamily: uiFont, fontWeight: '500' }}>Drive access expired</p>
+            {userEmail && (
+              <p style={{ marginBottom: '8px', fontSize: '12px', fontFamily: uiFont, opacity: 0.6 }}>
+                {userEmail}
+              </p>
+            )}
+            <p style={{ marginBottom: '24px', fontSize: '12px', opacity: 0.5, fontFamily: uiFont }}>Re-authenticate to restore access</p>
+            <ModalButton label={loading ? 'Connecting…' : '🔑 Reconnect Google Drive'} focused onClick={signIn} />
           </div>
         ) : justConnected ? (
           <div style={{ textAlign: 'center', padding: '32px 0' }}>
@@ -251,16 +281,15 @@ export default function GoogleDriveModal({
             </p>
             {userEmail && (
               <p style={{ marginBottom: '8px', fontSize: '13px', fontFamily: uiFont, opacity: 0.7 }}>
-                Signed in as <strong>{userEmail}</strong>
+                {userEmail}
               </p>
             )}
-            <p style={{ marginBottom: '24px', fontSize: '12px', opacity: 0.5, fontFamily: uiFont, maxWidth: '320px', margin: '0 auto 24px' }}>
-              You can now browse folders, upload files, and sync local folders to your Drive.
-            </p>
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <ModalButton label="📂 Browse My Drive" focused onClick={() => {
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '20px' }}>
+              <ModalButton label="📂 Browse Drive" focused onClick={async () => {
                 dismissJustConnected();
                 setTab('browse');
+                const token = await getToken();
+                if (token) loadFiles(token, 'root');
               }} />
               <ModalButton label="🔄 Set Up Sync" focused={false} onClick={() => {
                 dismissJustConnected();
@@ -398,7 +427,7 @@ export default function GoogleDriveModal({
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                       <ModalButton label="📤 Upload here" focused={false} onClick={uploadFile} />
                       <ModalButton label="📁 New folder" focused={false} onClick={() => { setShowNewFolder(!showNewFolder); setNewFolderName(''); }} />
-                      <ModalButton label="🔄 Refresh" focused={false} onClick={() => googleToken && loadFiles(googleToken, currentFolderId)} />
+                      <ModalButton label="🔄 Refresh" focused={false} onClick={async () => { const t = await getToken(); if (t) loadFiles(t, currentFolderId); }} />
                     </div>
                   </>
                 )}
