@@ -75,7 +75,7 @@ export interface FileBrowserProps {
   onReorderItem: (itemName: string, parentPath: string[], targetName: string, position: 'before' | 'after') => void;
   onToggleFolder: (path: string[]) => void;
   onRestoreFromDeleted: (itemName: string) => void;
-  onPermanentlyDeleteFile: (filename: string) => void;
+  onPermanentlyDeleteItem: (itemKey: string) => void;
   onEmptyDeleted: () => void;
   onFocus: () => void;
   getFolders: () => { name: string; path: string[] }[];
@@ -144,7 +144,7 @@ export default function FileBrowser({
   onReorderItem,
   onToggleFolder,
   onRestoreFromDeleted,
-  onPermanentlyDeleteFile,
+  onPermanentlyDeleteItem,
   onEmptyDeleted,
   onFocus,
   getFolders,
@@ -317,11 +317,9 @@ export default function FileBrowser({
           const isInDeleted = item.path[0] === 'Deleted';
           if (isInDeleted) {
             // Permanently delete items already in Deleted folder
-            if (item.type === 'file') {
-              onPermanentlyDeleteFile(item.name);
-              showStatus('Permanently deleted');
-            }
-            // For folders inside Deleted, use emptyDeleted or ignore
+            const key = item.type === 'file' ? item.name : item.path.slice(1).join('/');
+            onPermanentlyDeleteItem(key);
+            showStatus('Permanently deleted');
           } else if (item.type === 'file') {
             onDeleteFile(item.name);
             showStatus('Moved to Deleted');

@@ -1076,7 +1076,7 @@ export default function PrivateWriter() {
           onReorderItem={(itemName, parentPath, targetName, position) => fileStructure.reorderItem(itemName, parentPath, targetName, position)}
           onToggleFolder={(path) => fileStructure.toggleFolder(path)}
           onRestoreFromDeleted={(itemName) => fileStructure.restoreFromDeleted(itemName)}
-          onPermanentlyDeleteFile={(filename) => fileStructure.permanentlyDeleteFile(filename)}
+          onPermanentlyDeleteItem={(key) => fileStructure.permanentlyDeleteItem(key)}
           onEmptyDeleted={() => fileStructure.emptyDeleted()}
           onFocus={() => setFileBrowserFocused(true)}
           getFolders={() => fileStructure.getFolders()}
