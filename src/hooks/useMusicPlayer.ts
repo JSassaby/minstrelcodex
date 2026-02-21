@@ -183,11 +183,16 @@ export function useMusicPlayer() {
       noiseSourceRef.current = source;
       setPlaying(true);
     } else {
-      const audio = new Audio(track.src);
+      const audio = new Audio();
       audio.volume = volume;
       audio.loop = loop;
-      audio.play().catch(() => {});
+      audio.preload = 'auto';
       audio.onended = () => { if (!loop) setPlaying(false); };
+      audio.oncanplaythrough = () => {
+        audio.play().catch(err => console.error('[MusicPlayer] Playback failed:', err));
+      };
+      audio.onerror = () => console.error('[MusicPlayer] Audio load error');
+      audio.src = track.src;
       audioRef.current = audio;
       setPlaying(true);
     }
