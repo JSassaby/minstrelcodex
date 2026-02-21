@@ -36,7 +36,7 @@ export default function GoogleDriveModal({
   visible, onClose, onLoadContent, currentContent, currentFilename,
   localFolders, onSyncFolder,
 }: GoogleDriveModalProps) {
-  const { googleToken, isConnected, clearToken } = useGoogleToken();
+  const { googleToken, isConnected, clearToken, justConnected, dismissJustConnected, userEmail } = useGoogleToken();
   const [files, setFiles] = useState<DriveFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -242,6 +242,31 @@ export default function GoogleDriveModal({
             <p style={{ marginBottom: '6px', fontSize: '14px', fontFamily: uiFont, fontWeight: '500' }}>Connect to Google Drive</p>
             <p style={{ marginBottom: '24px', fontSize: '12px', opacity: 0.5, fontFamily: uiFont }}>Browse folders, upload files, and sync your work</p>
             <ModalButton label={loading ? 'Connecting…' : '🔑 Sign in with Google'} focused onClick={signIn} />
+          </div>
+        ) : justConnected ? (
+          <div style={{ textAlign: 'center', padding: '32px 0' }}>
+            <div style={{ fontSize: '42px', marginBottom: '16px' }}>✅</div>
+            <p style={{ marginBottom: '6px', fontSize: '16px', fontFamily: uiFont, fontWeight: '600' }}>
+              Connected to Google Drive
+            </p>
+            {userEmail && (
+              <p style={{ marginBottom: '8px', fontSize: '13px', fontFamily: uiFont, opacity: 0.7 }}>
+                Signed in as <strong>{userEmail}</strong>
+              </p>
+            )}
+            <p style={{ marginBottom: '24px', fontSize: '12px', opacity: 0.5, fontFamily: uiFont, maxWidth: '320px', margin: '0 auto 24px' }}>
+              You can now browse folders, upload files, and sync local folders to your Drive.
+            </p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <ModalButton label="📂 Browse My Drive" focused onClick={() => {
+                dismissJustConnected();
+                setTab('browse');
+              }} />
+              <ModalButton label="🔄 Set Up Sync" focused={false} onClick={() => {
+                dismissJustConnected();
+                setTab('sync');
+              }} />
+            </div>
           </div>
         ) : (
           <>
