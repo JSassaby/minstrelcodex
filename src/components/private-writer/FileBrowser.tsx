@@ -285,8 +285,8 @@ export default function FileBrowser({
       // Global keys
       if (e.key === 'Escape') { onClose(); e.preventDefault(); return; }
       if (e.key === '/') { setInputMode('search'); setInputValue(''); e.preventDefault(); return; }
-      if (e.key === 'n' || e.key === 'N') { setInputMode('new-folder'); setInputValue(''); e.preventDefault(); return; }
-      if (e.key === 'c' || e.key === 'C') { setInputMode('new-file'); setInputValue(''); e.preventDefault(); return; }
+      if (e.key === 'n' && !e.shiftKey) { setInputMode('new-file'); setInputValue(''); e.preventDefault(); return; }
+      if (e.key === 'N' && e.shiftKey) { setInputMode('new-folder'); setInputValue(''); e.preventDefault(); return; }
 
       // Navigation
       if (e.key === 'ArrowDown') {
@@ -786,20 +786,20 @@ export default function FileBrowser({
       >
         {[
           { key: 'Enter', label: 'Open' },
-          { key: 'c', label: 'New File' },
-          { key: 'n', label: 'New Folder' },
+          { key: 'n', label: 'New File' },
+          { key: 'N', label: 'New Folder', shift: true },
           { key: 'r', label: 'Rename' },
           { key: 'm', label: 'Move' },
           { key: 'd', label: 'Delete' },
           { key: '/', label: 'Search' },
-        ].map(({ key, label }) => (
+        ].map(({ key, label, shift }: { key: string; label: string; shift?: boolean }) => (
           <button
-            key={key}
+            key={key + label}
             onClick={(e) => {
               e.stopPropagation();
-              window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+              window.dispatchEvent(new KeyboardEvent('keydown', { key, shiftKey: !!shift, bubbles: true }));
             }}
-            title={`${key} — ${label}`}
+            title={`${shift ? 'Shift+' : ''}${key} — ${label}`}
             style={{
               background: 'var(--terminal-bg)',
               border: '1px solid var(--terminal-border)',
@@ -828,7 +828,7 @@ export default function FileBrowser({
               fontFamily: "'Courier Prime', monospace",
               lineHeight: 1.4,
               opacity: 0.7,
-            }}>{key === 'Enter' ? '↵' : key}</span>
+            }}>{key === 'Enter' ? '↵' : shift ? `⇧${key}` : key}</span>
             {label}
           </button>
         ))}
