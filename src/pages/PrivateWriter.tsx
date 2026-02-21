@@ -317,6 +317,7 @@ export default function PrivateWriter() {
 
   // Execute menu action
   const executeAction = useCallback((action: string) => {
+    
     if (action.startsWith('lang-')) {
       const lang = action.replace('lang-', '') as Language;
       setLanguage(lang);
