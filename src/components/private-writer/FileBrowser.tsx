@@ -522,6 +522,16 @@ export default function FileBrowser({
             const isFolder = item.type === 'folder';
             const fileKey = item.docKey || item.name;
             const doc = !isFolder ? allDocuments[fileKey] : null;
+            // Debug: log when a file in Deleted has no content
+            if (!isFolder && !doc && item.path[0] === 'Deleted') {
+              console.warn('[FileBrowser Debug] File in Deleted with no content:', {
+                treeKey: item.name,
+                docKey: item.docKey,
+                fileKey,
+                path: item.path,
+                availableDocKeys: Object.keys(allDocuments).filter(k => k.toLowerCase().includes(item.name.toLowerCase().replace(/.*\//, '')))
+              });
+            }
             // Use live content for the currently open file, otherwise use saved content
             const liveContent = (!isFolder && fileKey === currentFilename && currentContent != null)
               ? currentContent
