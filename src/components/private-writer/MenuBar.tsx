@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   FilePlus, BookOpen, FolderOpen, Clock, Save, FileOutput,
   Printer, PanelLeftOpen, Undo2, Redo2, Copy, ClipboardPaste,
-  Wifi, WifiOff, Bluetooth, Cloud, Settings, Camera, FileText
+  Wifi, WifiOff, Bluetooth, Cloud, Settings, Camera, FileText, Music
 } from 'lucide-react';
 import { t } from '@/lib/languages';
 
@@ -20,7 +20,7 @@ interface MenuBarProps {
   onMenuStateChange?: (open: boolean, menuIdx: number, subOpen: boolean, subIdx: number) => void;
 }
 
-const MENUS = ['file', 'edit', 'network', 'settings'] as const;
+const MENUS = ['file', 'edit', 'network', 'music', 'settings'] as const;
 
 // Accent colours per icon category — use CSS vars so they adapt per theme
 const ICON_ACCENT = {
@@ -71,6 +71,10 @@ function getSubmenuItems(menu: string, language: string, wifiOn: boolean, blueto
         { action: 'bluetooth', label: `Bluetooth — ${bluetoothOn ? 'On' : 'Off'}`,  icon: <Bluetooth size={13} color={bluetoothOn ? ICON_ACCENT.blue : ICON_ACCENT.red} strokeWidth={1.8} /> },
       ];
     // storage menu removed — Drive access via File menu
+    case 'music':
+      return [
+        { action: 'openmusic', label: 'Open Music Player…', icon: <Music size={13} color={ICON_ACCENT.blue} strokeWidth={1.8} /> },
+      ];
     case 'settings':
       return [
         { action: 'opensettings', label: 'Open Settings Panel…', icon: <Settings size={13} color={ICON_ACCENT.muted} strokeWidth={1.8} /> },
@@ -191,6 +195,7 @@ export default function MenuBar({
                 e.stopPropagation();
                 // Settings fires directly — no submenu needed
                 if (menu === 'settings') { onAction('opensettings'); return; }
+                if (menu === 'music') { onAction('openmusic'); return; }
                 if (mouseActive && hoverMenuIdx === i) {
                   setHoverMenuIdx(null);
                   setMouseActive(false);
@@ -236,7 +241,7 @@ export default function MenuBar({
       {/* Portal dropdown — rendered at body level to avoid clipping by toolbar */}
       {activeSubOpen && activeMenuIdx !== null && (() => {
         const menu = MENUS[activeMenuIdx];
-        if (menu === 'settings') return null;
+        if (menu === 'settings' || menu === 'music') return null;
         const items = getSubmenuItems(menu, language, wifiOn, bluetoothOn);
         const dropStyle = getDropdownStyle();
         return createPortal(

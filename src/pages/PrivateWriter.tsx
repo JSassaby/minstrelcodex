@@ -15,6 +15,7 @@ import type { NovelProjectConfig, StorageLocation } from '@/components/private-w
 import ExportModal from '@/components/private-writer/ExportModal';
 import ModalShell, { ModalButton, ModalInput } from '@/components/private-writer/ModalShell';
 import SettingsPanel from '@/components/private-writer/SettingsPanel';
+import MusicPlayer from '@/components/private-writer/MusicPlayer';
 import { t } from '@/lib/languages';
 import { typingPassages } from '@/lib/typingPassages';
 import { useDocumentStorage } from '@/hooks/useDocumentStorage';
@@ -22,6 +23,7 @@ import { useFileStructure } from '@/hooks/useFileStructure';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import ThemePicker from '@/components/private-writer/ThemePicker';
 import { useGoogleToken } from '@/hooks/useGoogleToken';
+import { useMusicPlayer } from '@/hooks/useMusicPlayer';
 import type { ModalType, Language, Difficulty, PinConfig } from '@/lib/types';
 
 
@@ -66,6 +68,7 @@ export default function PrivateWriter() {
   const [fileBrowserOpen, setFileBrowserOpen] = useState(false);
   const [fileBrowserFocused, setFileBrowserFocused] = useState(false);
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
+  const [musicPlayerOpen, setMusicPlayerOpen] = useState(false);
 
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -133,6 +136,7 @@ export default function PrivateWriter() {
   const theme = useAppTheme();
   const { googleToken, isConnected: googleConnected, clearToken: clearGoogleToken } = useGoogleToken();
   const editorRef = useRef<EditorHandle>(null);
+  const musicPlayer = useMusicPlayer();
 
    // Storage menu removed
   const [_storageMenuOpen, _setStorageMenuOpen] = useState(false); // kept for compat
@@ -375,6 +379,9 @@ export default function PrivateWriter() {
         break;
       case 'opensettings':
         setSettingsPanelOpen(true);
+        break;
+      case 'openmusic':
+        setMusicPlayerOpen(prev => !prev);
         break;
       case 'togglesidebar':
         setFileBrowserOpen(prev => {
@@ -1120,8 +1127,30 @@ export default function PrivateWriter() {
         content={editorContent}
         battery={battery}
         wifiOn={wifiOn}
+        musicPlaying={musicPlayer.playing}
+        musicTrackName={musicPlayer.tracks.find(t => t.id === musicPlayer.currentTrackId)?.name}
+        onMusicClick={() => setMusicPlayerOpen(prev => !prev)}
       />
 
+        {/* Music Player Sidebar */}
+        <MusicPlayer
+          visible={musicPlayerOpen}
+          tracks={musicPlayer.tracks}
+          currentTrackId={musicPlayer.currentTrackId}
+          playing={musicPlayer.playing}
+          volume={musicPlayer.volume}
+          loop={musicPlayer.loop}
+          onPlay={(id) => musicPlayer.play(id)}
+          onTogglePlayPause={musicPlayer.togglePlayPause}
+          onSetVolume={musicPlayer.setVolume}
+          onSetLoop={musicPlayer.setLoop}
+          onAddFile={async (file) => { await musicPlayer.addUserFile(file); }}
+          onRemoveTrack={async (id) => { await musicPlayer.removeUserTrack(id); }}
+          onClose={() => {
+            setMusicPlayerOpen(false);
+            setTimeout(() => editorRef.current?.focus(), 50);
+          }}
+        />
 
       <LiveStats visible={liveStatsEnabled} wpm={liveWpm} chars={liveChars} />
 
