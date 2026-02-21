@@ -22,7 +22,6 @@ import { useFileStructure } from '@/hooks/useFileStructure';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import ThemePicker from '@/components/private-writer/ThemePicker';
 import { useGoogleToken } from '@/hooks/useGoogleToken';
-import { supabase } from '@/integrations/supabase/client';
 import type { ModalType, Language, Difficulty, PinConfig } from '@/lib/types';
 
 
@@ -302,40 +301,17 @@ export default function PrivateWriter() {
   // Connect to Google Drive via OAuth
   const connectGoogle = useCallback(async () => {
     showToast('Connecting to Google Drive...');
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        scopes: 'https://www.googleapis.com/auth/drive.file',
-        skipBrowserRedirect: true,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
+    const { lovable } = await import('@/integrations/lovable/index');
+    const { error } = await lovable.auth.signInWithOAuth('google', {
+      redirect_uri: window.location.origin,
+      extraParams: {
+        scope: 'https://www.googleapis.com/auth/drive.file',
+        access_type: 'offline',
+        prompt: 'consent',
       },
     });
     if (error) {
-      showToast(`Google sign-in failed: ${error.message}`);
-      return;
-    }
-    if (data?.url) {
-      const popup = window.open(data.url, 'google-drive-auth', 'width=500,height=700,scrollbars=yes');
-      if (!popup) {
-        showToast('Popup blocked — please allow popups and try again.');
-        return;
-      }
-      const pollInterval = setInterval(async () => {
-        try {
-          if (popup.closed) {
-            clearInterval(pollInterval);
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.provider_token) {
-              localStorage.setItem('pw-google-token', session.provider_token);
-              window.location.reload();
-            }
-          }
-        } catch { /* cross-origin */ }
-      }, 500);
-      setTimeout(() => { clearInterval(pollInterval); if (!popup.closed) popup.close(); }, 120000);
+      showToast(`Google sign-in failed: ${(error as any).message || error}`);
     }
   }, [showToast]);
 
