@@ -5,20 +5,17 @@ const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
 interface StorageMenuProps {
   visible: boolean;
   googleConnected: boolean;
-  appleConnected: boolean;
   lastSyncTime: string | null;
   onSyncGoogleDrive: () => void;
-  onSyncICloud: () => void;
   onConnectGoogle: () => void;
-  onConnectApple: () => void;
   onDisconnectGoogle: () => void;
   onOpenDriveFiles: () => void;
   onClose: () => void;
 }
 
 export default function StorageMenu({
-  visible, googleConnected, appleConnected, lastSyncTime,
-  onSyncGoogleDrive, onSyncICloud, onConnectGoogle, onConnectApple,
+  visible, googleConnected, lastSyncTime,
+  onSyncGoogleDrive, onConnectGoogle,
   onDisconnectGoogle, onOpenDriveFiles, onClose,
 }: StorageMenuProps) {
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -34,13 +31,6 @@ export default function StorageMenu({
     items.push({ label: 'Connect Google Drive', icon: '🔑', sublabel: 'Not linked', action: onConnectGoogle });
   }
 
-  items.push({ label: '', action: () => {}, separator: true });
-
-  if (appleConnected) {
-    items.push({ label: 'Sync to iCloud', icon: '🍎', action: onSyncICloud });
-  } else {
-    items.push({ label: 'Connect iCloud', icon: '🍎', sublabel: 'Not linked', action: onConnectApple });
-  }
 
   if (lastSyncTime) {
     items.push({ label: '', action: () => {}, separator: true });
@@ -113,13 +103,8 @@ export default function StorageMenu({
           fontFamily: uiFont,
         }}>
           <span>Storage</span>
-          <span style={{ display: 'flex', gap: '10px' }}>
-            <span style={{ color: googleConnected ? 'var(--terminal-accent)' : '#e05c5c' }}>
-              ☁ {googleConnected ? '✓' : '✕'}
-            </span>
-            <span style={{ color: appleConnected ? 'var(--terminal-accent)' : '#e05c5c' }}>
-              🍎 {appleConnected ? '✓' : '✕'}
-            </span>
+          <span style={{ color: googleConnected ? 'var(--terminal-accent)' : '#e05c5c' }}>
+            ☁ {googleConnected ? '✓' : '✕'}
           </span>
         </div>
 

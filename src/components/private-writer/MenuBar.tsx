@@ -55,9 +55,7 @@ function getSubmenuItems(menu: string, language: string, wifiOn: boolean, blueto
         { action: 'separator',     label: '' },
         { action: 'print',         label: 'Print Current Page',                 shortcut: 'Ctrl+P',       icon: <Printer size={13} color={ICON_ACCENT.muted} strokeWidth={1.8} /> },
         { action: 'export',        label: 'Export / Combine…',                  shortcut: '',             icon: <FileOutput size={13} color={ICON_ACCENT.green} strokeWidth={1.8} /> },
-        { action: 'separator',     label: '' },
         { action: 'togglesidebar', label: 'File Browser',                       shortcut: 'Ctrl+Shift+B', icon: <PanelLeftOpen size={13} color={ICON_ACCENT.muted} strokeWidth={1.8} /> },
-        { action: 'gdrive',        label: 'Google Drive…',                      shortcut: '',             icon: <Cloud size={13} color={ICON_ACCENT.blue} strokeWidth={1.8} /> },
       ];
     case 'edit':
       return [

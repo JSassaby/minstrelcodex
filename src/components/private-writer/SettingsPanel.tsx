@@ -192,7 +192,7 @@ export default function SettingsPanel({
       }
       case 'security': onOpenPinSetup(); break;
       case 'storage': {
-        const actions = ['local', 'usb', 'dropbox', 'gdrive', 'icloud'];
+        const actions = ['local', 'usb', 'gdrive'];
         if (focusedItemIdx < actions.length) onAction(actions[focusedItemIdx]);
         break;
       }
@@ -822,19 +822,6 @@ export default function SettingsPanel({
               <span style={{ fontSize: '11px', fontWeight: '700', color: connectedProviders.google ? 'var(--terminal-accent)' : '#e05c5c' }}>
                 {connectedProviders.google ? '✓ Connected' : '✕ Not linked'}
               </span>
-            </div>
-            <div
-              onClick={() => { connectedProviders.apple ? onAction('icloud') : onConnectApple(); setFocusedItemIdx(3); }}
-              style={rowCard(focusedItemIdx === 3)}
-            >
-              <span>🍎 iCloud</span>
-              <span style={{ fontSize: '11px', fontWeight: '700', color: connectedProviders.apple ? 'var(--terminal-accent)' : '#e05c5c' }}>
-                {connectedProviders.apple ? '✓ Connected' : '✕ Not linked'}
-              </span>
-            </div>
-            <div onClick={() => { onAction('dropbox'); setFocusedItemIdx(4); }} style={rowCard(focusedItemIdx === 4)}>
-              <span>{t(language, 'storage.dropbox')}</span>
-              <span style={{ fontSize: '11px', opacity: 0.4 }}>Coming soon</span>
             </div>
 
             <div style={{ marginTop: '20px', padding: '14px 16px', border: '1px solid var(--terminal-border)', borderRadius: '10px', fontSize: '12px', opacity: 0.6, lineHeight: 1.65, fontFamily: uiFont, background: 'var(--terminal-surface)' }}>
