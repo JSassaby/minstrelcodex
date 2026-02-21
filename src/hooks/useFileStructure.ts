@@ -526,17 +526,29 @@ export function useFileStructure() {
     });
   }, []);
 
-  const permanentlyDeleteFile = useCallback((filename: string) => {
+  const permanentlyDeleteItem = useCallback((itemKey: string) => {
     setStructure(prev => {
       const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
       const deleted = next.root.children?.['Deleted'];
-      if (!deleted?.children?.[filename]) return prev;
-      // Remove associated document
+      if (!deleted?.children?.[itemKey]) return prev;
+      // Remove associated documents
       const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
-      delete docs[filename];
+      const item = deleted.children[itemKey];
+      if (item.type === 'file') {
+        delete docs[itemKey];
+      } else {
+        // Recursively remove all docs in folder
+        const collectAndDelete = (node: FileNode) => {
+          if (!node.children) return;
+          for (const [, child] of Object.entries(node.children)) {
+            if (child.type === 'file') delete docs[child.name];
+            if (child.type === 'folder') collectAndDelete(child);
+          }
+        };
+        collectAndDelete(item);
+      }
       localStorage.setItem('pw-documents', JSON.stringify(docs));
-      // Remove from Deleted folder
-      delete deleted.children[filename];
+      delete deleted.children[itemKey];
       localStorage.setItem(FS_KEY, JSON.stringify(next));
       return next;
     });
@@ -545,7 +557,7 @@ export function useFileStructure() {
   return {
     structure, createFolder, addFileToTree, toggleFolder, moveFile, moveFolder, deleteFile, deleteFolder, renameFile, getFolders,
     createNovelProject, saveVersion, saveSnapshot, findFilesInFolder, getNovelProjects, createFileInFolder, restoreFromDeleted, emptyDeleted,
-    reorderItem, permanentlyDeleteFile,
+    reorderItem, permanentlyDeleteItem,
   };
 }
 
