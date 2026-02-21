@@ -1,4 +1,4 @@
-import { Wifi, BatteryMedium, BatteryLow, BatteryFull, BatteryWarning } from 'lucide-react';
+import { Wifi, BatteryMedium, BatteryLow, BatteryFull, BatteryWarning, Music } from 'lucide-react';
 import { t } from '@/lib/languages';
 
 interface StatusBarProps {
@@ -8,6 +8,9 @@ interface StatusBarProps {
   content: string;
   battery: number;
   wifiOn: boolean;
+  musicPlaying?: boolean;
+  musicTrackName?: string;
+  onMusicClick?: () => void;
 }
 
 function BatteryIcon({ level }: { level: number }) {
@@ -18,7 +21,7 @@ function BatteryIcon({ level }: { level: number }) {
   return <BatteryFull size={12} color={color} strokeWidth={1.6} />;
 }
 
-export default function StatusBar({ language, filename, saved, content, battery, wifiOn }: StatusBarProps) {
+export default function StatusBar({ language, filename, saved, content, battery, wifiOn, musicPlaying, musicTrackName, onMusicClick }: StatusBarProps) {
   const displayName = filename ? (filename.split('/').pop() || filename) : t(language, 'status.untitled');
   const words = content.trim() ? content.trim().split(/\s+/).length : 0;
   const chars = content.length;
@@ -52,6 +55,15 @@ export default function StatusBar({ language, filename, saved, content, battery,
 
       {/* Right — system indicators */}
       <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        {musicPlaying && (
+          <span
+            onClick={onMusicClick}
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', opacity: 0.8 }}
+            title={musicTrackName || 'Music playing'}
+          >
+            <Music size={11} strokeWidth={1.6} color="var(--terminal-accent)" />
+          </span>
+        )}
         {wifiOn && (
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <Wifi size={11} strokeWidth={1.6} style={{ opacity: 0.8 }} />
