@@ -419,6 +419,117 @@ export default function SettingsPanel({
         {/* COLOURS */}
         {activeTab === 'colors' && (
           <div>
+            {/* ── Save Settings as Custom Theme ─────────────────────── */}
+            <div style={{ marginBottom: '20px' }}>
+              {!showSaveInput ? (
+                <button
+                  onClick={() => { setShowSaveInput(true); setSaveThemeName(''); setSaveStatus(''); }}
+                  style={{
+                    padding: '10px 16px', borderRadius: '10px', width: '100%',
+                    border: '1px solid var(--terminal-border)',
+                    background: 'var(--terminal-surface)',
+                    color: 'var(--terminal-text)',
+                    fontFamily: uiFont, fontSize: '13px', fontWeight: '500', cursor: 'pointer',
+                    transition: 'all 0.15s',
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--terminal-accent)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--terminal-border)'; }}
+                >
+                  <span style={{ fontSize: '14px' }}>💾</span> Save Settings as Custom Theme
+                </button>
+              ) : (
+                <div style={{
+                  padding: '12px', borderRadius: '10px',
+                  border: '1px solid var(--terminal-accent)',
+                  background: 'var(--terminal-surface)',
+                  display: 'flex', flexDirection: 'column', gap: '8px',
+                }}>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <div style={{
+                      width: '32px', height: '32px', borderRadius: '6px',
+                      background: bgColorInput, border: '1px solid var(--terminal-border)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '14px', fontWeight: 'bold', color: textColorInput,
+                      fontFamily: "'Courier Prime', monospace", flexShrink: 0,
+                    }}>Aa</div>
+                    <input
+                      value={saveThemeName}
+                      onChange={e => setSaveThemeName(e.target.value)}
+                      placeholder="Theme name…"
+                      autoFocus
+                      maxLength={30}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && saveThemeName.trim()) {
+                          const newTheme: CustomTheme = { name: saveThemeName.trim(), text: textColorInput, bg: bgColorInput };
+                          const updated = [...customThemes, newTheme];
+                          setCustomThemes(updated);
+                          saveCustomThemes(updated);
+                          setSaveStatus('Saved!');
+                          setShowSaveInput(false);
+                          setTimeout(() => setSaveStatus(''), 2000);
+                        } else if (e.key === 'Escape') {
+                          setShowSaveInput(false);
+                        }
+                        e.stopPropagation();
+                      }}
+                      style={{
+                        flex: 1, background: 'var(--terminal-bg)',
+                        border: '1px solid var(--terminal-border)', borderRadius: '8px',
+                        color: 'var(--terminal-text)', padding: '7px 12px',
+                        fontFamily: uiFont, fontSize: '13px', outline: 'none',
+                      }}
+                      onFocus={e => { e.currentTarget.style.borderColor = 'var(--terminal-accent)'; }}
+                      onBlur={e => { e.currentTarget.style.borderColor = 'var(--terminal-border)'; }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={() => {
+                        if (!saveThemeName.trim()) return;
+                        const newTheme: CustomTheme = { name: saveThemeName.trim(), text: textColorInput, bg: bgColorInput };
+                        const updated = [...customThemes, newTheme];
+                        setCustomThemes(updated);
+                        saveCustomThemes(updated);
+                        setSaveStatus('Saved!');
+                        setShowSaveInput(false);
+                        setTimeout(() => setSaveStatus(''), 2000);
+                      }}
+                      disabled={!saveThemeName.trim()}
+                      style={{
+                        padding: '7px 16px', borderRadius: '8px',
+                        border: '1px solid var(--terminal-accent)',
+                        background: 'var(--terminal-accent)',
+                        color: 'var(--terminal-bg)',
+                        fontFamily: uiFont, fontSize: '12px', fontWeight: '600', cursor: 'pointer',
+                        opacity: saveThemeName.trim() ? 1 : 0.4,
+                      }}
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => setShowSaveInput(false)}
+                      style={{
+                        padding: '7px 16px', borderRadius: '8px',
+                        border: '1px solid var(--terminal-border)',
+                        background: 'transparent',
+                        color: 'var(--terminal-text)',
+                        fontFamily: uiFont, fontSize: '12px', cursor: 'pointer',
+                        opacity: 0.7,
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+              {saveStatus && (
+                <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--terminal-accent)', fontFamily: uiFont }}>
+                  ✓ {saveStatus}
+                </div>
+              )}
+            </div>
+
             {/* Live Preview */}
             <div style={{
               border: '1px solid var(--terminal-border)', padding: '18px', marginBottom: '24px',
@@ -586,116 +697,6 @@ export default function SettingsPanel({
               </button>
             </div>
 
-            {/* ── Save Custom Theme ──────────────────────────────────────── */}
-            <div style={{ paddingTop: '20px', borderTop: '1px solid var(--terminal-border)', marginBottom: '20px' }}>
-              <div style={{ fontSize: '12px', opacity: 0.55, marginBottom: '14px', fontFamily: uiFont, fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                Save as Custom Theme
-              </div>
-
-              {!showSaveInput ? (
-                <button
-                  onClick={() => { setShowSaveInput(true); setSaveThemeName(''); setSaveStatus(''); }}
-                  style={{
-                    padding: '9px 20px', borderRadius: '8px',
-                    border: '1px solid var(--terminal-border)',
-                    background: 'var(--terminal-surface)',
-                    color: 'var(--terminal-text)',
-                    fontFamily: uiFont, fontSize: '13px', fontWeight: '500', cursor: 'pointer',
-                    transition: 'all 0.15s',
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                  }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--terminal-accent)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--terminal-border)'; }}
-                >
-                  <span style={{ fontSize: '14px' }}>💾</span> Save Current Colours…
-                </button>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <div style={{
-                      width: '32px', height: '32px', borderRadius: '6px',
-                      background: bgColorInput, border: '1px solid var(--terminal-border)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '14px', fontWeight: 'bold', color: textColorInput,
-                      fontFamily: "'Courier Prime', monospace", flexShrink: 0,
-                    }}>Aa</div>
-                    <input
-                      value={saveThemeName}
-                      onChange={e => setSaveThemeName(e.target.value)}
-                      placeholder="Theme name…"
-                      autoFocus
-                      maxLength={30}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && saveThemeName.trim()) {
-                          const newTheme: CustomTheme = { name: saveThemeName.trim(), text: textColorInput, bg: bgColorInput };
-                          const updated = [...customThemes, newTheme];
-                          setCustomThemes(updated);
-                          saveCustomThemes(updated);
-                          setSaveStatus('Saved!');
-                          setShowSaveInput(false);
-                          setTimeout(() => setSaveStatus(''), 2000);
-                        } else if (e.key === 'Escape') {
-                          setShowSaveInput(false);
-                        }
-                        e.stopPropagation();
-                      }}
-                      style={{
-                        flex: 1, background: 'var(--terminal-bg)',
-                        border: '1px solid var(--terminal-border)', borderRadius: '8px',
-                        color: 'var(--terminal-text)', padding: '7px 12px',
-                        fontFamily: uiFont, fontSize: '13px', outline: 'none',
-                      }}
-                      onFocus={e => { e.currentTarget.style.borderColor = 'var(--terminal-accent)'; }}
-                      onBlur={e => { e.currentTarget.style.borderColor = 'var(--terminal-border)'; }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                      onClick={() => {
-                        if (!saveThemeName.trim()) return;
-                        const newTheme: CustomTheme = { name: saveThemeName.trim(), text: textColorInput, bg: bgColorInput };
-                        const updated = [...customThemes, newTheme];
-                        setCustomThemes(updated);
-                        saveCustomThemes(updated);
-                        setSaveStatus('Saved!');
-                        setShowSaveInput(false);
-                        setTimeout(() => setSaveStatus(''), 2000);
-                      }}
-                      disabled={!saveThemeName.trim()}
-                      style={{
-                        padding: '7px 16px', borderRadius: '8px',
-                        border: '1px solid var(--terminal-accent)',
-                        background: 'var(--terminal-accent)',
-                        color: 'var(--terminal-bg)',
-                        fontFamily: uiFont, fontSize: '12px', fontWeight: '600', cursor: 'pointer',
-                        opacity: saveThemeName.trim() ? 1 : 0.4,
-                      }}
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={() => setShowSaveInput(false)}
-                      style={{
-                        padding: '7px 16px', borderRadius: '8px',
-                        border: '1px solid var(--terminal-border)',
-                        background: 'transparent',
-                        color: 'var(--terminal-text)',
-                        fontFamily: uiFont, fontSize: '12px', cursor: 'pointer',
-                        opacity: 0.7,
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {saveStatus && (
-                <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--terminal-accent)', fontFamily: uiFont }}>
-                  ✓ {saveStatus}
-                </div>
-              )}
-            </div>
 
             {/* ── Custom Themes ──────────────────────────────────────────── */}
             {customThemes.length > 0 && (
