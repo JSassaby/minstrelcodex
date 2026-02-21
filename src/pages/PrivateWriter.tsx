@@ -1085,6 +1085,7 @@ export default function PrivateWriter() {
           onRenameFile={(oldName, newName) => fileStructure.renameFile(oldName, newName)}
           onMoveFile={(filename, fromPath, toPath) => fileStructure.moveFile(filename, fromPath, toPath)}
           onMoveFolder={(folderName, fromPath, toPath) => fileStructure.moveFolder(folderName, fromPath, toPath)}
+          onReorderItem={(itemName, parentPath, targetName, position) => fileStructure.reorderItem(itemName, parentPath, targetName, position)}
           onToggleFolder={(path) => fileStructure.toggleFolder(path)}
           onRestoreFromDeleted={(itemName) => fileStructure.restoreFromDeleted(itemName)}
           onEmptyDeleted={() => fileStructure.emptyDeleted()}

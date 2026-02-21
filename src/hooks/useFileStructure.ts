@@ -486,9 +486,50 @@ export function useFileStructure() {
     });
   }, []);
 
+  const reorderItem = useCallback((itemName: string, parentPath: string[], targetName: string, position: 'before' | 'after') => {
+    setStructure(prev => {
+      const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
+
+      // Navigate to parent
+      let parent: FileNode = next.root;
+      for (const p of parentPath) {
+        if (!parent.children?.[p]) return prev;
+        parent = parent.children[p];
+      }
+      if (!parent.children) return prev;
+      if (!parent.children[itemName] || !parent.children[targetName]) return prev;
+      if (itemName === targetName) return prev;
+
+      // Build current order (or derive from keys)
+      const currentOrder = parent.childOrder && parent.childOrder.length > 0
+        ? parent.childOrder.filter(k => k in parent.children!)
+        : Object.keys(parent.children);
+
+      // Add any missing keys
+      for (const k of Object.keys(parent.children)) {
+        if (!currentOrder.includes(k)) currentOrder.push(k);
+      }
+
+      // Remove the item being moved
+      const filtered = currentOrder.filter(k => k !== itemName);
+
+      // Find target index and insert
+      const targetIdx = filtered.indexOf(targetName);
+      if (targetIdx === -1) return prev;
+      const insertIdx = position === 'before' ? targetIdx : targetIdx + 1;
+      filtered.splice(insertIdx, 0, itemName);
+
+      parent.childOrder = filtered;
+
+      localStorage.setItem(FS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   return {
     structure, createFolder, addFileToTree, toggleFolder, moveFile, moveFolder, deleteFile, deleteFolder, renameFile, getFolders,
     createNovelProject, saveVersion, saveSnapshot, findFilesInFolder, getNovelProjects, createFileInFolder, restoreFromDeleted, emptyDeleted,
+    reorderItem,
   };
 }
 
