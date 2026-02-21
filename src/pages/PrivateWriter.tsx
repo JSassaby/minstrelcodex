@@ -1586,11 +1586,6 @@ export default function PrivateWriter() {
           if (location === 'google-drive') {
             setNovelWizardOpen(false);
             setActiveModal('gdrive');
-          } else if (location === 'icloud') {
-            setNovelWizardOpen(false);
-            setActiveModal('apple-signin');
-          } else {
-            showToast(`${location} integration coming soon.`);
           }
         }}
       />
