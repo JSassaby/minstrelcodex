@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { lovable } from '@/integrations/lovable/index';
+import { supabase } from '@/integrations/supabase/client';
 import { useGoogleToken } from '@/hooks/useGoogleToken';
 import ModalShell, { ModalButton } from './ModalShell';
 
@@ -80,14 +81,41 @@ export default function GoogleDriveModal({
   }, [visible, isConnected]);
 
   const signIn = async () => {
-    setLoading(true); setError('');
+    setLoading(true); setError(''); setNeedsReauth(false);
     try {
-      const { error } = await lovable.auth.signInWithOAuth('google', {
+      const result = await lovable.auth.signInWithOAuth('google', {
         redirect_uri: window.location.origin,
         extraParams: { scope: 'https://www.googleapis.com/auth/drive.file', access_type: 'offline', prompt: 'consent' },
       });
-      if (error) { setError(error.message || 'Sign-in failed'); setLoading(false); return; }
-      // OAuth will redirect the page — the token is captured on return
+      if (result.error) {
+        setError((result.error as any).message || 'Sign-in failed');
+        setLoading(false);
+        return;
+      }
+      // If the auth bridge handled it without redirect, check session for provider_token
+      if (!result.redirected) {
+        // Give the session a moment to propagate
+        await new Promise(r => setTimeout(r, 500));
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.provider_token) {
+          localStorage.setItem('pw-google-token', session.provider_token);
+          // Force re-render by reloading the token state
+          window.location.reload();
+          return;
+        }
+        // Session exists but no provider_token — try refreshing
+        const { data: refreshData } = await supabase.auth.refreshSession();
+        if (refreshData.session?.provider_token) {
+          localStorage.setItem('pw-google-token', refreshData.session.provider_token);
+          window.location.reload();
+          return;
+        }
+        // Auth succeeded but Drive token not available — inform user
+        setError('Signed in but Drive access token unavailable. Try signing out and back in.');
+        setLoading(false);
+        return;
+      }
+      // If redirected, page will navigate away — token captured on return
       setTimeout(() => { setLoading(false); }, 5000);
     } catch (e: any) {
       setError(e.message || 'Sign-in failed');
