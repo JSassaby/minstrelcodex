@@ -1426,6 +1426,44 @@ export default function PrivateWriter() {
         }}
         currentContent={editorContent}
         currentFilename={docStorage.currentDocument.filename}
+        localFolders={fileStructure.getFolders()}
+        onSyncFolder={async (folderPath, driveFolderId, driveFolderName) => {
+          if (!googleToken) {
+            showToast('Connect Google Drive first');
+            return;
+          }
+          const files = fileStructure.findFilesInFolder(fileStructure.structure.root, folderPath);
+          if (files.length === 0) {
+            showToast('No files in this folder to sync.');
+            return;
+          }
+          showToast(`Syncing ${files.length} files to ${driveFolderName}…`);
+          const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-drive`;
+          const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
+          let uploaded = 0;
+          let failed = 0;
+          for (const filePath of files) {
+            try {
+              const content = docs[filePath]?.content || ' ';
+              const fileName = filePath.split('/').pop() || filePath;
+              const res = await fetch(FUNCTION_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  action: 'upload', googleToken, fileName, content,
+                  mimeType: 'text/plain',
+                  parentId: driveFolderId === 'root' ? undefined : driveFolderId,
+                }),
+              });
+              if (res.ok) uploaded++;
+              else failed++;
+            } catch { failed++; }
+          }
+          const now = new Date().toLocaleTimeString();
+          setLastSyncTime(now);
+          localStorage.setItem('pw-last-sync', now);
+          showToast(failed > 0 ? `${uploaded} synced, ${failed} failed.` : `✓ ${uploaded} files synced to ${driveFolderName}`);
+        }}
       />
 
       {/* Apple Sign In Modal */}

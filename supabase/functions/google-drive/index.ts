@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { action, googleToken, fileId, fileName, content, mimeType } = await req.json();
+    const { action, googleToken, fileId, folderId, fileName, folderName, content, mimeType, parentId } = await req.json();
 
     if (!googleToken) {
       return new Response(JSON.stringify({ error: 'Google access token required' }), {
@@ -29,12 +29,13 @@ serve(async (req) => {
 
     switch (action) {
       case 'list': {
-        // List text files in Drive, specifically in a "Private Writer" folder
+        // List files and folders in a specific parent (or root)
+        const parent = folderId || 'root';
         const q = encodeURIComponent(
-          "mimeType='text/plain' or mimeType='text/html' or mimeType='application/vnd.google-apps.document'"
+          `'${parent}' in parents and trashed = false`
         );
         const res = await fetch(
-          `${DRIVE_API}/files?q=${q}&fields=files(id,name,mimeType,modifiedTime,size)&orderBy=modifiedTime desc&pageSize=50`,
+          `${DRIVE_API}/files?q=${q}&fields=files(id,name,mimeType,modifiedTime,size,parents)&orderBy=folder,name&pageSize=100`,
           { headers: authHeaders }
         );
         const data = await res.json();
@@ -49,6 +50,35 @@ serve(async (req) => {
         });
       }
 
+      case 'create-folder': {
+        if (!folderName) {
+          return new Response(JSON.stringify({ error: 'folderName required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        const metadata: Record<string, unknown> = {
+          name: folderName,
+          mimeType: 'application/vnd.google-apps.folder',
+        };
+        if (parentId) metadata.parents = [parentId];
+        const res = await fetch(`${DRIVE_API}/files`, {
+          method: 'POST',
+          headers: { ...authHeaders, 'Content-Type': 'application/json' },
+          body: JSON.stringify(metadata),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          return new Response(JSON.stringify({ error: data.error?.message || 'Failed to create folder' }), {
+            status: res.status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        return new Response(JSON.stringify({ folder: data }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       case 'download': {
         if (!fileId) {
           return new Response(JSON.stringify({ error: 'fileId required' }), {
@@ -56,7 +86,6 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
-        // Get file metadata first
         const metaRes = await fetch(`${DRIVE_API}/files/${fileId}?fields=mimeType,name`, {
           headers: authHeaders,
         });
@@ -64,14 +93,12 @@ serve(async (req) => {
 
         let fileContent: string;
         if (meta.mimeType === 'application/vnd.google-apps.document') {
-          // Export Google Docs as HTML
           const exportRes = await fetch(
             `${DRIVE_API}/files/${fileId}/export?mimeType=text/html`,
             { headers: authHeaders }
           );
           fileContent = await exportRes.text();
         } else {
-          // Download regular files
           const dlRes = await fetch(`${DRIVE_API}/files/${fileId}?alt=media`, {
             headers: authHeaders,
           });
@@ -91,12 +118,12 @@ serve(async (req) => {
           });
         }
 
-        const metadata = {
+        const metadata: Record<string, unknown> = {
           name: fileName,
           mimeType: mimeType || 'text/html',
         };
+        if (parentId) metadata.parents = [parentId];
 
-        // If fileId provided, update existing file
         if (fileId) {
           const res = await fetch(`${UPLOAD_API}/files/${fileId}?uploadType=multipart`, {
             method: 'PATCH',
@@ -118,7 +145,6 @@ serve(async (req) => {
           });
         }
 
-        // Create new file
         const res = await fetch(`${UPLOAD_API}/files?uploadType=multipart`, {
           method: 'POST',
           headers: {
