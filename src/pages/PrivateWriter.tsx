@@ -628,6 +628,12 @@ export default function PrivateWriter() {
         return;
       }
 
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'm' || e.key === 'M')) {
+        e.preventDefault();
+        executeAction('openmusic');
+        return;
+      }
+
       if (e.ctrlKey || e.metaKey) {
         // Ctrl+B/I/U are reserved for text formatting (TipTap handles them)
         if (e.key === 'b' || e.key === 'i' || e.key === 'u') return;
