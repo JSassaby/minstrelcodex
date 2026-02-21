@@ -88,13 +88,18 @@ export default function MenuBar({
   const [hoverSubIdx, setHoverSubIdx] = useState<number | null>(null);
   const [mouseActive, setMouseActive] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const menuItemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     if (!mouseActive) return;
     const handler = (e: MouseEvent) => {
-      if (barRef.current && !barRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        barRef.current && !barRef.current.contains(target) &&
+        (!dropdownRef.current || !dropdownRef.current.contains(target))
+      ) {
         setHoverMenuIdx(null);
         setHoverSubIdx(null);
         setMouseActive(false);
@@ -241,7 +246,7 @@ export default function MenuBar({
               style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
               onClick={() => { setHoverMenuIdx(null); setMouseActive(false); }}
             />
-            <div style={{ ...dropStyle, fontFamily: uiFont }}>
+            <div ref={dropdownRef} style={{ ...dropStyle, fontFamily: uiFont }}>
               {items.map((item, j) => {
                 if (item.action === 'separator') {
                   return (
@@ -258,6 +263,7 @@ export default function MenuBar({
                     onMouseEnter={() => setHoverSubIdx(j)}
                     onClick={(e) => {
                       e.stopPropagation();
+                      
                       onAction(item.action);
                       setHoverMenuIdx(null);
                       setMouseActive(false);
