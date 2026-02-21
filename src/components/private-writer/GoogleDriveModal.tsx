@@ -63,12 +63,21 @@ export default function GoogleDriveModal({
 
   const signIn = async () => {
     setLoading(true); setError('');
-    const { error } = await lovable.auth.signInWithOAuth('google', {
-      redirect_uri: window.location.origin,
-      extraParams: { scope: 'https://www.googleapis.com/auth/drive.file', access_type: 'offline', prompt: 'consent' },
-    });
-    if (error) { setError(error.message || 'Sign-in failed'); setLoading(false); }
-    // On success the page redirects; useGoogleToken captures the token on return
+    try {
+      const { error } = await lovable.auth.signInWithOAuth('google', {
+        redirect_uri: window.location.origin,
+        extraParams: { scope: 'https://www.googleapis.com/auth/drive.file', access_type: 'offline', prompt: 'consent' },
+      });
+      if (error) { setError(error.message || 'Sign-in failed'); setLoading(false); return; }
+      // If we're still here after 5s, the redirect likely didn't work (e.g. iframe)
+      setTimeout(() => {
+        setLoading(false);
+        setError('Redirect did not occur. Try opening the app in a new tab.');
+      }, 5000);
+    } catch (e: any) {
+      setError(e.message || 'Sign-in failed');
+      setLoading(false);
+    }
   };
 
   const loadFiles = async (token: string, folderId: string) => {
