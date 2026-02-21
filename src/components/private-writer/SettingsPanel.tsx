@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { t } from '@/lib/languages';
-import { supabase } from '@/integrations/supabase/client';
+// supabase import removed — connection state uses localStorage
 import { ThemeMode, THEMES } from '@/lib/themes';
 import type { AppColors, Language, PinConfig } from '@/lib/types';
 
@@ -100,25 +100,18 @@ export default function SettingsPanel({
 
   const activeTab = TABS[activeTabIdx].id;
 
-  const [connectedProviders, setConnectedProviders] = useState<ConnectedProviders>({ google: false, apple: false });
+  const [connectedProviders, setConnectedProviders] = useState<ConnectedProviders>(() => ({
+    google: !!localStorage.getItem('pw-google-token'),
+    apple: false,
+  }));
 
   useEffect(() => {
     if (!visible) return;
-    const checkProviders = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const provider = session.user?.app_metadata?.provider;
-        setConnectedProviders(prev => ({
-          ...prev,
-          google: provider === 'google' || prev.google,
-          apple: provider === 'apple' || prev.apple,
-        }));
-        if (session.provider_token) {
-          setConnectedProviders(prev => ({ ...prev, google: true }));
-        }
-      }
-    };
-    checkProviders();
+    // Check localStorage token as source of truth
+    setConnectedProviders({
+      google: !!localStorage.getItem('pw-google-token'),
+      apple: false,
+    });
   }, [visible]);
 
   useEffect(() => { setFocusedItemIdx(0); }, [activeTabIdx]);
@@ -822,7 +815,7 @@ export default function SettingsPanel({
             </div>
 
             <div
-              onClick={() => { connectedProviders.google ? onAction('gdrive') : onConnectGoogle(); setFocusedItemIdx(2); }}
+              onClick={() => { onAction('gdrive'); setFocusedItemIdx(2); }}
               style={rowCard(focusedItemIdx === 2)}
             >
               <span>☁ Google Drive</span>
