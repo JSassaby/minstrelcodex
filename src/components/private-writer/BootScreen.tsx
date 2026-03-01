@@ -9,6 +9,7 @@ interface BootScreenProps {
 
 export default function BootScreen({ language, onComplete }: BootScreenProps) {
   const [lines, setLines] = useState<string[]>([]);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   const bootMessages = [
     t(language, 'boot.bios'),
