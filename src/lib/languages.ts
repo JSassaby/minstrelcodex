@@ -126,8 +126,8 @@ export const languages = {
   'af': {
     name: 'Afrikaans',
     boot: {
-      bios: 'PRIVATE WRITER BIOS v2.4',
-      copyright: 'Kopiereg (C) 2026 Private Writer Stelsels',
+      bios: 'MINSTREL CODEX BIOS v2.4',
+      copyright: 'Kopiereg (C) 2026 Minstrel Codex Stelsels',
       init: 'Stelsel word geïnisialiseer...',
       kernel: 'Laai kern... OK',
       fs: 'Monteer lêerstelsels... OK',
