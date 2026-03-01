@@ -25,17 +25,25 @@ export default function BootScreen({ language, onComplete }: BootScreenProps) {
   ];
 
   useEffect(() => {
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < bootMessages.length) {
-        setLines(prev => [...prev, bootMessages[i]]);
-        i++;
-      } else {
-        clearInterval(interval);
-        setTimeout(() => onComplete(), 500);
-      }
-    }, 100);
-    return () => clearInterval(interval);
+    // Pause on the logo/title for 2.5s before boot messages begin
+    const pauseTimer = setTimeout(() => {
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i < bootMessages.length) {
+          setLines(prev => [...prev, bootMessages[i]]);
+          i++;
+        } else {
+          clearInterval(interval);
+          setTimeout(() => onComplete(), 500);
+        }
+      }, 100);
+      // store for cleanup
+      cleanupRef.current = () => clearInterval(interval);
+    }, 2500);
+    return () => {
+      clearTimeout(pauseTimer);
+      cleanupRef.current?.();
+    };
   }, []);
 
   return (
