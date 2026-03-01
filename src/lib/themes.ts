@@ -127,23 +127,24 @@ export function hasChosenTheme(): boolean {
   return localStorage.getItem(THEME_CHOSEN_KEY) === 'true';
 }
 
-export function applyTheme(theme: ThemeDefinition) {
+export function applyTheme(theme?: ThemeDefinition) {
+  const resolvedTheme = theme ?? THEMES[DEFAULT_THEME];
   const root = document.documentElement;
   const body = document.body;
 
   // Set CSS variables
-  root.style.setProperty('--terminal-text', theme.colors.text);
-  root.style.setProperty('--terminal-bg', theme.colors.background);
-  root.style.setProperty('--terminal-glow', theme.colors.glow);
-  root.style.setProperty('--terminal-accent', theme.colors.accent);
-  root.style.setProperty('--terminal-muted', theme.colors.muted);
-  root.style.setProperty('--terminal-border', theme.colors.border);
-  root.style.setProperty('--terminal-surface', theme.colors.surface);
-  root.style.setProperty('--font-body', theme.fonts.body);
-  root.style.setProperty('--font-display', theme.fonts.display);
-  root.style.setProperty('--font-ui', theme.fonts.ui);
+  root.style.setProperty('--terminal-text', resolvedTheme.colors.text);
+  root.style.setProperty('--terminal-bg', resolvedTheme.colors.background);
+  root.style.setProperty('--terminal-glow', resolvedTheme.colors.glow);
+  root.style.setProperty('--terminal-accent', resolvedTheme.colors.accent);
+  root.style.setProperty('--terminal-muted', resolvedTheme.colors.muted);
+  root.style.setProperty('--terminal-border', resolvedTheme.colors.border);
+  root.style.setProperty('--terminal-surface', resolvedTheme.colors.surface);
+  root.style.setProperty('--font-body', resolvedTheme.fonts.body);
+  root.style.setProperty('--font-display', resolvedTheme.fonts.display);
+  root.style.setProperty('--font-ui', resolvedTheme.fonts.ui);
 
   // Remove all theme classes
   body.classList.remove('theme-terminal', 'theme-modern', 'theme-typewriter');
-  body.classList.add(`theme-${theme.mode}`);
+  body.classList.add(`theme-${resolvedTheme.mode}`);
 }

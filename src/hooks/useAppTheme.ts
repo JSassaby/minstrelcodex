@@ -27,7 +27,7 @@ export function useAppTheme() {
 
   // Apply theme on mount and when mode changes
   useEffect(() => {
-    const theme = THEMES[themeMode];
+    const theme = THEMES[themeMode] ?? THEMES.terminal;
     applyTheme(theme);
     // If custom colors are set for terminal mode, override
     if (themeMode === 'terminal') {
