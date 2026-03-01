@@ -5,6 +5,7 @@ import {
   Printer, PanelLeftOpen, Undo2, Redo2, Copy, ClipboardPaste,
   Wifi, WifiOff, Bluetooth, Cloud, Settings, Camera, FileText, Music
 } from 'lucide-react';
+import minstrelLogo from '@/assets/minstrel-logo.svg';
 import { t } from '@/lib/languages';
 
 interface MenuBarProps {
@@ -237,6 +238,19 @@ export default function MenuBar({
         <FileText size={11} strokeWidth={1.8} style={{ flexShrink: 0, opacity: 0.7 }} />
         {shortName}
       </div>
+
+      {/* Right — logo */}
+      <img
+        src={minstrelLogo}
+        alt="Minstrel Codex"
+        style={{
+          width: '24px',
+          height: '24px',
+          objectFit: 'contain',
+          opacity: 0.8,
+          flexShrink: 0,
+        }}
+      />
 
       {/* Portal dropdown — rendered at body level to avoid clipping by toolbar */}
       {activeSubOpen && activeMenuIdx !== null && (() => {
