@@ -103,9 +103,19 @@ export const THEMES: Record<ThemeMode, ThemeDefinition> = {
 
 const THEME_KEY = 'pw-theme-mode';
 const THEME_CHOSEN_KEY = 'pw-theme-chosen';
+const DEFAULT_THEME: ThemeMode = 'terminal';
+
+function isThemeMode(value: string | null): value is ThemeMode {
+  return value === 'terminal' || value === 'modern' || value === 'typewriter';
+}
 
 export function getSavedTheme(): ThemeMode {
-  return (localStorage.getItem(THEME_KEY) as ThemeMode) || 'terminal';
+  const saved = localStorage.getItem(THEME_KEY);
+  if (isThemeMode(saved)) return saved;
+
+  // Self-heal stale/invalid values from older versions to avoid blank screens
+  localStorage.setItem(THEME_KEY, DEFAULT_THEME);
+  return DEFAULT_THEME;
 }
 
 export function saveTheme(mode: ThemeMode) {
