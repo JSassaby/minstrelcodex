@@ -239,6 +239,19 @@ export default function MenuBar({
         {shortName}
       </div>
 
+      {/* Right — logo */}
+      <img
+        src={minstrelLogo}
+        alt="Minstrel Codex"
+        style={{
+          width: '24px',
+          height: '24px',
+          objectFit: 'contain',
+          opacity: 0.8,
+          flexShrink: 0,
+        }}
+      />
+
       {/* Portal dropdown — rendered at body level to avoid clipping by toolbar */}
       {activeSubOpen && activeMenuIdx !== null && (() => {
         const menu = MENUS[activeMenuIdx];
