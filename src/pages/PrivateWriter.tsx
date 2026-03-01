@@ -1007,6 +1007,22 @@ export default function PrivateWriter() {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
+      {/* Top-right logo */}
+      <img
+        src={minstrelLogo}
+        alt="Minstrel"
+        style={{
+          position: 'absolute',
+          top: '8px',
+          right: '12px',
+          width: '32px',
+          height: '32px',
+          objectFit: 'contain',
+          zIndex: 100,
+          opacity: 0.8,
+          pointerEvents: 'none',
+        }}
+      />
       <MenuBar
         language={language}
         visible={menuOpen}

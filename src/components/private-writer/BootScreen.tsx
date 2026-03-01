@@ -54,14 +54,26 @@ export default function BootScreen({ language, onComplete }: BootScreenProps) {
         fontSize: '18px',
       }}
     >
+      <img
+        src={minstrelLogo}
+        alt="Minstrel"
+        style={{
+          width: '120px',
+          height: '120px',
+          objectFit: 'contain',
+          marginBottom: '16px',
+          filter: 'drop-shadow(0 0 12px var(--terminal-glow))',
+        }}
+      />
       <div
         style={{
           fontSize: '32px',
           marginBottom: '20px',
           textShadow: '0 0 10px var(--terminal-glow)',
+          fontFamily: 'var(--font-display)',
         }}
       >
-        PRIVATE WRITER SYSTEM
+        MINSTREL
       </div>
       <div>
         {lines.map((line, i) => (
