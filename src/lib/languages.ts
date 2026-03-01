@@ -64,8 +64,8 @@ export const languages = {
   'en-US': {
     name: 'English (US)',
     boot: {
-      bios: 'PRIVATE WRITER BIOS v2.4',
-      copyright: 'Copyright (C) 2026 Private Writer Systems',
+      bios: 'MINSTREL CODEX BIOS v2.4',
+      copyright: 'Copyright (C) 2026 Minstrel Codex Systems',
       init: 'Initializing system...',
       kernel: 'Loading kernel... OK',
       fs: 'Mounting file systems... OK',
