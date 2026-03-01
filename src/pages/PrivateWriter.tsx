@@ -25,6 +25,7 @@ import ThemePicker from '@/components/private-writer/ThemePicker';
 import { useGoogleToken } from '@/hooks/useGoogleToken';
 import { useMusicPlayer } from '@/hooks/useMusicPlayer';
 import type { ModalType, Language, Difficulty, PinConfig } from '@/lib/types';
+import minstrelLogo from '@/assets/minstrel-logo.png';
 
 
 
