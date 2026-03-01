@@ -105,7 +105,7 @@ export const languages = {
     },
     help: { line1: 'Press ESC to open menu', line2: 'Ctrl+S to save | Ctrl+N for new file', line3: 'Ctrl+Z/R for undo/redo' },
     placeholder: 'Press any key to begin writing...',
-    shutdownConfirm: 'Restart Private Writer?',
+    shutdownConfirm: 'Restart Minstrel Codex?',
     pin: {
       setupTitle: 'SET UP PIN LOCK',
       setupDesc: 'Protect your writing with a PIN code',
