@@ -2,8 +2,8 @@ export const languages = {
   'en-GB': {
     name: 'English (UK)',
     boot: {
-      bios: 'PRIVATE WRITER BIOS v2.4',
-      copyright: 'Copyright (C) 2026 Private Writer Systems',
+      bios: 'MINSTREL CODEX BIOS v2.4',
+      copyright: 'Copyright (C) 2026 Minstrel Codex Systems',
       init: 'Initialising system...',
       kernel: 'Loading kernel... OK',
       fs: 'Mounting file systems... OK',
@@ -43,7 +43,7 @@ export const languages = {
     },
     help: { line1: 'Press ESC to open menu', line2: 'Ctrl+S to save | Ctrl+N for new file', line3: 'Ctrl+Z/R for undo/redo' },
     placeholder: 'Press any key to begin writing...',
-    shutdownConfirm: 'Restart Private Writer?',
+    shutdownConfirm: 'Restart Minstrel Codex?',
     pin: {
       setupTitle: 'SET UP PIN LOCK',
       setupDesc: 'Protect your writing with a PIN code',
@@ -54,7 +54,7 @@ export const languages = {
       mismatch: 'PINs do not match. Try again.',
       set: 'SET PIN',
       skip: 'SKIP',
-      lockTitle: 'PRIVATE WRITER LOCKED',
+      lockTitle: 'MINSTREL CODEX LOCKED',
       lockDesc: 'Enter your PIN to unlock',
       unlock: 'UNLOCK',
       incorrect: 'Incorrect PIN. Try again.',
@@ -64,8 +64,8 @@ export const languages = {
   'en-US': {
     name: 'English (US)',
     boot: {
-      bios: 'PRIVATE WRITER BIOS v2.4',
-      copyright: 'Copyright (C) 2026 Private Writer Systems',
+      bios: 'MINSTREL CODEX BIOS v2.4',
+      copyright: 'Copyright (C) 2026 Minstrel Codex Systems',
       init: 'Initializing system...',
       kernel: 'Loading kernel... OK',
       fs: 'Mounting file systems... OK',
@@ -105,7 +105,7 @@ export const languages = {
     },
     help: { line1: 'Press ESC to open menu', line2: 'Ctrl+S to save | Ctrl+N for new file', line3: 'Ctrl+Z/R for undo/redo' },
     placeholder: 'Press any key to begin writing...',
-    shutdownConfirm: 'Restart Private Writer?',
+    shutdownConfirm: 'Restart Minstrel Codex?',
     pin: {
       setupTitle: 'SET UP PIN LOCK',
       setupDesc: 'Protect your writing with a PIN code',
@@ -116,7 +116,7 @@ export const languages = {
       mismatch: 'PINs do not match. Try again.',
       set: 'SET PIN',
       skip: 'SKIP',
-      lockTitle: 'PRIVATE WRITER LOCKED',
+      lockTitle: 'MINSTREL CODEX LOCKED',
       lockDesc: 'Enter your PIN to unlock',
       unlock: 'UNLOCK',
       incorrect: 'Incorrect PIN. Try again.',
@@ -126,8 +126,8 @@ export const languages = {
   'af': {
     name: 'Afrikaans',
     boot: {
-      bios: 'PRIVATE WRITER BIOS v2.4',
-      copyright: 'Kopiereg (C) 2026 Private Writer Stelsels',
+      bios: 'MINSTREL CODEX BIOS v2.4',
+      copyright: 'Kopiereg (C) 2026 Minstrel Codex Stelsels',
       init: 'Stelsel word geïnisialiseer...',
       kernel: 'Laai kern... OK',
       fs: 'Monteer lêerstelsels... OK',
@@ -167,7 +167,7 @@ export const languages = {
     },
     help: { line1: 'Druk ESC om kieslys oop te maak', line2: 'Ctrl+S om te stoor | Ctrl+N vir nuwe lêer', line3: 'Ctrl+Z/R vir ontdoen/herdoen' },
     placeholder: 'Druk enige sleutel om te begin skryf...',
-    shutdownConfirm: 'Herbegin Private Writer?',
+    shutdownConfirm: 'Herbegin Minstrel Codex?',
     pin: {
       setupTitle: 'STEL PIN-SLOT OP',
       setupDesc: 'Beskerm jou skryfwerk met \'n PIN-kode',
@@ -178,7 +178,7 @@ export const languages = {
       mismatch: 'PINs stem nie ooreen nie. Probeer weer.',
       set: 'STEL PIN',
       skip: 'SLAAN OOR',
-      lockTitle: 'PRIVATE WRITER GESLUIT',
+      lockTitle: 'MINSTREL CODEX GESLUIT',
       lockDesc: 'Voer jou PIN in om te ontsluit',
       unlock: 'ONTSLUIT',
       incorrect: 'Verkeerde PIN. Probeer weer.',

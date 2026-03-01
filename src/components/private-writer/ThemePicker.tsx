@@ -224,7 +224,7 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
           <Monitor size={14} color="rgba(255,255,255,0.3)" strokeWidth={1.5} />
           <span style={{ fontSize: '10px', letterSpacing: '5px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', fontWeight: 500 }}>
-            Private Writer
+            Minstrel Codex
           </span>
         </div>
         <div style={{ fontSize: '22px', fontWeight: 600, color: 'rgba(255,255,255,0.82)', letterSpacing: '-0.3px' }}>

@@ -73,7 +73,7 @@ export default function BootScreen({ language, onComplete }: BootScreenProps) {
           fontFamily: 'var(--font-display)',
         }}
       >
-        MINSTREL
+        MINSTREL CODEX
       </div>
       <div>
         {lines.map((line, i) => (
