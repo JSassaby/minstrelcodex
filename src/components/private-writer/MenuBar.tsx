@@ -239,18 +239,28 @@ export default function MenuBar({
         {shortName}
       </div>
 
-      {/* Right — logo */}
-      <img
-        src={minstrelLogo}
-        alt="Minstrel Codex"
-        style={{
-          width: '24px',
-          height: '24px',
-          objectFit: 'contain',
-          opacity: 0.8,
-          flexShrink: 0,
-        }}
-      />
+      {/* Right — logo + name */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+        <img
+          src={minstrelLogo}
+          alt="Minstrel Codex"
+          style={{
+            width: '24px',
+            height: '24px',
+            objectFit: 'contain',
+            opacity: 0.8,
+          }}
+        />
+        <span style={{
+          fontSize: '11px',
+          fontFamily: uiFont,
+          fontWeight: '500',
+          opacity: 0.55,
+          letterSpacing: '0.04em',
+        }}>
+          Minstrel Codex
+        </span>
+      </div>
 
       {/* Portal dropdown — rendered at body level to avoid clipping by toolbar */}
       {activeSubOpen && activeMenuIdx !== null && (() => {
