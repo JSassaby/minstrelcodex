@@ -20,8 +20,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "placeholder.svg"],
       manifest: {
-        name: "Private Writer",
-        short_name: "Writer",
+        name: "Minstrel Codex",
+        short_name: "Minstrel",
         description: "A distraction-free, offline-capable writing app",
         theme_color: "#0a0a0a",
         background_color: "#0a0a0a",

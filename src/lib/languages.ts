@@ -178,7 +178,7 @@ export const languages = {
       mismatch: 'PINs stem nie ooreen nie. Probeer weer.',
       set: 'STEL PIN',
       skip: 'SLAAN OOR',
-      lockTitle: 'PRIVATE WRITER GESLUIT',
+      lockTitle: 'MINSTREL CODEX GESLUIT',
       lockDesc: 'Voer jou PIN in om te ontsluit',
       unlock: 'ONTSLUIT',
       incorrect: 'Verkeerde PIN. Probeer weer.',
