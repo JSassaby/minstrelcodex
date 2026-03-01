@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { t } from '@/lib/languages';
-import minstrelLogo from '@/assets/minstrel-logo.png';
+import minstrelLogo from '@/assets/minstrel-logo.svg';
 
 interface BootScreenProps {
   language: string;
