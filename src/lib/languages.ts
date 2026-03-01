@@ -167,7 +167,7 @@ export const languages = {
     },
     help: { line1: 'Druk ESC om kieslys oop te maak', line2: 'Ctrl+S om te stoor | Ctrl+N vir nuwe lêer', line3: 'Ctrl+Z/R vir ontdoen/herdoen' },
     placeholder: 'Druk enige sleutel om te begin skryf...',
-    shutdownConfirm: 'Herbegin Private Writer?',
+    shutdownConfirm: 'Herbegin Minstrel Codex?',
     pin: {
       setupTitle: 'STEL PIN-SLOT OP',
       setupDesc: 'Beskerm jou skryfwerk met \'n PIN-kode',
