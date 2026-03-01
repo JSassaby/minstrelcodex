@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { t } from '@/lib/languages';
 import minstrelLogo from '@/assets/minstrel-logo.svg';
 
