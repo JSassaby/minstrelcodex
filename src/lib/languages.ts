@@ -54,7 +54,7 @@ export const languages = {
       mismatch: 'PINs do not match. Try again.',
       set: 'SET PIN',
       skip: 'SKIP',
-      lockTitle: 'PRIVATE WRITER LOCKED',
+      lockTitle: 'MINSTREL CODEX LOCKED',
       lockDesc: 'Enter your PIN to unlock',
       unlock: 'UNLOCK',
       incorrect: 'Incorrect PIN. Try again.',
