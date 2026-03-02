@@ -27,7 +27,21 @@ import { useMusicPlayer } from '@/hooks/useMusicPlayer';
 import { useAccessibility } from '@/hooks/useAccessibility';
 import type { ModalType, Language, Difficulty, PinConfig } from '@/lib/types';
 
-
+// ── Reading Guide Component ──────────────────────────────────────────
+function ReadingGuide({ opacity }: { opacity: number }) {
+  const [y, setY] = useState(0);
+  useEffect(() => {
+    const handler = (e: MouseEvent) => setY(e.clientY);
+    window.addEventListener('mousemove', handler, { passive: true });
+    return () => window.removeEventListener('mousemove', handler);
+  }, []);
+  return (
+    <div
+      id="a11y-reading-guide"
+      style={{ top: `${y}px`, opacity }}
+    />
+  );
+}
 
 
 export default function PrivateWriter() {
