@@ -6,6 +6,7 @@ import MenuBar, { MENUS, getSubmenuItems } from '@/components/private-writer/Men
 import StatusBar from '@/components/private-writer/StatusBar';
 import FileBrowser from '@/components/private-writer/FileBrowser';
 import HelpText from '@/components/private-writer/HelpText';
+import HelpPanel from '@/components/private-writer/HelpPanel';
 import LiveStats from '@/components/private-writer/LiveStats';
 import GoogleDriveModal from '@/components/private-writer/GoogleDriveModal';
 import AppleSignInModal from '@/components/private-writer/AppleSignInModal';
