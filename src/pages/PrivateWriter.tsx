@@ -728,6 +728,16 @@ export default function PrivateWriter() {
         return;
       }
 
+      // Voice input shortcuts (always available, even with Settings panel open)
+      const isAltSpace = e.altKey && !e.ctrlKey && !e.metaKey && (e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar');
+      const isLegacyVoiceShortcut = (e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd');
+
+      if (isAltSpace || isLegacyVoiceShortcut) {
+        e.preventDefault();
+        toggleVoiceInput();
+        return;
+      }
+
       // Settings panel has its own keyboard handler
       if (settingsPanelOpen) {
         return;
@@ -790,13 +800,6 @@ export default function PrivateWriter() {
       if ((e.ctrlKey || e.metaKey) && (e.key === 'm' || e.key === 'M')) {
         e.preventDefault();
         executeAction('openmusic');
-        return;
-      }
-
-      // Voice input: Ctrl+Shift+D
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
-        e.preventDefault();
-        if (a11y.settings.voiceInputEnabled) toggleVoiceInput();
         return;
       }
 

@@ -326,7 +326,7 @@ export default function AccessibilitySection({ settings, onUpdate, onReset }: Ac
               background: 'var(--terminal-surface)', border: '1px solid var(--terminal-border)',
               fontSize: '11px', fontFamily: uiFont, opacity: 0.65, lineHeight: 1.5,
             }}>
-              🎤 Press <kbd style={{ padding: '1px 4px', borderRadius: '3px', border: '1px solid var(--terminal-border)', fontSize: '10px' }}>Ctrl+Shift+D</kbd> in the editor to start/stop dictation. Spoken text will be inserted at your cursor position.
+              🎤 Press <kbd style={{ padding: '1px 4px', borderRadius: '3px', border: '1px solid var(--terminal-border)', fontSize: '10px' }}>Alt+Space</kbd> to start/stop dictation (or <kbd style={{ padding: '1px 4px', borderRadius: '3px', border: '1px solid var(--terminal-border)', fontSize: '10px' }}>Ctrl+Shift+D</kbd>). Spoken text will be inserted at your cursor position.
             </div>
           )}
 
