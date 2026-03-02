@@ -201,9 +201,16 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
           50% { opacity: 0; }
         }
         @keyframes picker-logo-enter {
-          0%   { opacity: 0; transform: scale(0.7); filter: drop-shadow(0 0 0 transparent); }
-          60%  { opacity: 1; transform: scale(1.04); }
+          0%   { opacity: 0; transform: scale(0.5); filter: drop-shadow(0 0 0 transparent); }
+          40%  { opacity: 1; transform: scale(1.12); filter: drop-shadow(0 0 60px rgba(255,255,255,0.5)) drop-shadow(0 0 120px rgba(255,255,255,0.25)); }
+          60%  { transform: scale(0.97); filter: drop-shadow(0 0 32px rgba(255,255,255,0.15)); }
+          80%  { transform: scale(1.03); }
           100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 32px rgba(255,255,255,0.12)) drop-shadow(0 0 80px rgba(255,255,255,0.06)); }
+        }
+        @keyframes picker-flash-burst {
+          0%   { opacity: 0; transform: scale(0.3); }
+          30%  { opacity: 0.9; transform: scale(1.2); }
+          100% { opacity: 0; transform: scale(2.5); }
         }
         @keyframes picker-title-enter {
           from { opacity: 0; transform: translateY(12px); letter-spacing: 16px; }
@@ -221,7 +228,8 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
           from { opacity: 0; transform: translateY(8px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        .picker-logo { animation: picker-logo-enter 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        .picker-logo { animation: picker-logo-enter 1.1s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        .picker-flash { animation: picker-flash-burst 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both; pointer-events: none; }
         .picker-title { animation: picker-title-enter 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.5s both; }
         .picker-subtitle { animation: picker-subtitle-enter 0.5s ease 0.8s both; }
         .picker-card { animation: picker-card-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
@@ -238,7 +246,22 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
       `}</style>
 
       {/* ── Header ── */}
-      <div style={{ textAlign: 'center', padding: '52px 20px 32px', flexShrink: 0 }}>
+      <div style={{ textAlign: 'center', padding: '52px 20px 32px', flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
+        {/* Radial light burst */}
+        <div
+          className="picker-flash"
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '92px',
+            width: '300px',
+            height: '300px',
+            marginLeft: '-150px',
+            marginTop: '-150px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.08) 40%, transparent 70%)',
+          }}
+        />
         <img
           src={minstrelLogo}
           alt="Minstrel Codex"
@@ -249,10 +272,11 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
             width: '140px',
             height: '140px',
             objectFit: 'contain',
+            position: 'relative',
             animationName: 'picker-logo-enter, picker-logo-glow',
-            animationDuration: '0.9s, 3s',
+            animationDuration: '1.1s, 3s',
             animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1), ease-in-out',
-            animationDelay: '0s, 1.2s',
+            animationDelay: '0s, 1.4s',
             animationIterationCount: '1, infinite',
             animationDirection: 'normal, alternate',
             animationFillMode: 'both, both',
