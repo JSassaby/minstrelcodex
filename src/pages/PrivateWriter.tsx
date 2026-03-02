@@ -831,6 +831,7 @@ export default function PrivateWriter() {
     typingPhase, typingBtnIdx, typingDifficulty,
     typingPhase, typingBtnIdx, typingDifficulty,
     docStorage, fileStructure, theme, editorContent, executeAction, closeModal,
+    toggleVoiceInput, toggleTTS,
   ]);
 
   // Menu key handler
