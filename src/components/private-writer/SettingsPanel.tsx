@@ -88,6 +88,7 @@ const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
 
 export default function SettingsPanel({
   visible, language, colors, wifiOn, bluetoothOn, pinConfig, themeMode,
+  a11ySettings, onA11yUpdate, onA11yReset,
   onClose, onAction, onUpdateColors, onResetColors, onSetLanguage,
   onOpenPinSetup, onOpenTypingChallenge, onConnectGoogle, onConnectApple,
   onSwitchTheme,
