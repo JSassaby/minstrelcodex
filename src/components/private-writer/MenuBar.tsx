@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import {
   FilePlus, BookOpen, FolderOpen, Clock, Save, FileOutput,
   Printer, PanelLeftOpen, Undo2, Redo2, Copy, ClipboardPaste,
-  Wifi, WifiOff, Bluetooth, Cloud, Settings, Camera, FileText, Music
+  Wifi, WifiOff, Bluetooth, Cloud, Settings, Camera, FileText, Music,
+  HelpCircle
 } from 'lucide-react';
 import minstrelLogo from '@/assets/minstrel-logo.svg';
 import { t } from '@/lib/languages';
