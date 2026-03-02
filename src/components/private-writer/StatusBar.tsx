@@ -30,10 +30,10 @@ function BatteryIcon({ level }: { level: number }) {
   return <BatteryFull size={12} color={color} strokeWidth={1.6} />;
 }
 
-function A11yIndicator({ icon: Icon, label, active, pulse, onClick }: {
-  icon: any; label: string; active: boolean; pulse?: boolean; onClick?: () => void;
+function A11yIndicator({ icon: Icon, label, enabled, pulse, onClick }: {
+  icon: any; label: string; enabled: boolean; pulse?: boolean; onClick?: () => void;
 }) {
-  if (!active) return null;
+  if (!enabled) return null;
   return (
     <span
       onClick={onClick}
@@ -41,7 +41,7 @@ function A11yIndicator({ icon: Icon, label, active, pulse, onClick }: {
       style={{
         display: 'flex', alignItems: 'center', gap: '3px',
         cursor: onClick ? 'pointer' : 'default',
-        opacity: 0.85,
+        opacity: pulse ? 0.95 : 0.6,
         animation: pulse ? 'a11y-pulse 1.5s ease-in-out infinite' : undefined,
       }}
     >
