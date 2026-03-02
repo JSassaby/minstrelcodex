@@ -213,6 +213,9 @@ export default function FileBrowser({
     if (!visible || !focused) return;
 
     const handler = (e: KeyboardEvent) => {
+      // Don't capture keys when the editor (ProseMirror) is focused
+      const target = e.target as HTMLElement;
+      if (target?.closest?.('.ProseMirror')) return;
       // Input mode handling
       if (inputMode === 'search') {
         if (e.key === 'Escape') {
