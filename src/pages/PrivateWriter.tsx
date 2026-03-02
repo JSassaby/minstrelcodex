@@ -358,23 +358,37 @@ export default function PrivateWriter() {
   }, []);
 
   // Text-to-Speech
+  const [ttsActive, setTtsActive] = useState(false);
+
   const toggleTTS = useCallback(() => {
     if (window.speechSynthesis.speaking) {
       window.speechSynthesis.cancel();
+      setTtsActive(false);
+      showToast('🔇 Text-to-speech stopped');
       return;
     }
-    // Get selected text or full document text
+    if (!a11y.settings.ttsEnabled) {
+      showToast('⚠ Enable Text-to-Speech in Settings → Accessibility first');
+      return;
+    }
     const selection = window.getSelection()?.toString();
     const text = selection || editorRef.current?.getHTML().replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() || '';
-    if (!text) return;
+    if (!text) {
+      showToast('⚠ No text to read aloud');
+      return;
+    }
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = a11y.settings.ttsRate;
     const voices = window.speechSynthesis.getVoices();
     if (voices[a11y.settings.ttsVoiceIdx]) {
       utterance.voice = voices[a11y.settings.ttsVoiceIdx];
     }
+    utterance.onend = () => setTtsActive(false);
+    utterance.onerror = () => setTtsActive(false);
     window.speechSynthesis.speak(utterance);
-  }, [a11y.settings.ttsRate, a11y.settings.ttsVoiceIdx]);
+    setTtsActive(true);
+    showToast('🔊 Reading aloud...');
+  }, [a11y.settings.ttsRate, a11y.settings.ttsVoiceIdx, a11y.settings.ttsEnabled, showToast]);
 
   // Apply base font size as CSS custom property for a11y scaling
   useEffect(() => {
