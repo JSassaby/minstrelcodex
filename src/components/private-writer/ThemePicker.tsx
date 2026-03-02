@@ -246,7 +246,7 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
       `}</style>
 
       {/* ── Header ── */}
-      <div style={{ textAlign: 'center', padding: '52px 20px 32px', flexShrink: 0 }}>
+      <div style={{ textAlign: 'center', padding: '52px 20px 32px', flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
         {/* Radial light burst */}
         <div
           className="picker-flash"
