@@ -3,6 +3,8 @@ import { t } from '@/lib/languages';
 // supabase import removed — connection state uses localStorage
 import { ThemeMode, THEMES } from '@/lib/themes';
 import type { AppColors, Language, PinConfig } from '@/lib/types';
+import AccessibilitySection from './AccessibilitySection';
+import type { AccessibilitySettings } from '@/hooks/useAccessibility';
 
 // Color presets
 const TEXT_PRESETS = ['#33ff33','#00ff00','#ffffff','#4db8ff','#00e5e5','#ffff00','#ffb000','#ff6b9d','#ff5555','#e6e6e6'];
@@ -48,6 +50,9 @@ interface SettingsPanelProps {
   bluetoothOn: boolean;
   pinConfig: PinConfig;
   themeMode: ThemeMode;
+  a11ySettings: AccessibilitySettings;
+  onA11yUpdate: <K extends keyof AccessibilitySettings>(key: K, value: AccessibilitySettings[K]) => void;
+  onA11yReset: () => void;
   onClose: () => void;
   onAction: (action: string) => void;
   onUpdateColors: (colors: AppColors) => void;
@@ -67,21 +72,23 @@ interface ConnectedProviders {
   apple: boolean;
 }
 
-type SettingsTab = 'appearance' | 'colors' | 'language' | 'security' | 'storage' | 'system';
+type SettingsTab = 'appearance' | 'colors' | 'language' | 'accessibility' | 'security' | 'storage' | 'system';
 
 const TABS: { id: SettingsTab; label: string; icon: string }[] = [
-  { id: 'appearance', label: 'Theme',    icon: '🖥' },
-  { id: 'colors',     label: 'Colours',  icon: '🎨' },
-  { id: 'language',   label: 'Language', icon: '🌐' },
-  { id: 'security',   label: 'Security', icon: '🔒' },
-  { id: 'storage',    label: 'Storage',  icon: '💾' },
-  { id: 'system',     label: 'System',   icon: '⚙' },
+  { id: 'appearance',     label: 'Theme',    icon: '🖥' },
+  { id: 'colors',         label: 'Colours',  icon: '🎨' },
+  { id: 'accessibility',  label: 'Access',   icon: '♿' },
+  { id: 'language',       label: 'Language', icon: '🌐' },
+  { id: 'security',       label: 'Security', icon: '🔒' },
+  { id: 'storage',        label: 'Storage',  icon: '💾' },
+  { id: 'system',         label: 'System',   icon: '⚙' },
 ];
 
 const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
 
 export default function SettingsPanel({
   visible, language, colors, wifiOn, bluetoothOn, pinConfig, themeMode,
+  a11ySettings, onA11yUpdate, onA11yReset,
   onClose, onAction, onUpdateColors, onResetColors, onSetLanguage,
   onOpenPinSetup, onOpenTypingChallenge, onConnectGoogle, onConnectApple,
   onSwitchTheme,
@@ -761,6 +768,15 @@ export default function SettingsPanel({
               </div>
             )}
           </div>
+        )}
+
+        {/* ACCESSIBILITY */}
+        {activeTab === 'accessibility' && (
+          <AccessibilitySection
+            settings={a11ySettings}
+            onUpdate={onA11yUpdate}
+            onReset={onA11yReset}
+          />
         )}
 
         {/* LANGUAGE */}

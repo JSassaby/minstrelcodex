@@ -24,9 +24,24 @@ import { useAppTheme } from '@/hooks/useAppTheme';
 import ThemePicker from '@/components/private-writer/ThemePicker';
 import { useGoogleToken } from '@/hooks/useGoogleToken';
 import { useMusicPlayer } from '@/hooks/useMusicPlayer';
+import { useAccessibility } from '@/hooks/useAccessibility';
 import type { ModalType, Language, Difficulty, PinConfig } from '@/lib/types';
 
-
+// ── Reading Guide Component ──────────────────────────────────────────
+function ReadingGuide({ opacity }: { opacity: number }) {
+  const [y, setY] = useState(0);
+  useEffect(() => {
+    const handler = (e: MouseEvent) => setY(e.clientY);
+    window.addEventListener('mousemove', handler, { passive: true });
+    return () => window.removeEventListener('mousemove', handler);
+  }, []);
+  return (
+    <div
+      id="a11y-reading-guide"
+      style={{ top: `${y}px`, opacity }}
+    />
+  );
+}
 
 
 export default function PrivateWriter() {
@@ -138,6 +153,7 @@ export default function PrivateWriter() {
   const { googleToken, isConnected: googleConnected, clearToken: clearGoogleToken } = useGoogleToken();
   const editorRef = useRef<EditorHandle>(null);
   const musicPlayer = useMusicPlayer();
+  const a11y = useAccessibility();
 
    // Storage menu removed
   const [_storageMenuOpen, _setStorageMenuOpen] = useState(false); // kept for compat
@@ -254,6 +270,78 @@ export default function PrivateWriter() {
       document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
     }
   }, []);
+
+  // Voice input (Web Speech API)
+  const voiceRecognitionRef = useRef<any>(null);
+  const [voiceListening, setVoiceListening] = useState(false);
+
+  const toggleVoiceInput = useCallback(() => {
+    if (voiceListening && voiceRecognitionRef.current) {
+      voiceRecognitionRef.current.stop();
+      setVoiceListening(false);
+      return;
+    }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = language === 'af' ? 'af-ZA' : language === 'en-US' ? 'en-US' : 'en-GB';
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results)
+        .slice(event.resultIndex)
+        .map((r: any) => r[0].transcript)
+        .join('');
+      if (transcript && editorRef.current) {
+        const current = editorRef.current.getHTML();
+        const insertion = current.endsWith('</p>') ? current.slice(0, -4) + ' ' + transcript + '</p>' : current + '<p>' + transcript + '</p>';
+        editorRef.current.setContent(insertion);
+        setEditorContent(insertion);
+      }
+    };
+    recognition.onerror = () => setVoiceListening(false);
+    recognition.onend = () => setVoiceListening(false);
+    recognition.start();
+    voiceRecognitionRef.current = recognition;
+    setVoiceListening(true);
+  }, [voiceListening, language]);
+
+  // Text-to-Speech
+  const toggleTTS = useCallback(() => {
+    if (window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+      return;
+    }
+    // Get selected text or full document text
+    const selection = window.getSelection()?.toString();
+    const text = selection || editorRef.current?.getHTML().replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() || '';
+    if (!text) return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = a11y.settings.ttsRate;
+    const voices = window.speechSynthesis.getVoices();
+    if (voices[a11y.settings.ttsVoiceIdx]) {
+      utterance.voice = voices[a11y.settings.ttsVoiceIdx];
+    }
+    window.speechSynthesis.speak(utterance);
+  }, [a11y.settings.ttsRate, a11y.settings.ttsVoiceIdx]);
+
+  // Apply base font size as CSS custom property for a11y scaling
+  useEffect(() => {
+    document.documentElement.style.setProperty('--base-font-size', `${theme.fontSize}px`);
+  }, [theme.fontSize]);
+
+  // Apply color filter
+  useEffect(() => {
+    const filter = a11y.settings.colorFilter;
+    if (filter === 'none') {
+      document.body.style.filter = '';
+    } else if (filter === 'grayscale') {
+      document.body.style.filter = 'grayscale(100%)';
+    } else {
+      document.body.style.filter = `url(#a11y-${filter})`;
+    }
+    return () => { document.body.style.filter = ''; };
+  }, [a11y.settings.colorFilter]);
 
   // Sync fullscreen state with actual fullscreen changes
   useEffect(() => {
@@ -638,6 +726,20 @@ export default function PrivateWriter() {
         return;
       }
 
+      // Voice input: Ctrl+Shift+D
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+        e.preventDefault();
+        if (a11y.settings.voiceInputEnabled) toggleVoiceInput();
+        return;
+      }
+
+      // TTS readback: Ctrl+Shift+R
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'R' || e.key === 'r')) {
+        e.preventDefault();
+        if (a11y.settings.ttsEnabled) toggleTTS();
+        return;
+      }
+
       if (e.ctrlKey || e.metaKey) {
         // Ctrl+B/I/U are reserved for text formatting (TipTap handles them)
         if (e.key === 'b' || e.key === 'i' || e.key === 'u') return;
@@ -1007,6 +1109,28 @@ export default function PrivateWriter() {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
+      {/* Reading guide overlay */}
+      {a11y.settings.readingGuide && <ReadingGuide opacity={a11y.settings.readingGuideOpacity} />}
+
+      {/* SVG color blindness filters */}
+      <svg style={{ position: 'absolute', width: 0, height: 0 }} aria-hidden="true">
+        <defs>
+          <filter id="a11y-protanopia">
+            <feColorMatrix type="matrix" values="0.567,0.433,0,0,0 0.558,0.442,0,0,0 0,0.242,0.758,0,0 0,0,0,1,0" />
+          </filter>
+          <filter id="a11y-deuteranopia">
+            <feColorMatrix type="matrix" values="0.625,0.375,0,0,0 0.7,0.3,0,0,0 0,0.3,0.7,0,0 0,0,0,1,0" />
+          </filter>
+          <filter id="a11y-tritanopia">
+            <feColorMatrix type="matrix" values="0.95,0.05,0,0,0 0,0.433,0.567,0,0 0,0.475,0.525,0,0 0,0,0,1,0" />
+          </filter>
+        </defs>
+      </svg>
+
+      {/* ARIA live region for screen reader announcements */}
+      {a11y.settings.screenReaderHints && (
+        <div role="status" aria-live="polite" className="sr-only" id="a11y-announcer" />
+      )}
       <MenuBar
         language={language}
         visible={menuOpen}
@@ -1035,6 +1159,9 @@ export default function PrivateWriter() {
           bluetoothOn={bluetoothOn}
           pinConfig={pinConfig}
           themeMode={theme.themeMode}
+          a11ySettings={a11y.settings}
+          onA11yUpdate={a11y.update}
+          onA11yReset={a11y.reset}
           onClose={() => {
             setSettingsPanelOpen(false);
             setTimeout(() => editorRef.current?.focus(), 50);
