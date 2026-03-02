@@ -247,6 +247,21 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
 
       {/* ── Header ── */}
       <div style={{ textAlign: 'center', padding: '52px 20px 32px', flexShrink: 0 }}>
+        {/* Radial light burst */}
+        <div
+          className="picker-flash"
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '92px',
+            width: '300px',
+            height: '300px',
+            marginLeft: '-150px',
+            marginTop: '-150px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.08) 40%, transparent 70%)',
+          }}
+        />
         <img
           src={minstrelLogo}
           alt="Minstrel Codex"
@@ -257,10 +272,11 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
             width: '140px',
             height: '140px',
             objectFit: 'contain',
+            position: 'relative',
             animationName: 'picker-logo-enter, picker-logo-glow',
-            animationDuration: '0.9s, 3s',
+            animationDuration: '1.1s, 3s',
             animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1), ease-in-out',
-            animationDelay: '0s, 1.2s',
+            animationDelay: '0s, 1.4s',
             animationIterationCount: '1, infinite',
             animationDirection: 'normal, alternate',
             animationFillMode: 'both, both',
