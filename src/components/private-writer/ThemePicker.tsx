@@ -200,6 +200,19 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
           0%, 100% { opacity: 0.85; }
           50% { opacity: 0; }
         }
+        @keyframes picker-logo-enter {
+          0%   { opacity: 0; transform: scale(0.7); filter: drop-shadow(0 0 0 transparent); }
+          60%  { opacity: 1; transform: scale(1.04); }
+          100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 32px rgba(255,255,255,0.12)) drop-shadow(0 0 80px rgba(255,255,255,0.06)); }
+        }
+        @keyframes picker-title-enter {
+          from { opacity: 0; transform: translateY(12px); letter-spacing: 16px; }
+          to   { opacity: 1; transform: translateY(0); letter-spacing: 8px; }
+        }
+        @keyframes picker-subtitle-enter {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
         @keyframes picker-card-in {
           from { opacity: 0; transform: translateY(18px) scale(0.97); }
           to   { opacity: 1; transform: translateY(0) scale(1); }
@@ -208,11 +221,14 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
           from { opacity: 0; transform: translateY(8px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        .picker-logo { animation: picker-logo-enter 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        .picker-title { animation: picker-title-enter 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.5s both; }
+        .picker-subtitle { animation: picker-subtitle-enter 0.5s ease 0.8s both; }
         .picker-card { animation: picker-card-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
-        .picker-card:nth-child(1) { animation-delay: 0.05s; }
-        .picker-card:nth-child(2) { animation-delay: 0.12s; }
-        .picker-card:nth-child(3) { animation-delay: 0.19s; }
-        .picker-fade { animation: picker-fade-in 0.5s ease both; }
+        .picker-card:nth-child(1) { animation-delay: 0.7s; }
+        .picker-card:nth-child(2) { animation-delay: 0.8s; }
+        .picker-card:nth-child(3) { animation-delay: 0.9s; }
+        .picker-fade { animation: picker-fade-in 0.5s ease 0.7s both; }
         @keyframes picker-logo-glow {
           from { filter: drop-shadow(0 0 32px rgba(255,255,255,0.12)) drop-shadow(0 0 80px rgba(255,255,255,0.06)); }
           to   { filter: drop-shadow(0 0 40px rgba(255,255,255,0.18)) drop-shadow(0 0 100px rgba(255,255,255,0.1)); }
