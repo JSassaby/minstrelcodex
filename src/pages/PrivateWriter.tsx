@@ -273,20 +273,35 @@ export default function PrivateWriter() {
 
   // Voice input (Web Speech API)
   const voiceRecognitionRef = useRef<any>(null);
+  const voiceListeningRef = useRef(false);
   const [voiceListening, setVoiceListening] = useState(false);
 
   const toggleVoiceInput = useCallback(() => {
-    if (voiceListening && voiceRecognitionRef.current) {
+    // Stop if currently listening
+    if (voiceListeningRef.current && voiceRecognitionRef.current) {
+      voiceListeningRef.current = false;
       voiceRecognitionRef.current.stop();
       setVoiceListening(false);
+      showToast('🎤 Voice dictation stopped');
       return;
     }
+
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    if (!SpeechRecognition) {
+      showToast('⚠ Voice input not supported in this browser. Try Chrome or Edge.');
+      return;
+    }
+
+    if (!a11y.settings.voiceInputEnabled) {
+      showToast('⚠ Enable Voice Input in Settings → Accessibility first');
+      return;
+    }
+
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = false;
     recognition.lang = language === 'af' ? 'af-ZA' : language === 'en-US' ? 'en-US' : 'en-GB';
+
     recognition.onresult = (event: any) => {
       const transcript = Array.from(event.results)
         .slice(event.resultIndex)
@@ -294,17 +309,53 @@ export default function PrivateWriter() {
         .join('');
       if (transcript && editorRef.current) {
         const current = editorRef.current.getHTML();
-        const insertion = current.endsWith('</p>') ? current.slice(0, -4) + ' ' + transcript + '</p>' : current + '<p>' + transcript + '</p>';
+        const insertion = current.endsWith('</p>')
+          ? current.slice(0, -4) + ' ' + transcript + '</p>'
+          : current + '<p>' + transcript + '</p>';
         editorRef.current.setContent(insertion);
         setEditorContent(insertion);
       }
     };
-    recognition.onerror = () => setVoiceListening(false);
-    recognition.onend = () => setVoiceListening(false);
-    recognition.start();
-    voiceRecognitionRef.current = recognition;
-    setVoiceListening(true);
-  }, [voiceListening, language]);
+
+    recognition.onerror = (event: any) => {
+      if (event.error === 'not-allowed') {
+        showToast('⚠ Microphone permission denied. Please allow access.');
+        voiceListeningRef.current = false;
+        setVoiceListening(false);
+      } else if (event.error === 'no-speech') {
+        // Normal silence timeout — will auto-restart via onend
+      } else {
+        showToast(`⚠ Voice error: ${event.error}`);
+      }
+    };
+
+    // Auto-restart on silence timeout (browser stops after ~5-10s silence)
+    recognition.onend = () => {
+      if (voiceListeningRef.current) {
+        try { recognition.start(); } catch { /* already started */ }
+      } else {
+        setVoiceListening(false);
+      }
+    };
+
+    try {
+      recognition.start();
+      voiceRecognitionRef.current = recognition;
+      voiceListeningRef.current = true;
+      setVoiceListening(true);
+      showToast('🎤 Voice dictation active — speak now');
+    } catch (err) {
+      showToast('⚠ Could not start voice input');
+    }
+  }, [language, a11y.settings.voiceInputEnabled, showToast]);
+
+  // Clean up voice recognition on unmount
+  useEffect(() => {
+    return () => {
+      voiceListeningRef.current = false;
+      voiceRecognitionRef.current?.stop();
+    };
+  }, []);
 
   // Text-to-Speech
   const toggleTTS = useCallback(() => {
