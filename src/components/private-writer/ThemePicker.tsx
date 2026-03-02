@@ -238,30 +238,33 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
       `}</style>
 
       {/* ── Header ── */}
-      <div
-        className="picker-fade"
-        style={{ textAlign: 'center', padding: '52px 20px 32px', flexShrink: 0 }}
-      >
+      <div style={{ textAlign: 'center', padding: '52px 20px 32px', flexShrink: 0 }}>
         <img
           src={minstrelLogo}
           alt="Minstrel Codex"
+          className="picker-logo"
           style={{
             display: 'block',
             margin: '0 auto 20px',
             width: '140px',
             height: '140px',
             objectFit: 'contain',
-            filter: 'drop-shadow(0 0 32px rgba(255,255,255,0.12)) drop-shadow(0 0 80px rgba(255,255,255,0.06))',
-            animation: 'picker-logo-glow 3s ease-in-out infinite alternate',
+            animationName: 'picker-logo-enter, picker-logo-glow',
+            animationDuration: '0.9s, 3s',
+            animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1), ease-in-out',
+            animationDelay: '0s, 1.2s',
+            animationIterationCount: '1, infinite',
+            animationDirection: 'normal, alternate',
+            animationFillMode: 'both, both',
           }}
         />
-        <div style={{ fontSize: '28px', fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: '8px', textTransform: 'uppercase', marginBottom: '8px' }}>
+        <div className="picker-title" style={{ fontSize: '28px', fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: '8px', textTransform: 'uppercase', marginBottom: '8px' }}>
           Minstrel Codex
         </div>
-        <div style={{ fontSize: '13px', fontWeight: 400, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.5px' }}>
+        <div className="picker-subtitle" style={{ fontSize: '13px', fontWeight: 400, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.5px' }}>
           Choose your writing environment
         </div>
-        <div style={{ marginTop: '4px', fontSize: '11px', color: 'rgba(255,255,255,0.2)' }}>
+        <div className="picker-subtitle" style={{ marginTop: '4px', fontSize: '11px', color: 'rgba(255,255,255,0.2)' }}>
           You can change this any time in Settings
         </div>
       </div>
