@@ -201,9 +201,16 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
           50% { opacity: 0; }
         }
         @keyframes picker-logo-enter {
-          0%   { opacity: 0; transform: scale(0.7); filter: drop-shadow(0 0 0 transparent); }
-          60%  { opacity: 1; transform: scale(1.04); }
+          0%   { opacity: 0; transform: scale(0.5); filter: drop-shadow(0 0 0 transparent); }
+          40%  { opacity: 1; transform: scale(1.12); filter: drop-shadow(0 0 60px rgba(255,255,255,0.5)) drop-shadow(0 0 120px rgba(255,255,255,0.25)); }
+          60%  { transform: scale(0.97); filter: drop-shadow(0 0 32px rgba(255,255,255,0.15)); }
+          80%  { transform: scale(1.03); }
           100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 32px rgba(255,255,255,0.12)) drop-shadow(0 0 80px rgba(255,255,255,0.06)); }
+        }
+        @keyframes picker-flash-burst {
+          0%   { opacity: 0; transform: scale(0.3); }
+          30%  { opacity: 0.9; transform: scale(1.2); }
+          100% { opacity: 0; transform: scale(2.5); }
         }
         @keyframes picker-title-enter {
           from { opacity: 0; transform: translateY(12px); letter-spacing: 16px; }
