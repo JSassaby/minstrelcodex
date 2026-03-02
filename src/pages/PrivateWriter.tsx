@@ -139,6 +139,7 @@ export default function PrivateWriter() {
   const { googleToken, isConnected: googleConnected, clearToken: clearGoogleToken } = useGoogleToken();
   const editorRef = useRef<EditorHandle>(null);
   const musicPlayer = useMusicPlayer();
+  const a11y = useAccessibility();
 
    // Storage menu removed
   const [_storageMenuOpen, _setStorageMenuOpen] = useState(false); // kept for compat
