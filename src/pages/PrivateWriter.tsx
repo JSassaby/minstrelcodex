@@ -1037,6 +1037,9 @@ export default function PrivateWriter() {
           bluetoothOn={bluetoothOn}
           pinConfig={pinConfig}
           themeMode={theme.themeMode}
+          a11ySettings={a11y.settings}
+          onA11yUpdate={a11y.update}
+          onA11yReset={a11y.reset}
           onClose={() => {
             setSettingsPanelOpen(false);
             setTimeout(() => editorRef.current?.focus(), 50);
