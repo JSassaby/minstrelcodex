@@ -770,6 +770,15 @@ export default function SettingsPanel({
           </div>
         )}
 
+        {/* ACCESSIBILITY */}
+        {activeTab === 'accessibility' && (
+          <AccessibilitySection
+            settings={a11ySettings}
+            onUpdate={onA11yUpdate}
+            onReset={onA11yReset}
+          />
+        )}
+
         {/* LANGUAGE */}
         {activeTab === 'language' && (
           <div>
