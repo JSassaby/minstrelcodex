@@ -94,12 +94,12 @@ export default function StatusBar({
       {/* Right — system + a11y indicators */}
       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
         {/* Accessibility indicators */}
-        <A11yIndicator icon={Mic} label="Voice dictation active" active={!!voiceListening} pulse onClick={onVoiceClick} />
-        <A11yIndicator icon={Volume2} label="Text-to-speech active" active={!!ttsActive} pulse />
-        <A11yIndicator icon={Eye} label="High contrast enabled" active={!!a11yHighContrast} />
-        <A11yIndicator icon={Type} label="Dyslexia font enabled" active={!!a11yDyslexiaFont} />
-        <A11yIndicator icon={Minimize2} label="Reduced motion enabled" active={!!a11yReducedMotion} />
-        <A11yIndicator icon={BookOpen} label="Reading guide enabled" active={!!a11yReadingGuide} />
+        <A11yIndicator icon={Mic} label={voiceListening ? 'Voice dictation active' : 'Voice dictation enabled'} enabled={!!a11yVoiceEnabled} pulse={!!voiceListening} onClick={onVoiceClick} />
+        <A11yIndicator icon={Volume2} label={ttsActive ? 'Text-to-speech active' : 'Text-to-speech enabled'} enabled={!!a11yTtsEnabled} pulse={!!ttsActive} />
+        <A11yIndicator icon={Eye} label="High contrast enabled" enabled={!!a11yHighContrast} />
+        <A11yIndicator icon={Type} label="Dyslexia font enabled" enabled={!!a11yDyslexiaFont} />
+        <A11yIndicator icon={Minimize2} label="Reduced motion enabled" enabled={!!a11yReducedMotion} />
+        <A11yIndicator icon={BookOpen} label="Reading guide enabled" enabled={!!a11yReadingGuide} />
 
         {/* Separator when a11y features are active */}
         {hasA11yFeatures && (

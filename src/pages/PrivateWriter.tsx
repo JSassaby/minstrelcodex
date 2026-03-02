@@ -1340,6 +1340,8 @@ export default function PrivateWriter() {
         onMusicClick={() => setMusicPlayerOpen(prev => !prev)}
         voiceListening={voiceListening}
         ttsActive={ttsActive}
+        a11yVoiceEnabled={a11y.settings.voiceInputEnabled}
+        a11yTtsEnabled={a11y.settings.ttsEnabled}
         a11yHighContrast={a11y.settings.highContrast}
         a11yDyslexiaFont={a11y.settings.dyslexiaFont}
         a11yReducedMotion={a11y.settings.reducedMotion}
