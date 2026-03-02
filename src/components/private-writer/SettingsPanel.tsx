@@ -3,6 +3,8 @@ import { t } from '@/lib/languages';
 // supabase import removed — connection state uses localStorage
 import { ThemeMode, THEMES } from '@/lib/themes';
 import type { AppColors, Language, PinConfig } from '@/lib/types';
+import AccessibilitySection from './AccessibilitySection';
+import type { AccessibilitySettings } from '@/hooks/useAccessibility';
 
 // Color presets
 const TEXT_PRESETS = ['#33ff33','#00ff00','#ffffff','#4db8ff','#00e5e5','#ffff00','#ffb000','#ff6b9d','#ff5555','#e6e6e6'];
