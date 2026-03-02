@@ -538,11 +538,18 @@ export default function PrivateWriter() {
         break;
       case 'opensettings':
         setMusicPlayerOpen(false);
+        setHelpPanelOpen(false);
         setSettingsPanelOpen(true);
         break;
       case 'openmusic':
         setSettingsPanelOpen(false);
+        setHelpPanelOpen(false);
         setMusicPlayerOpen(prev => !prev);
+        break;
+      case 'openhelp':
+        setSettingsPanelOpen(false);
+        setMusicPlayerOpen(false);
+        setHelpPanelOpen(prev => !prev);
         break;
       case 'togglesidebar':
         setFileBrowserOpen(prev => {
