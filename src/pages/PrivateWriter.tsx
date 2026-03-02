@@ -86,6 +86,7 @@ export default function PrivateWriter() {
   const [fileBrowserFocused, setFileBrowserFocused] = useState(false);
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
   const [musicPlayerOpen, setMusicPlayerOpen] = useState(false);
+  const [helpPanelOpen, setHelpPanelOpen] = useState(false);
 
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false);

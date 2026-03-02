@@ -240,8 +240,25 @@ export default function MenuBar({
         {shortName}
       </div>
 
-      {/* Right — logo + name */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+      {/* Right — help + logo + name */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+        <div
+          onClick={(e) => { e.stopPropagation(); onAction('openhelp'); }}
+          style={{
+            cursor: 'pointer',
+            opacity: 0.55,
+            padding: '3px',
+            borderRadius: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            transition: 'opacity 0.15s',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
+          onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.55')}
+          title="Help & Reference"
+        >
+          <HelpCircle size={15} strokeWidth={1.8} />
+        </div>
         <img
           src={minstrelLogo}
           alt="Minstrel Codex"
