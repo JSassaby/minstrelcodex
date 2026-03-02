@@ -13,6 +13,8 @@ interface StatusBarProps {
   onMusicClick?: () => void;
   voiceListening?: boolean;
   ttsActive?: boolean;
+  a11yVoiceEnabled?: boolean;
+  a11yTtsEnabled?: boolean;
   a11yHighContrast?: boolean;
   a11yDyslexiaFont?: boolean;
   a11yReducedMotion?: boolean;
