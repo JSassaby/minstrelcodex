@@ -200,6 +200,19 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
           0%, 100% { opacity: 0.85; }
           50% { opacity: 0; }
         }
+        @keyframes picker-logo-enter {
+          0%   { opacity: 0; transform: scale(0.7); filter: drop-shadow(0 0 0 transparent); }
+          60%  { opacity: 1; transform: scale(1.04); }
+          100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 32px rgba(255,255,255,0.12)) drop-shadow(0 0 80px rgba(255,255,255,0.06)); }
+        }
+        @keyframes picker-title-enter {
+          from { opacity: 0; transform: translateY(12px); letter-spacing: 16px; }
+          to   { opacity: 1; transform: translateY(0); letter-spacing: 8px; }
+        }
+        @keyframes picker-subtitle-enter {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
         @keyframes picker-card-in {
           from { opacity: 0; transform: translateY(18px) scale(0.97); }
           to   { opacity: 1; transform: translateY(0) scale(1); }
@@ -208,11 +221,14 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
           from { opacity: 0; transform: translateY(8px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        .picker-logo { animation: picker-logo-enter 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        .picker-title { animation: picker-title-enter 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.5s both; }
+        .picker-subtitle { animation: picker-subtitle-enter 0.5s ease 0.8s both; }
         .picker-card { animation: picker-card-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
-        .picker-card:nth-child(1) { animation-delay: 0.05s; }
-        .picker-card:nth-child(2) { animation-delay: 0.12s; }
-        .picker-card:nth-child(3) { animation-delay: 0.19s; }
-        .picker-fade { animation: picker-fade-in 0.5s ease both; }
+        .picker-card:nth-child(1) { animation-delay: 0.7s; }
+        .picker-card:nth-child(2) { animation-delay: 0.8s; }
+        .picker-card:nth-child(3) { animation-delay: 0.9s; }
+        .picker-fade { animation: picker-fade-in 0.5s ease 0.7s both; }
         @keyframes picker-logo-glow {
           from { filter: drop-shadow(0 0 32px rgba(255,255,255,0.12)) drop-shadow(0 0 80px rgba(255,255,255,0.06)); }
           to   { filter: drop-shadow(0 0 40px rgba(255,255,255,0.18)) drop-shadow(0 0 100px rgba(255,255,255,0.1)); }
@@ -222,30 +238,33 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
       `}</style>
 
       {/* ── Header ── */}
-      <div
-        className="picker-fade"
-        style={{ textAlign: 'center', padding: '52px 20px 32px', flexShrink: 0 }}
-      >
+      <div style={{ textAlign: 'center', padding: '52px 20px 32px', flexShrink: 0 }}>
         <img
           src={minstrelLogo}
           alt="Minstrel Codex"
+          className="picker-logo"
           style={{
             display: 'block',
             margin: '0 auto 20px',
             width: '140px',
             height: '140px',
             objectFit: 'contain',
-            filter: 'drop-shadow(0 0 32px rgba(255,255,255,0.12)) drop-shadow(0 0 80px rgba(255,255,255,0.06))',
-            animation: 'picker-logo-glow 3s ease-in-out infinite alternate',
+            animationName: 'picker-logo-enter, picker-logo-glow',
+            animationDuration: '0.9s, 3s',
+            animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1), ease-in-out',
+            animationDelay: '0s, 1.2s',
+            animationIterationCount: '1, infinite',
+            animationDirection: 'normal, alternate',
+            animationFillMode: 'both, both',
           }}
         />
-        <div style={{ fontSize: '28px', fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: '8px', textTransform: 'uppercase', marginBottom: '8px' }}>
+        <div className="picker-title" style={{ fontSize: '28px', fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: '8px', textTransform: 'uppercase', marginBottom: '8px' }}>
           Minstrel Codex
         </div>
-        <div style={{ fontSize: '13px', fontWeight: 400, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.5px' }}>
+        <div className="picker-subtitle" style={{ fontSize: '13px', fontWeight: 400, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.5px' }}>
           Choose your writing environment
         </div>
-        <div style={{ marginTop: '4px', fontSize: '11px', color: 'rgba(255,255,255,0.2)' }}>
+        <div className="picker-subtitle" style={{ marginTop: '4px', fontSize: '11px', color: 'rgba(255,255,255,0.2)' }}>
           You can change this any time in Settings
         </div>
       </div>
