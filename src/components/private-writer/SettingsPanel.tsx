@@ -72,15 +72,16 @@ interface ConnectedProviders {
   apple: boolean;
 }
 
-type SettingsTab = 'appearance' | 'colors' | 'language' | 'security' | 'storage' | 'system';
+type SettingsTab = 'appearance' | 'colors' | 'language' | 'accessibility' | 'security' | 'storage' | 'system';
 
 const TABS: { id: SettingsTab; label: string; icon: string }[] = [
-  { id: 'appearance', label: 'Theme',    icon: '🖥' },
-  { id: 'colors',     label: 'Colours',  icon: '🎨' },
-  { id: 'language',   label: 'Language', icon: '🌐' },
-  { id: 'security',   label: 'Security', icon: '🔒' },
-  { id: 'storage',    label: 'Storage',  icon: '💾' },
-  { id: 'system',     label: 'System',   icon: '⚙' },
+  { id: 'appearance',     label: 'Theme',    icon: '🖥' },
+  { id: 'colors',         label: 'Colours',  icon: '🎨' },
+  { id: 'accessibility',  label: 'Access',   icon: '♿' },
+  { id: 'language',       label: 'Language', icon: '🌐' },
+  { id: 'security',       label: 'Security', icon: '🔒' },
+  { id: 'storage',        label: 'Storage',  icon: '💾' },
+  { id: 'system',         label: 'System',   icon: '⚙' },
 ];
 
 const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
