@@ -220,13 +220,21 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
       {/* ── Header ── */}
       <div
         className="picker-fade"
-        style={{ textAlign: 'center', padding: '36px 20px 24px', flexShrink: 0 }}
+        style={{ textAlign: 'center', padding: '40px 20px 28px', flexShrink: 0 }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
-          <Monitor size={14} color="rgba(255,255,255,0.3)" strokeWidth={1.5} />
-          <span style={{ fontSize: '10px', letterSpacing: '5px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', fontWeight: 500 }}>
-            Minstrel Codex
-          </span>
+        <img
+          src={minstrelLogo}
+          alt="Minstrel Codex"
+          style={{
+            width: '72px',
+            height: '72px',
+            objectFit: 'contain',
+            marginBottom: '14px',
+            filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.08))',
+          }}
+        />
+        <div style={{ fontSize: '11px', letterSpacing: '5px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.32)', fontWeight: 500, marginBottom: '10px' }}>
+          Minstrel Codex
         </div>
         <div style={{ fontSize: '22px', fontWeight: 600, color: 'rgba(255,255,255,0.82)', letterSpacing: '-0.3px' }}>
           Choose your writing environment
