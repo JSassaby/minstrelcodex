@@ -213,6 +213,10 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
         .picker-card:nth-child(2) { animation-delay: 0.12s; }
         .picker-card:nth-child(3) { animation-delay: 0.19s; }
         .picker-fade { animation: picker-fade-in 0.5s ease both; }
+        @keyframes picker-logo-glow {
+          from { filter: drop-shadow(0 0 32px rgba(255,255,255,0.12)) drop-shadow(0 0 80px rgba(255,255,255,0.06)); }
+          to   { filter: drop-shadow(0 0 40px rgba(255,255,255,0.18)) drop-shadow(0 0 100px rgba(255,255,255,0.1)); }
+        }
         .colour-swatch { transition: transform 0.15s, box-shadow 0.15s; }
         .colour-swatch:hover { transform: scale(1.06); }
       `}</style>
