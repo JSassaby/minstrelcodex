@@ -24,6 +24,7 @@ import { useAppTheme } from '@/hooks/useAppTheme';
 import ThemePicker from '@/components/private-writer/ThemePicker';
 import { useGoogleToken } from '@/hooks/useGoogleToken';
 import { useMusicPlayer } from '@/hooks/useMusicPlayer';
+import { useAccessibility } from '@/hooks/useAccessibility';
 import type { ModalType, Language, Difficulty, PinConfig } from '@/lib/types';
 
 
