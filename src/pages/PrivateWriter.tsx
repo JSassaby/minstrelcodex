@@ -271,6 +271,78 @@ export default function PrivateWriter() {
     }
   }, []);
 
+  // Voice input (Web Speech API)
+  const voiceRecognitionRef = useRef<any>(null);
+  const [voiceListening, setVoiceListening] = useState(false);
+
+  const toggleVoiceInput = useCallback(() => {
+    if (voiceListening && voiceRecognitionRef.current) {
+      voiceRecognitionRef.current.stop();
+      setVoiceListening(false);
+      return;
+    }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = language === 'af' ? 'af-ZA' : language === 'en-US' ? 'en-US' : 'en-GB';
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results)
+        .slice(event.resultIndex)
+        .map((r: any) => r[0].transcript)
+        .join('');
+      if (transcript && editorRef.current) {
+        const current = editorRef.current.getHTML();
+        const insertion = current.endsWith('</p>') ? current.slice(0, -4) + ' ' + transcript + '</p>' : current + '<p>' + transcript + '</p>';
+        editorRef.current.setContent(insertion);
+        setEditorContent(insertion);
+      }
+    };
+    recognition.onerror = () => setVoiceListening(false);
+    recognition.onend = () => setVoiceListening(false);
+    recognition.start();
+    voiceRecognitionRef.current = recognition;
+    setVoiceListening(true);
+  }, [voiceListening, language]);
+
+  // Text-to-Speech
+  const toggleTTS = useCallback(() => {
+    if (window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+      return;
+    }
+    // Get selected text or full document text
+    const selection = window.getSelection()?.toString();
+    const text = selection || editorRef.current?.getHTML().replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() || '';
+    if (!text) return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = a11y.settings.ttsRate;
+    const voices = window.speechSynthesis.getVoices();
+    if (voices[a11y.settings.ttsVoiceIdx]) {
+      utterance.voice = voices[a11y.settings.ttsVoiceIdx];
+    }
+    window.speechSynthesis.speak(utterance);
+  }, [a11y.settings.ttsRate, a11y.settings.ttsVoiceIdx]);
+
+  // Apply base font size as CSS custom property for a11y scaling
+  useEffect(() => {
+    document.documentElement.style.setProperty('--base-font-size', `${theme.fontSize}px`);
+  }, [theme.fontSize]);
+
+  // Apply color filter
+  useEffect(() => {
+    const filter = a11y.settings.colorFilter;
+    if (filter === 'none') {
+      document.body.style.filter = '';
+    } else if (filter === 'grayscale') {
+      document.body.style.filter = 'grayscale(100%)';
+    } else {
+      document.body.style.filter = `url(#a11y-${filter})`;
+    }
+    return () => { document.body.style.filter = ''; };
+  }, [a11y.settings.colorFilter]);
+
   // Sync fullscreen state with actual fullscreen changes
   useEffect(() => {
     const handler = () => setIsFullscreen(!!document.fullscreenElement);
