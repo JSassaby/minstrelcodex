@@ -654,6 +654,19 @@ export default function PrivateWriter() {
         return;
       }
 
+      // Voice input: Ctrl+Shift+D
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+        e.preventDefault();
+        if (a11y.settings.voiceInputEnabled) toggleVoiceInput();
+        return;
+      }
+
+      // TTS readback: Ctrl+Shift+R
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'R' || e.key === 'r')) {
+        e.preventDefault();
+        if (a11y.settings.ttsEnabled) toggleTTS();
+        return;
+
       if (e.ctrlKey || e.metaKey) {
         // Ctrl+B/I/U are reserved for text formatting (TipTap handles them)
         if (e.key === 'b' || e.key === 'i' || e.key === 'u') return;
