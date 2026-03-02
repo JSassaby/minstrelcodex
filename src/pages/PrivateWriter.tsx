@@ -666,6 +666,7 @@ export default function PrivateWriter() {
         e.preventDefault();
         if (a11y.settings.ttsEnabled) toggleTTS();
         return;
+      }
 
       if (e.ctrlKey || e.metaKey) {
         // Ctrl+B/I/U are reserved for text formatting (TipTap handles them)
