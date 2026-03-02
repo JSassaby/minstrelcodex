@@ -6,6 +6,7 @@ import MenuBar, { MENUS, getSubmenuItems } from '@/components/private-writer/Men
 import StatusBar from '@/components/private-writer/StatusBar';
 import FileBrowser from '@/components/private-writer/FileBrowser';
 import HelpText from '@/components/private-writer/HelpText';
+import HelpPanel from '@/components/private-writer/HelpPanel';
 import LiveStats from '@/components/private-writer/LiveStats';
 import GoogleDriveModal from '@/components/private-writer/GoogleDriveModal';
 import AppleSignInModal from '@/components/private-writer/AppleSignInModal';
@@ -85,6 +86,7 @@ export default function PrivateWriter() {
   const [fileBrowserFocused, setFileBrowserFocused] = useState(false);
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
   const [musicPlayerOpen, setMusicPlayerOpen] = useState(false);
+  const [helpPanelOpen, setHelpPanelOpen] = useState(false);
 
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -536,11 +538,18 @@ export default function PrivateWriter() {
         break;
       case 'opensettings':
         setMusicPlayerOpen(false);
+        setHelpPanelOpen(false);
         setSettingsPanelOpen(true);
         break;
       case 'openmusic':
         setSettingsPanelOpen(false);
+        setHelpPanelOpen(false);
         setMusicPlayerOpen(prev => !prev);
+        break;
+      case 'openhelp':
+        setSettingsPanelOpen(false);
+        setMusicPlayerOpen(false);
+        setHelpPanelOpen(prev => !prev);
         break;
       case 'togglesidebar':
         setFileBrowserOpen(prev => {
@@ -1297,6 +1306,14 @@ export default function PrivateWriter() {
           getFolders={() => fileStructure.getFolders()}
           onSyncGoogleDrive={syncToGoogleDrive}
           onSyncICloud={() => showToast('iCloud sync requires Apple CloudKit — coming soon.')}
+        />
+
+        <HelpPanel
+          visible={helpPanelOpen}
+          onClose={() => {
+            setHelpPanelOpen(false);
+            setTimeout(() => editorRef.current?.focus(), 50);
+          }}
         />
 
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={() => setFileBrowserFocused(false)}>
