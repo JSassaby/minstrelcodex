@@ -54,6 +54,7 @@ export default function StatusBar({
   language, filename, saved, content, battery, wifiOn,
   musicPlaying, musicTrackName, onMusicClick,
   voiceListening, ttsActive,
+  a11yVoiceEnabled, a11yTtsEnabled,
   a11yHighContrast, a11yDyslexiaFont, a11yReducedMotion, a11yReadingGuide,
   onVoiceClick,
 }: StatusBarProps) {
@@ -62,7 +63,7 @@ export default function StatusBar({
   const chars = content.length;
   const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
 
-  const hasA11yFeatures = a11yHighContrast || a11yDyslexiaFont || a11yReducedMotion || a11yReadingGuide;
+  const hasA11yFeatures = a11yVoiceEnabled || a11yTtsEnabled || a11yHighContrast || a11yDyslexiaFont || a11yReducedMotion || a11yReadingGuide;
 
   return (
     <div
