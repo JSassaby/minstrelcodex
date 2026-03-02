@@ -50,6 +50,9 @@ interface SettingsPanelProps {
   bluetoothOn: boolean;
   pinConfig: PinConfig;
   themeMode: ThemeMode;
+  a11ySettings: AccessibilitySettings;
+  onA11yUpdate: <K extends keyof AccessibilitySettings>(key: K, value: AccessibilitySettings[K]) => void;
+  onA11yReset: () => void;
   onClose: () => void;
   onAction: (action: string) => void;
   onUpdateColors: (colors: AppColors) => void;
