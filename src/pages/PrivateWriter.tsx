@@ -1308,6 +1308,14 @@ export default function PrivateWriter() {
           onSyncICloud={() => showToast('iCloud sync requires Apple CloudKit — coming soon.')}
         />
 
+        <HelpPanel
+          visible={helpPanelOpen}
+          onClose={() => {
+            setHelpPanelOpen(false);
+            setTimeout(() => editorRef.current?.focus(), 50);
+          }}
+        />
+
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={() => setFileBrowserFocused(false)}>
           <Editor
             content={editorContent}
