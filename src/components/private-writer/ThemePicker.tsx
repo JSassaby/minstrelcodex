@@ -230,10 +230,11 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
           src={minstrelLogo}
           alt="Minstrel Codex"
           style={{
+            display: 'block',
+            margin: '0 auto 20px',
             width: '140px',
             height: '140px',
             objectFit: 'contain',
-            marginBottom: '20px',
             filter: 'drop-shadow(0 0 32px rgba(255,255,255,0.12)) drop-shadow(0 0 80px rgba(255,255,255,0.06))',
             animation: 'picker-logo-glow 3s ease-in-out infinite alternate',
           }}
