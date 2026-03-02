@@ -422,12 +422,7 @@ export default function PrivateWriter() {
     return () => document.removeEventListener('fullscreenchange', handler);
   }, []);
 
-  // Toast helper
-  const showToast = useCallback((msg: string) => {
-    setToastMessage(msg);
-    setToastVisible(true);
-    setTimeout(() => setToastVisible(false), 2500);
-  }, []);
+  // (showToast declared earlier, before voice/tts functions)
 
   // Google Drive sync helper
   const syncToGoogleDrive = useCallback(async () => {
