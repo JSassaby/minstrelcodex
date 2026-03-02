@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Check, ArrowRight, Palette, Monitor } from 'lucide-react';
 import { ThemeMode, THEMES, ThemeDefinition, applyTheme } from '@/lib/themes';
+import minstrelLogo from '@/assets/minstrel-logo.svg';
 
 interface ThemePickerProps {
   onSelect: (mode: ThemeMode) => void;
