@@ -271,6 +271,13 @@ export default function PrivateWriter() {
     }
   }, []);
 
+  // Toast helper (declared early so voice/tts can use it)
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+    setToastVisible(true);
+    setTimeout(() => setToastVisible(false), 2500);
+  }, []);
+
   // Voice input (Web Speech API)
   const voiceRecognitionRef = useRef<any>(null);
   const voiceListeningRef = useRef(false);
