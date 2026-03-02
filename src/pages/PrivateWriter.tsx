@@ -806,7 +806,7 @@ export default function PrivateWriter() {
       // TTS readback: Ctrl+Shift+R
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'R' || e.key === 'r')) {
         e.preventDefault();
-        if (a11y.settings.ttsEnabled) toggleTTS();
+        toggleTTS();
         return;
       }
 
