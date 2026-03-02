@@ -1332,6 +1332,13 @@ export default function PrivateWriter() {
         musicPlaying={musicPlayer.playing}
         musicTrackName={musicPlayer.tracks.find(t => t.id === musicPlayer.currentTrackId)?.name}
         onMusicClick={() => setMusicPlayerOpen(prev => !prev)}
+        voiceListening={voiceListening}
+        ttsActive={ttsActive}
+        a11yHighContrast={a11y.settings.highContrast}
+        a11yDyslexiaFont={a11y.settings.dyslexiaFont}
+        a11yReducedMotion={a11y.settings.reducedMotion}
+        a11yReadingGuide={a11y.settings.readingGuide}
+        onVoiceClick={toggleVoiceInput}
       />
 
         {/* Music Player Sidebar */}
