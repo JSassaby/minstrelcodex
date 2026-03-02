@@ -224,3 +224,9 @@ html[style*="--a11y-color-filter: grayscale"] body {
 .terminal-editor p {
   margin-bottom: var(--a11y-paragraph-spacing, 0.5em) !important;
 }
+
+/* A11y status bar pulse animation */
+@keyframes a11y-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}

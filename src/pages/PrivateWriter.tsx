@@ -271,22 +271,44 @@ export default function PrivateWriter() {
     }
   }, []);
 
+  // Toast helper (declared early so voice/tts can use it)
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+    setToastVisible(true);
+    setTimeout(() => setToastVisible(false), 2500);
+  }, []);
+
   // Voice input (Web Speech API)
   const voiceRecognitionRef = useRef<any>(null);
+  const voiceListeningRef = useRef(false);
   const [voiceListening, setVoiceListening] = useState(false);
 
   const toggleVoiceInput = useCallback(() => {
-    if (voiceListening && voiceRecognitionRef.current) {
+    // Stop if currently listening
+    if (voiceListeningRef.current && voiceRecognitionRef.current) {
+      voiceListeningRef.current = false;
       voiceRecognitionRef.current.stop();
       setVoiceListening(false);
+      showToast('🎤 Voice dictation stopped');
       return;
     }
+
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    if (!SpeechRecognition) {
+      showToast('⚠ Voice input not supported in this browser. Try Chrome or Edge.');
+      return;
+    }
+
+    if (!a11y.settings.voiceInputEnabled) {
+      showToast('⚠ Enable Voice Input in Settings → Accessibility first');
+      return;
+    }
+
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = false;
     recognition.lang = language === 'af' ? 'af-ZA' : language === 'en-US' ? 'en-US' : 'en-GB';
+
     recognition.onresult = (event: any) => {
       const transcript = Array.from(event.results)
         .slice(event.resultIndex)
@@ -294,36 +316,86 @@ export default function PrivateWriter() {
         .join('');
       if (transcript && editorRef.current) {
         const current = editorRef.current.getHTML();
-        const insertion = current.endsWith('</p>') ? current.slice(0, -4) + ' ' + transcript + '</p>' : current + '<p>' + transcript + '</p>';
+        const insertion = current.endsWith('</p>')
+          ? current.slice(0, -4) + ' ' + transcript + '</p>'
+          : current + '<p>' + transcript + '</p>';
         editorRef.current.setContent(insertion);
         setEditorContent(insertion);
       }
     };
-    recognition.onerror = () => setVoiceListening(false);
-    recognition.onend = () => setVoiceListening(false);
-    recognition.start();
-    voiceRecognitionRef.current = recognition;
-    setVoiceListening(true);
-  }, [voiceListening, language]);
+
+    recognition.onerror = (event: any) => {
+      if (event.error === 'not-allowed') {
+        showToast('⚠ Microphone permission denied. Please allow access.');
+        voiceListeningRef.current = false;
+        setVoiceListening(false);
+      } else if (event.error === 'no-speech') {
+        // Normal silence timeout — will auto-restart via onend
+      } else {
+        showToast(`⚠ Voice error: ${event.error}`);
+      }
+    };
+
+    // Auto-restart on silence timeout (browser stops after ~5-10s silence)
+    recognition.onend = () => {
+      if (voiceListeningRef.current) {
+        try { recognition.start(); } catch { /* already started */ }
+      } else {
+        setVoiceListening(false);
+      }
+    };
+
+    try {
+      recognition.start();
+      voiceRecognitionRef.current = recognition;
+      voiceListeningRef.current = true;
+      setVoiceListening(true);
+      showToast('🎤 Voice dictation active — speak now');
+    } catch (err) {
+      showToast('⚠ Could not start voice input');
+    }
+  }, [language, a11y.settings.voiceInputEnabled, showToast]);
+
+  // Clean up voice recognition on unmount
+  useEffect(() => {
+    return () => {
+      voiceListeningRef.current = false;
+      voiceRecognitionRef.current?.stop();
+    };
+  }, []);
 
   // Text-to-Speech
+  const [ttsActive, setTtsActive] = useState(false);
+
   const toggleTTS = useCallback(() => {
     if (window.speechSynthesis.speaking) {
       window.speechSynthesis.cancel();
+      setTtsActive(false);
+      showToast('🔇 Text-to-speech stopped');
       return;
     }
-    // Get selected text or full document text
+    if (!a11y.settings.ttsEnabled) {
+      showToast('⚠ Enable Text-to-Speech in Settings → Accessibility first');
+      return;
+    }
     const selection = window.getSelection()?.toString();
     const text = selection || editorRef.current?.getHTML().replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() || '';
-    if (!text) return;
+    if (!text) {
+      showToast('⚠ No text to read aloud');
+      return;
+    }
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = a11y.settings.ttsRate;
     const voices = window.speechSynthesis.getVoices();
     if (voices[a11y.settings.ttsVoiceIdx]) {
       utterance.voice = voices[a11y.settings.ttsVoiceIdx];
     }
+    utterance.onend = () => setTtsActive(false);
+    utterance.onerror = () => setTtsActive(false);
     window.speechSynthesis.speak(utterance);
-  }, [a11y.settings.ttsRate, a11y.settings.ttsVoiceIdx]);
+    setTtsActive(true);
+    showToast('🔊 Reading aloud...');
+  }, [a11y.settings.ttsRate, a11y.settings.ttsVoiceIdx, a11y.settings.ttsEnabled, showToast]);
 
   // Apply base font size as CSS custom property for a11y scaling
   useEffect(() => {
@@ -350,12 +422,7 @@ export default function PrivateWriter() {
     return () => document.removeEventListener('fullscreenchange', handler);
   }, []);
 
-  // Toast helper
-  const showToast = useCallback((msg: string) => {
-    setToastMessage(msg);
-    setToastVisible(true);
-    setTimeout(() => setToastVisible(false), 2500);
-  }, []);
+  // (showToast declared earlier, before voice/tts functions)
 
   // Google Drive sync helper
   const syncToGoogleDrive = useCallback(async () => {
@@ -1267,6 +1334,13 @@ export default function PrivateWriter() {
         musicPlaying={musicPlayer.playing}
         musicTrackName={musicPlayer.tracks.find(t => t.id === musicPlayer.currentTrackId)?.name}
         onMusicClick={() => setMusicPlayerOpen(prev => !prev)}
+        voiceListening={voiceListening}
+        ttsActive={ttsActive}
+        a11yHighContrast={a11y.settings.highContrast}
+        a11yDyslexiaFont={a11y.settings.dyslexiaFont}
+        a11yReducedMotion={a11y.settings.reducedMotion}
+        a11yReadingGuide={a11y.settings.readingGuide}
+        onVoiceClick={toggleVoiceInput}
       />
 
         {/* Music Player Sidebar */}

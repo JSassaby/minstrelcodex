@@ -1,4 +1,4 @@
-import { Wifi, BatteryMedium, BatteryLow, BatteryFull, BatteryWarning, Music } from 'lucide-react';
+import { Wifi, BatteryMedium, BatteryLow, BatteryFull, BatteryWarning, Music, Mic, Volume2, Eye, Type, Minimize2, BookOpen } from 'lucide-react';
 import { t } from '@/lib/languages';
 
 interface StatusBarProps {
@@ -11,6 +11,13 @@ interface StatusBarProps {
   musicPlaying?: boolean;
   musicTrackName?: string;
   onMusicClick?: () => void;
+  voiceListening?: boolean;
+  ttsActive?: boolean;
+  a11yHighContrast?: boolean;
+  a11yDyslexiaFont?: boolean;
+  a11yReducedMotion?: boolean;
+  a11yReadingGuide?: boolean;
+  onVoiceClick?: () => void;
 }
 
 function BatteryIcon({ level }: { level: number }) {
@@ -21,11 +28,39 @@ function BatteryIcon({ level }: { level: number }) {
   return <BatteryFull size={12} color={color} strokeWidth={1.6} />;
 }
 
-export default function StatusBar({ language, filename, saved, content, battery, wifiOn, musicPlaying, musicTrackName, onMusicClick }: StatusBarProps) {
+function A11yIndicator({ icon: Icon, label, active, pulse, onClick }: {
+  icon: any; label: string; active: boolean; pulse?: boolean; onClick?: () => void;
+}) {
+  if (!active) return null;
+  return (
+    <span
+      onClick={onClick}
+      title={label}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '3px',
+        cursor: onClick ? 'pointer' : 'default',
+        opacity: 0.85,
+        animation: pulse ? 'a11y-pulse 1.5s ease-in-out infinite' : undefined,
+      }}
+    >
+      <Icon size={11} strokeWidth={1.6} color="var(--terminal-accent)" />
+    </span>
+  );
+}
+
+export default function StatusBar({
+  language, filename, saved, content, battery, wifiOn,
+  musicPlaying, musicTrackName, onMusicClick,
+  voiceListening, ttsActive,
+  a11yHighContrast, a11yDyslexiaFont, a11yReducedMotion, a11yReadingGuide,
+  onVoiceClick,
+}: StatusBarProps) {
   const displayName = filename ? (filename.split('/').pop() || filename) : t(language, 'status.untitled');
   const words = content.trim() ? content.trim().split(/\s+/).length : 0;
   const chars = content.length;
   const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
+
+  const hasA11yFeatures = a11yHighContrast || a11yDyslexiaFont || a11yReducedMotion || a11yReadingGuide;
 
   return (
     <div
@@ -53,8 +88,21 @@ export default function StatusBar({ language, filename, saved, content, battery,
         <span>{chars.toLocaleString()} {t(language, 'status.chars')}</span>
       </div>
 
-      {/* Right — system indicators */}
-      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+      {/* Right — system + a11y indicators */}
+      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        {/* Accessibility indicators */}
+        <A11yIndicator icon={Mic} label="Voice dictation active" active={!!voiceListening} pulse onClick={onVoiceClick} />
+        <A11yIndicator icon={Volume2} label="Text-to-speech active" active={!!ttsActive} pulse />
+        <A11yIndicator icon={Eye} label="High contrast enabled" active={!!a11yHighContrast} />
+        <A11yIndicator icon={Type} label="Dyslexia font enabled" active={!!a11yDyslexiaFont} />
+        <A11yIndicator icon={Minimize2} label="Reduced motion enabled" active={!!a11yReducedMotion} />
+        <A11yIndicator icon={BookOpen} label="Reading guide enabled" active={!!a11yReadingGuide} />
+
+        {/* Separator when a11y features are active */}
+        {hasA11yFeatures && (
+          <span style={{ width: '1px', height: '10px', background: 'var(--terminal-border)', opacity: 0.5 }} />
+        )}
+
         {musicPlaying && (
           <span
             onClick={onMusicClick}
