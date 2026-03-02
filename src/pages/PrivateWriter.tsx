@@ -728,6 +728,16 @@ export default function PrivateWriter() {
         return;
       }
 
+      // Voice input shortcuts (always available, even with Settings panel open)
+      const isAltSpace = e.altKey && !e.ctrlKey && !e.metaKey && (e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar');
+      const isLegacyVoiceShortcut = (e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd');
+
+      if (isAltSpace || isLegacyVoiceShortcut) {
+        e.preventDefault();
+        toggleVoiceInput();
+        return;
+      }
+
       // Settings panel has its own keyboard handler
       if (settingsPanelOpen) {
         return;
@@ -793,17 +803,10 @@ export default function PrivateWriter() {
         return;
       }
 
-      // Voice input: Ctrl+Shift+D
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
-        e.preventDefault();
-        if (a11y.settings.voiceInputEnabled) toggleVoiceInput();
-        return;
-      }
-
       // TTS readback: Ctrl+Shift+R
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'R' || e.key === 'r')) {
         e.preventDefault();
-        if (a11y.settings.ttsEnabled) toggleTTS();
+        toggleTTS();
         return;
       }
 
@@ -828,6 +831,7 @@ export default function PrivateWriter() {
     typingPhase, typingBtnIdx, typingDifficulty,
     typingPhase, typingBtnIdx, typingDifficulty,
     docStorage, fileStructure, theme, editorContent, executeAction, closeModal,
+    toggleVoiceInput, toggleTTS,
   ]);
 
   // Menu key handler
@@ -1336,6 +1340,8 @@ export default function PrivateWriter() {
         onMusicClick={() => setMusicPlayerOpen(prev => !prev)}
         voiceListening={voiceListening}
         ttsActive={ttsActive}
+        a11yVoiceEnabled={a11y.settings.voiceInputEnabled}
+        a11yTtsEnabled={a11y.settings.ttsEnabled}
         a11yHighContrast={a11y.settings.highContrast}
         a11yDyslexiaFont={a11y.settings.dyslexiaFont}
         a11yReducedMotion={a11y.settings.reducedMotion}
