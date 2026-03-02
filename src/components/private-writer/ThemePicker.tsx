@@ -213,6 +213,10 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
         .picker-card:nth-child(2) { animation-delay: 0.12s; }
         .picker-card:nth-child(3) { animation-delay: 0.19s; }
         .picker-fade { animation: picker-fade-in 0.5s ease both; }
+        @keyframes picker-logo-glow {
+          from { filter: drop-shadow(0 0 32px rgba(255,255,255,0.12)) drop-shadow(0 0 80px rgba(255,255,255,0.06)); }
+          to   { filter: drop-shadow(0 0 40px rgba(255,255,255,0.18)) drop-shadow(0 0 100px rgba(255,255,255,0.1)); }
+        }
         .colour-swatch { transition: transform 0.15s, box-shadow 0.15s; }
         .colour-swatch:hover { transform: scale(1.06); }
       `}</style>
@@ -220,26 +224,27 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
       {/* ── Header ── */}
       <div
         className="picker-fade"
-        style={{ textAlign: 'center', padding: '40px 20px 28px', flexShrink: 0 }}
+        style={{ textAlign: 'center', padding: '52px 20px 32px', flexShrink: 0 }}
       >
         <img
           src={minstrelLogo}
           alt="Minstrel Codex"
           style={{
-            width: '72px',
-            height: '72px',
+            width: '140px',
+            height: '140px',
             objectFit: 'contain',
-            marginBottom: '14px',
-            filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.08))',
+            marginBottom: '20px',
+            filter: 'drop-shadow(0 0 32px rgba(255,255,255,0.12)) drop-shadow(0 0 80px rgba(255,255,255,0.06))',
+            animation: 'picker-logo-glow 3s ease-in-out infinite alternate',
           }}
         />
-        <div style={{ fontSize: '11px', letterSpacing: '5px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.32)', fontWeight: 500, marginBottom: '10px' }}>
+        <div style={{ fontSize: '28px', fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: '8px', textTransform: 'uppercase', marginBottom: '8px' }}>
           Minstrel Codex
         </div>
-        <div style={{ fontSize: '22px', fontWeight: 600, color: 'rgba(255,255,255,0.82)', letterSpacing: '-0.3px' }}>
+        <div style={{ fontSize: '13px', fontWeight: 400, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.5px' }}>
           Choose your writing environment
         </div>
-        <div style={{ marginTop: '6px', fontSize: '12px', color: 'rgba(255,255,255,0.28)' }}>
+        <div style={{ marginTop: '4px', fontSize: '11px', color: 'rgba(255,255,255,0.2)' }}>
           You can change this any time in Settings
         </div>
       </div>
