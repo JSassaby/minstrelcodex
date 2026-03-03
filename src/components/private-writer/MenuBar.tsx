@@ -134,7 +134,7 @@ export default function MenuBar({
       position: 'fixed',
       top: `${rect.bottom + 6}px`,
       left: `${rect.left}px`,
-      background: 'var(--terminal-surface)',
+      background: 'var(--menu-bg, var(--terminal-bg))',
       border: '1px solid var(--terminal-border)',
       minWidth: '270px',
       zIndex: 9999,
