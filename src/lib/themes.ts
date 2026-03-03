@@ -143,6 +143,7 @@ export function applyTheme(theme?: ThemeDefinition) {
   root.style.setProperty('--terminal-muted', resolvedTheme.colors.muted);
   root.style.setProperty('--terminal-border', resolvedTheme.colors.border);
   root.style.setProperty('--terminal-surface', resolvedTheme.colors.surface);
+  root.style.setProperty('--menu-bg', resolvedTheme.colors.menuBg);
   root.style.setProperty('--font-body', resolvedTheme.fonts.body);
   root.style.setProperty('--font-display', resolvedTheme.fonts.display);
   root.style.setProperty('--font-ui', resolvedTheme.fonts.ui);
