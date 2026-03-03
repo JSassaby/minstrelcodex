@@ -54,7 +54,7 @@ body.theme-terminal::before {
   z-index: 1000;
 }
 
-/* CRT Screen Glow — terminal only */
+/* CRT Screen Glow — terminal only (very subtle vignette) */
 body.theme-terminal::after {
   content: "";
   position: fixed;
@@ -62,7 +62,7 @@ body.theme-terminal::after {
   left: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.3) 100%);
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.15) 100%);
   pointer-events: none;
   z-index: 999;
 }

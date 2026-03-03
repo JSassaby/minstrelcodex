@@ -151,7 +151,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({ content, onChange, fontS
           }
           .terminal-editor strong {
             font-weight: bold;
-            text-shadow: 0 0 8px var(--terminal-glow);
+            text-shadow: 0 0 3px var(--terminal-glow);
           }
           .terminal-editor em {
             font-style: italic;

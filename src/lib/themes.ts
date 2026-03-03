@@ -53,7 +53,7 @@ export const THEMES: Record<ThemeMode, ThemeDefinition> = {
       ui: "'Space Grotesk', sans-serif",
     },
     effects: { scanlines: true, crtGlow: true, textGlow: true, paperTexture: false },
-    preview: { sampleText: 'The quick brown fox', bg: '#0d1117', fg: '#00c896' },
+    preview: { sampleText: 'The quick brown fox', bg: '#000000', fg: '#33d9a8' },
   },
   modern: {
     mode: 'modern',
