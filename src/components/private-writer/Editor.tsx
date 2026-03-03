@@ -118,7 +118,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({ content, onChange, fontS
             font-size: 2em;
             font-weight: bold;
             margin: 0.5em 0 0.3em;
-            text-shadow: 0 0 10px var(--terminal-glow);
+            text-shadow: 0 0 4px var(--terminal-glow);
             border-bottom: 1px solid var(--terminal-text);
             padding-bottom: 0.2em;
           }
