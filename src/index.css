@@ -35,7 +35,7 @@ body {
 
 /* ===== TERMINAL THEME EFFECTS ===== */
 
-/* CRT Scanlines — terminal only */
+/* CRT Scanlines — terminal only (subtle, non-intrusive) */
 body.theme-terminal::before {
   content: "";
   position: fixed;
@@ -45,10 +45,10 @@ body.theme-terminal::before {
   height: 100%;
   background: repeating-linear-gradient(
     0deg,
-    rgba(0, 0, 0, 0.15),
-    rgba(0, 0, 0, 0.15) 1px,
+    rgba(0, 0, 0, 0.06),
+    rgba(0, 0, 0, 0.06) 1px,
     transparent 1px,
-    transparent 2px
+    transparent 3px
   );
   pointer-events: none;
   z-index: 1000;
