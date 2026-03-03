@@ -92,6 +92,7 @@ export const THEMES: Record<ThemeMode, ThemeDefinition> = {
       muted: 'rgba(44, 31, 20, 0.45)',
       border: '#cec3ae',
       surface: '#faf6ee',
+      menuBg: '#faf6ee',
     },
     fonts: {
       body: "'Lora', 'Georgia', 'Times New Roman', serif",
