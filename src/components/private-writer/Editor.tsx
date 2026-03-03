@@ -107,7 +107,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({ content, onChange, fontS
             font-family: ${fontFamily};
             font-size: ${fontSize}px;
             line-height: 1.6;
-            text-shadow: 0 0 5px var(--terminal-glow);
+            text-shadow: 0 0 2px var(--terminal-glow);
             caret-color: var(--terminal-text);
             min-height: 100%;
           }
@@ -118,7 +118,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({ content, onChange, fontS
             font-size: 2em;
             font-weight: bold;
             margin: 0.5em 0 0.3em;
-            text-shadow: 0 0 10px var(--terminal-glow);
+            text-shadow: 0 0 4px var(--terminal-glow);
             border-bottom: 1px solid var(--terminal-text);
             padding-bottom: 0.2em;
           }
@@ -126,13 +126,13 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({ content, onChange, fontS
             font-size: 1.6em;
             font-weight: bold;
             margin: 0.4em 0 0.3em;
-            text-shadow: 0 0 8px var(--terminal-glow);
+            text-shadow: 0 0 3px var(--terminal-glow);
           }
           .terminal-editor h3 {
             font-size: 1.3em;
             font-weight: bold;
             margin: 0.3em 0 0.2em;
-            text-shadow: 0 0 6px var(--terminal-glow);
+            text-shadow: 0 0 2px var(--terminal-glow);
           }
           .terminal-editor h4 {
             font-size: 1.1em;
@@ -151,7 +151,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({ content, onChange, fontS
           }
           .terminal-editor strong {
             font-weight: bold;
-            text-shadow: 0 0 8px var(--terminal-glow);
+            text-shadow: 0 0 3px var(--terminal-glow);
           }
           .terminal-editor em {
             font-style: italic;
