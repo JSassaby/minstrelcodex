@@ -13,6 +13,7 @@ export interface ThemeDefinition {
     muted: string;
     border: string;
     surface: string;
+    menuBg: string;
   };
   fonts: {
     body: string;
