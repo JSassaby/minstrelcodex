@@ -107,7 +107,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({ content, onChange, fontS
             font-family: ${fontFamily};
             font-size: ${fontSize}px;
             line-height: 1.6;
-            text-shadow: 0 0 5px var(--terminal-glow);
+            text-shadow: 0 0 2px var(--terminal-glow);
             caret-color: var(--terminal-text);
             min-height: 100%;
           }
