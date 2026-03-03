@@ -69,6 +69,7 @@ export const THEMES: Record<ThemeMode, ThemeDefinition> = {
       muted: 'rgba(28, 35, 51, 0.45)',
       border: '#dddbd6',
       surface: '#ffffff',
+      menuBg: '#ffffff',
     },
     fonts: {
       body: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
