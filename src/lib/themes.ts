@@ -46,6 +46,7 @@ export const THEMES: Record<ThemeMode, ThemeDefinition> = {
       muted: 'rgba(51, 217, 168, 0.5)',
       border: 'rgba(51, 217, 168, 0.25)',
       surface: 'rgba(51, 217, 168, 0.08)',
+      menuBg: '#111111',
     },
     fonts: {
       body: "'JetBrains Mono', 'Courier Prime', 'Courier New', monospace",
