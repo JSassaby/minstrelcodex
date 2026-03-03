@@ -98,7 +98,11 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({ content, onChange, fontS
           overflow: 'auto',
           cursor: 'text',
         }}
-        onClick={() => editor?.commands.focus('end')}
+        onClick={(e) => {
+          // Only focus editor when clicking the empty area, not when selecting text inside it
+          if ((e.target as HTMLElement).closest('.ProseMirror')) return;
+          editor?.commands.focus('end');
+        }}
       >
         <style>{`
           .terminal-editor {
