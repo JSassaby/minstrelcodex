@@ -126,7 +126,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({ content, onChange, fontS
             font-size: 1.6em;
             font-weight: bold;
             margin: 0.4em 0 0.3em;
-            text-shadow: 0 0 8px var(--terminal-glow);
+            text-shadow: 0 0 3px var(--terminal-glow);
           }
           .terminal-editor h3 {
             font-size: 1.3em;
