@@ -13,6 +13,7 @@ export interface ThemeDefinition {
     muted: string;
     border: string;
     surface: string;
+    menuBg: string;
   };
   fonts: {
     body: string;
@@ -46,6 +47,7 @@ export const THEMES: Record<ThemeMode, ThemeDefinition> = {
       muted: 'rgba(51, 217, 168, 0.5)',
       border: 'rgba(51, 217, 168, 0.25)',
       surface: 'rgba(51, 217, 168, 0.08)',
+      menuBg: '#111111',
     },
     fonts: {
       body: "'JetBrains Mono', 'Courier Prime', 'Courier New', monospace",
@@ -68,6 +70,7 @@ export const THEMES: Record<ThemeMode, ThemeDefinition> = {
       muted: 'rgba(28, 35, 51, 0.45)',
       border: '#dddbd6',
       surface: '#ffffff',
+      menuBg: '#ffffff',
     },
     fonts: {
       body: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
@@ -90,6 +93,7 @@ export const THEMES: Record<ThemeMode, ThemeDefinition> = {
       muted: 'rgba(44, 31, 20, 0.45)',
       border: '#cec3ae',
       surface: '#faf6ee',
+      menuBg: '#faf6ee',
     },
     fonts: {
       body: "'Lora', 'Georgia', 'Times New Roman', serif",
@@ -140,6 +144,7 @@ export function applyTheme(theme?: ThemeDefinition) {
   root.style.setProperty('--terminal-muted', resolvedTheme.colors.muted);
   root.style.setProperty('--terminal-border', resolvedTheme.colors.border);
   root.style.setProperty('--terminal-surface', resolvedTheme.colors.surface);
+  root.style.setProperty('--menu-bg', resolvedTheme.colors.menuBg);
   root.style.setProperty('--font-body', resolvedTheme.fonts.body);
   root.style.setProperty('--font-display', resolvedTheme.fonts.display);
   root.style.setProperty('--font-ui', resolvedTheme.fonts.ui);

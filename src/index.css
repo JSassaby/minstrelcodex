@@ -13,6 +13,7 @@
   --terminal-muted: rgba(51, 217, 168, 0.5);
   --terminal-border: rgba(51, 217, 168, 0.25);
   --terminal-surface: rgba(51, 217, 168, 0.08);
+  --menu-bg: #111111;
   --font-body: 'JetBrains Mono', 'Courier Prime', 'Courier New', monospace;
   --font-display: 'Space Grotesk', sans-serif;
   --font-ui: 'Space Grotesk', sans-serif;
