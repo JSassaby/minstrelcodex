@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { t } from '@/lib/languages';
 // supabase import removed — connection state uses localStorage
 import { ThemeMode, THEMES } from '@/lib/themes';
-import type { AppColors, Language, PinConfig } from '@/lib/types';
+import type { AppColors, Language, PinConfig } from '@minstrelcodex/core';
 import AccessibilitySection from './AccessibilitySection';
 import type { AccessibilitySettings } from '@/hooks/useAccessibility';
 

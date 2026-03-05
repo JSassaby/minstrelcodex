@@ -1,7 +1,6 @@
 import { useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
 import FormattingToolbar from './FormattingToolbar';
 
 export interface EditorHandle {
@@ -30,7 +29,6 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({ content, onChange, fontS
         bulletList: { keepMarks: true },
         orderedList: { keepMarks: true },
       }),
-      Underline,
     ],
     content: content || '',
     editable: !readOnly,

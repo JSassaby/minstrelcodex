@@ -287,13 +287,7 @@ export default function MenuBar({
         const items = getSubmenuItems(menu, language, wifiOn, bluetoothOn);
         const dropStyle = getDropdownStyle();
         return createPortal(
-          <>
-            {/* Backdrop to close on outside click */}
-            <div
-              style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
-              onClick={() => { setHoverMenuIdx(null); setMouseActive(false); }}
-            />
-            <div ref={dropdownRef} style={{ ...dropStyle, fontFamily: uiFont }}>
+          <div ref={dropdownRef} style={{ ...dropStyle, fontFamily: uiFont }}>
               {items.map((item, j) => {
                 if (item.action === 'separator') {
                   return (
@@ -352,8 +346,7 @@ export default function MenuBar({
                   </div>
                 );
               })}
-            </div>
-          </>,
+          </div>,
           document.body
         );
       })()}

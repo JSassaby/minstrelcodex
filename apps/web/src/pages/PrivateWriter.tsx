@@ -24,9 +24,10 @@ import { useFileStructure } from '@/hooks/useFileStructure';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import ThemePicker from '@/components/private-writer/ThemePicker';
 import { useGoogleToken } from '@/hooks/useGoogleToken';
+import { useSyncEngine, GoogleDriveAdapter } from '@minstrelcodex/core';
 import { useMusicPlayer } from '@/hooks/useMusicPlayer';
 import { useAccessibility } from '@/hooks/useAccessibility';
-import type { ModalType, Language, Difficulty, PinConfig } from '@/lib/types';
+import type { ModalType, Language, Difficulty, PinConfig } from '@minstrelcodex/core';
 
 // ── Reading Guide Component ──────────────────────────────────────────
 function ReadingGuide({ opacity }: { opacity: number }) {
@@ -153,13 +154,15 @@ export default function PrivateWriter() {
   const fileStructure = useFileStructure();
   const theme = useAppTheme();
   const { googleToken, isConnected: googleConnected, clearToken: clearGoogleToken } = useGoogleToken();
+  const driveAdapter = googleToken ? new GoogleDriveAdapter(googleToken) : null;
+  const { syncStatus, lastSyncTime: syncLastTime, triggerSync } = useSyncEngine(driveAdapter);
   const editorRef = useRef<EditorHandle>(null);
   const musicPlayer = useMusicPlayer();
   const a11y = useAccessibility();
 
    // Storage menu removed
   const [_storageMenuOpen, _setStorageMenuOpen] = useState(false); // kept for compat
-  const [lastSyncTime, setLastSyncTime] = useState<string | null>(() => localStorage.getItem('pw-last-sync'));
+  // lastSyncTime is now owned by useSyncEngine (syncLastTime)
 
   // Content state managed locally for editor
   const [editorContent, setEditorContent] = useState('');
@@ -170,16 +173,16 @@ export default function PrivateWriter() {
     if (saved) setEditorContent(saved.content);
   }, []);
 
-  // Auto-save
+  // Auto-save is handled inside useDocumentStorage (10 s stable interval).
+
+  // Trigger immediate sync when Google Drive connects
+  const prevGoogleToken = useRef<string | null>(null);
   useEffect(() => {
-    const interval = setInterval(() => {
-      docStorage.saveState(editorContent);
-      if (!docStorage.currentDocument.saved && docStorage.currentDocument.filename) {
-        docStorage.saveDocument(docStorage.currentDocument.filename, editorContent);
-      }
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [editorContent, docStorage]);
+    if (googleToken && !prevGoogleToken.current) {
+      triggerSync();
+    }
+    prevGoogleToken.current = googleToken;
+  }, [googleToken, triggerSync]);
 
   // Sync WiFi with real navigator.onLine
   useEffect(() => {
@@ -455,9 +458,6 @@ export default function PrivateWriter() {
         else failed++;
       } catch { failed++; }
     }
-    const now = new Date().toLocaleTimeString();
-    setLastSyncTime(now);
-    localStorage.setItem('pw-last-sync', now);
     showToast(failed > 0 ? `${uploaded} synced, ${failed} failed.` : `✓ ${uploaded} files synced to Google Drive`);
   }, [googleToken, showToast]);
   // Connect to Google Drive via OAuth
@@ -1364,6 +1364,9 @@ export default function PrivateWriter() {
         a11yReducedMotion={a11y.settings.reducedMotion}
         a11yReadingGuide={a11y.settings.readingGuide}
         onVoiceClick={toggleVoiceInput}
+        syncStatus={syncStatus}
+        lastSyncTime={syncLastTime}
+        onSyncClick={triggerSync}
       />
 
         {/* Music Player Sidebar */}
@@ -1711,9 +1714,6 @@ export default function PrivateWriter() {
               else failed++;
             } catch { failed++; }
           }
-          const now = new Date().toLocaleTimeString();
-          setLastSyncTime(now);
-          localStorage.setItem('pw-last-sync', now);
           showToast(failed > 0 ? `${uploaded} synced, ${failed} failed.` : `✓ ${uploaded} files synced to ${driveFolderName}`);
         }}
       />

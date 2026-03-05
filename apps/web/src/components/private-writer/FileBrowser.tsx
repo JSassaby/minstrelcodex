@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
-import type { FileNode, DocumentData } from '@/lib/types';
+import type { FileNode, DocumentData } from '@minstrelcodex/core';
 
 // ── Drag-and-drop state ───────────────────────────────────────────────────────
 interface DragState {

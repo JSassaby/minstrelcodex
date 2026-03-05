@@ -1,4 +1,4 @@
-import type { FileNode } from '@/lib/types';
+import type { FileNode } from '@minstrelcodex/core';
 
 interface FileSidebarProps {
   visible: boolean;

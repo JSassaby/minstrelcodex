@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import ModalShell, { ModalButton } from './ModalShell';
-import type { FileNode } from '@/lib/types';
+import type { FileNode } from '@minstrelcodex/core';
 
 const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
 

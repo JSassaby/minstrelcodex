@@ -1,5 +1,6 @@
-import { Wifi, BatteryMedium, BatteryLow, BatteryFull, BatteryWarning, Music, Mic, Volume2, Eye, Type, Minimize2, BookOpen } from 'lucide-react';
+import { Wifi, BatteryMedium, BatteryLow, BatteryFull, BatteryWarning, Music, Mic, Volume2, Eye, Type, Minimize2, BookOpen, Cloud, CloudOff, RefreshCw, AlertCircle } from 'lucide-react';
 import { t } from '@/lib/languages';
+import type { SyncStatus } from '@minstrelcodex/core';
 
 interface StatusBarProps {
   language: string;
@@ -20,6 +21,9 @@ interface StatusBarProps {
   a11yReducedMotion?: boolean;
   a11yReadingGuide?: boolean;
   onVoiceClick?: () => void;
+  syncStatus?: SyncStatus;
+  lastSyncTime?: Date | null;
+  onSyncClick?: () => void;
 }
 
 function BatteryIcon({ level }: { level: number }) {
@@ -50,6 +54,38 @@ function A11yIndicator({ icon: Icon, label, enabled, pulse, onClick }: {
   );
 }
 
+function SyncIndicator({ status, lastSyncTime, onClick }: { status: SyncStatus; lastSyncTime?: Date | null; onClick?: () => void }) {
+  if (status === 'disconnected') return null;
+
+  const label =
+    status === 'syncing' ? 'Syncing…' :
+    status === 'synced'  ? (lastSyncTime ? `Synced ${lastSyncTime.toLocaleTimeString()}` : 'Synced') :
+    status === 'error'   ? 'Sync error — click to retry' :
+    status === 'offline' ? 'Offline — changes saved locally' :
+    '';
+
+  const icon =
+    status === 'syncing' ? <RefreshCw size={11} strokeWidth={1.6} color="var(--terminal-accent)" style={{ animation: 'spin 1s linear infinite' }} /> :
+    status === 'synced'  ? <Cloud size={11} strokeWidth={1.6} color="var(--terminal-accent)" /> :
+    status === 'error'   ? <AlertCircle size={11} strokeWidth={1.6} color="#e05c5c" /> :
+    status === 'offline' ? <CloudOff size={11} strokeWidth={1.6} color="#f5c542" /> :
+    null;
+
+  return (
+    <span
+      onClick={onClick}
+      title={label}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '3px',
+        cursor: (status === 'error' && onClick) ? 'pointer' : 'default',
+        opacity: status === 'synced' ? 0.6 : 0.85,
+      }}
+    >
+      {icon}
+    </span>
+  );
+}
+
 export default function StatusBar({
   language, filename, saved, content, battery, wifiOn,
   musicPlaying, musicTrackName, onMusicClick,
@@ -57,6 +93,7 @@ export default function StatusBar({
   a11yVoiceEnabled, a11yTtsEnabled,
   a11yHighContrast, a11yDyslexiaFont, a11yReducedMotion, a11yReadingGuide,
   onVoiceClick,
+  syncStatus, lastSyncTime, onSyncClick,
 }: StatusBarProps) {
   const displayName = filename ? (filename.split('/').pop() || filename) : t(language, 'status.untitled');
   const words = content.trim() ? content.trim().split(/\s+/).length : 0;
@@ -114,6 +151,9 @@ export default function StatusBar({
           >
             <Music size={11} strokeWidth={1.6} color="var(--terminal-accent)" />
           </span>
+        )}
+        {syncStatus && (
+          <SyncIndicator status={syncStatus} lastSyncTime={lastSyncTime} onClick={onSyncClick} />
         )}
         {wifiOn && (
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>

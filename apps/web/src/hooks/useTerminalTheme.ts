@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { AppColors } from '@/lib/types';
+import type { AppColors } from '@minstrelcodex/core';
 
 const COLORS_KEY = 'pw-colors';
 
