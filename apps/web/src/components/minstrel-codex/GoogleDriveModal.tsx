@@ -1,17 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useGoogleToken } from '@/hooks/useGoogleToken';
-import { supabase } from '@/integrations/supabase/client';
 import ModalShell, { ModalButton } from './ModalShell';
 
 const DEVICE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-drive-device`;
 
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  const { data: { session } } = await supabase.auth.getSession();
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (session?.access_token) {
-    headers['Authorization'] = `Bearer ${session.access_token}`;
-  }
-  return headers;
+function getAuthHeaders(): Record<string, string> {
+  return { 'Content-Type': 'application/json' };
 }
 
 const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
@@ -88,7 +82,7 @@ export default function GoogleDriveModal({
   const startDeviceFlow = async () => {
     setLoading(true); setError(''); setNeedsReauth(false);
     try {
-      const authH = await getAuthHeaders();
+      const authH = getAuthHeaders();
       const res = await fetch(DEVICE_URL, {
         method: 'POST', headers: authH,
         body: JSON.stringify({ action: 'request-code' }),
@@ -109,7 +103,7 @@ export default function GoogleDriveModal({
       const intervalMs = (data.interval || 5) * 1000;
       pollRef.current = setInterval(async () => {
         try {
-          const pollHeaders = await getAuthHeaders();
+          const pollHeaders = getAuthHeaders();
           const pollRes = await fetch(DEVICE_URL, {
             method: 'POST', headers: pollHeaders,
             body: JSON.stringify({ action: 'poll-token', deviceCode: data.device_code }),
@@ -156,7 +150,7 @@ export default function GoogleDriveModal({
   const loadFiles = async (token: string, folderId: string) => {
     setLoading(true); setError('');
     try {
-      const authH = await getAuthHeaders();
+      const authH = getAuthHeaders();
       const res = await fetch(FUNCTION_URL, {
         method: 'POST', headers: authH,
         body: JSON.stringify({ action: 'list', googleToken: token, folderId }),
@@ -202,7 +196,7 @@ export default function GoogleDriveModal({
     if (!token) return;
     setLoading(true); setStatus(`Downloading ${file.name}…`);
     try {
-      const authH = await getAuthHeaders();
+      const authH = getAuthHeaders();
       const res = await fetch(FUNCTION_URL, {
         method: 'POST', headers: authH,
         body: JSON.stringify({ action: 'download', googleToken: token, fileId: file.id }),
@@ -221,7 +215,7 @@ export default function GoogleDriveModal({
     const name = currentFilename || 'Untitled.html';
     setStatus(`Uploading ${name} to ${breadcrumbs[breadcrumbs.length - 1].name}…`);
     try {
-      const authH = await getAuthHeaders();
+      const authH = getAuthHeaders();
       const res = await fetch(FUNCTION_URL, {
         method: 'POST', headers: authH,
         body: JSON.stringify({
@@ -243,7 +237,7 @@ export default function GoogleDriveModal({
     if (!token || !newFolderName.trim()) return;
     setLoading(true);
     try {
-      const authH = await getAuthHeaders();
+      const authH = getAuthHeaders();
       const res = await fetch(FUNCTION_URL, {
         method: 'POST', headers: authH,
         body: JSON.stringify({

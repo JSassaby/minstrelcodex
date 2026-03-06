@@ -17,16 +17,14 @@ export class GoogleDriveAdapter implements CloudAdapter {
 
   private token: string | null;
   private folderId: string;
-  private getSupabaseToken: () => Promise<string | null>;
 
   private driveFileMap: Map<string, string> = new Map();
   private folderIdCache: Map<string, string> = new Map();
   private listed = false;
 
-  constructor(token: string | null, folderId = 'root', getSupabaseToken?: () => Promise<string | null>) {
+  constructor(token: string | null, folderId = 'root') {
     this.token = token;
     this.folderId = folderId;
-    this.getSupabaseToken = getSupabaseToken ?? (async () => null);
   }
 
   isConnected(): boolean {
@@ -34,16 +32,9 @@ export class GoogleDriveAdapter implements CloudAdapter {
   }
 
   private async edgeFetch(body: Record<string, unknown>): Promise<Response> {
-    const supabaseToken = await this.getSupabaseToken();
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-    if (supabaseToken) {
-      headers['Authorization'] = `Bearer ${supabaseToken}`;
-    }
     const res = await fetch(FUNCTION_URL, {
       method: 'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...body, googleToken: this.token }),
     });
     if (res.status === 401) throw new TokenExpiredError();
