@@ -109,9 +109,9 @@ export default function GoogleDriveModal({
       const intervalMs = (data.interval || 5) * 1000;
       pollRef.current = setInterval(async () => {
         try {
+          const pollHeaders = await getAuthHeaders();
           const pollRes = await fetch(DEVICE_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: pollHeaders,
             body: JSON.stringify({ action: 'poll-token', deviceCode: data.device_code }),
           });
           const pollData = await pollRes.json();
