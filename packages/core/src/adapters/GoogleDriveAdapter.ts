@@ -17,16 +17,14 @@ export class GoogleDriveAdapter implements CloudAdapter {
 
   private token: string | null;
   private folderId: string;
-  private getSupabaseToken: () => Promise<string | null>;
 
   private driveFileMap: Map<string, string> = new Map();
   private folderIdCache: Map<string, string> = new Map();
   private listed = false;
 
-  constructor(token: string | null, folderId = 'root', getSupabaseToken?: () => Promise<string | null>) {
+  constructor(token: string | null, folderId = 'root') {
     this.token = token;
     this.folderId = folderId;
-    this.getSupabaseToken = getSupabaseToken ?? (async () => null);
   }
 
   isConnected(): boolean {
