@@ -82,7 +82,7 @@ export default function GoogleDriveModal({
   const startDeviceFlow = async () => {
     setLoading(true); setError(''); setNeedsReauth(false);
     try {
-      const authH = await getAuthHeaders();
+      const authH = getAuthHeaders();
       const res = await fetch(DEVICE_URL, {
         method: 'POST', headers: authH,
         body: JSON.stringify({ action: 'request-code' }),
