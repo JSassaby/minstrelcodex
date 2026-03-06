@@ -237,7 +237,7 @@ export default function GoogleDriveModal({
     if (!token || !newFolderName.trim()) return;
     setLoading(true);
     try {
-      const authH = await getAuthHeaders();
+      const authH = getAuthHeaders();
       const res = await fetch(FUNCTION_URL, {
         method: 'POST', headers: authH,
         body: JSON.stringify({
