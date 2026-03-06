@@ -196,7 +196,7 @@ export default function GoogleDriveModal({
     if (!token) return;
     setLoading(true); setStatus(`Downloading ${file.name}…`);
     try {
-      const authH = await getAuthHeaders();
+      const authH = getAuthHeaders();
       const res = await fetch(FUNCTION_URL, {
         method: 'POST', headers: authH,
         body: JSON.stringify({ action: 'download', googleToken: token, fileId: file.id }),
