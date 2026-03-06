@@ -1,77 +1,53 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useCallback } from 'react';
 
-const TOKEN_KEY = 'pw-google-token';
+const ACCESS_KEY = 'mc-drive-access-token';
+const REFRESH_KEY = 'mc-drive-refresh-token';
+
+const DEVICE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-drive-device`;
 
 /**
- * Manages Google Drive connection state.
- * Checks both localStorage (for persisted provider_token) and the active
- * Supabase session (for Google identity) to determine connection status.
+ * Manages the Google Drive access token independently of Supabase auth.
+ * Tokens are obtained via the OAuth Device Authorization Flow (RFC 8628)
+ * and stored in localStorage. No OAuth redirects — entirely in-app.
  */
 export function useGoogleToken() {
-  const [googleToken, setGoogleToken] = useState<string | null>(() => {
-    return localStorage.getItem(TOKEN_KEY);
-  });
-  const [justConnected, setJustConnected] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [hasGoogleIdentity, setHasGoogleIdentity] = useState(false);
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.provider_token) {
-        const hadToken = !!localStorage.getItem(TOKEN_KEY);
-        localStorage.setItem(TOKEN_KEY, session.provider_token);
-        setGoogleToken(session.provider_token);
-        if (!hadToken) setJustConnected(true);
-      }
-      if (session?.user) {
-        const googleId = session.user.app_metadata?.providers?.includes('google');
-        setHasGoogleIdentity(!!googleId);
-        setUserEmail(session.user.email || null);
-      }
-    });
-
-    // Check current session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.provider_token) {
-        const hadToken = !!localStorage.getItem(TOKEN_KEY);
-        localStorage.setItem(TOKEN_KEY, session.provider_token);
-        setGoogleToken(session.provider_token);
-        if (!hadToken) setJustConnected(true);
-      }
-      if (session?.user) {
-        const googleId = session.user.app_metadata?.providers?.includes('google');
-        setHasGoogleIdentity(!!googleId);
-        setUserEmail(session.user.email || null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const clearToken = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
-    setGoogleToken(null);
-    setJustConnected(false);
-    setUserEmail(null);
-  }, []);
-
-  const dismissJustConnected = useCallback(() => {
-    setJustConnected(false);
-  }, []);
-
-  // Try to refresh and get a new provider token
-  const refreshToken = useCallback(async (): Promise<string | null> => {
-    const { data } = await supabase.auth.refreshSession();
-    if (data.session?.provider_token) {
-      localStorage.setItem(TOKEN_KEY, data.session.provider_token);
-      setGoogleToken(data.session.provider_token);
-      return data.session.provider_token;
-    }
-    return null;
-  }, []);
+  const [googleToken, setGoogleTokenState] = useState<string | null>(() =>
+    localStorage.getItem(ACCESS_KEY)
+  );
 
   const isConnected = !!googleToken;
 
-  return { googleToken, isConnected, clearToken, justConnected, dismissJustConnected, userEmail, hasGoogleIdentity, refreshToken };
+  const setToken = useCallback((accessToken: string, refreshToken?: string) => {
+    localStorage.setItem(ACCESS_KEY, accessToken);
+    if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken);
+    setGoogleTokenState(accessToken);
+  }, []);
+
+  const clearToken = useCallback(() => {
+    localStorage.removeItem(ACCESS_KEY);
+    localStorage.removeItem(REFRESH_KEY);
+    setGoogleTokenState(null);
+  }, []);
+
+  // Use the stored refresh token to get a new access token
+  const refreshToken = useCallback(async (): Promise<string | null> => {
+    const stored = localStorage.getItem(REFRESH_KEY);
+    if (!stored) return null;
+    try {
+      const res = await fetch(DEVICE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'refresh-token', refreshToken: stored }),
+      });
+      const data = await res.json();
+      if (data.access_token) {
+        localStorage.setItem(ACCESS_KEY, data.access_token);
+        setGoogleTokenState(data.access_token);
+        return data.access_token;
+      }
+    } catch {}
+    return null;
+  }, []);
+
+  return { googleToken, isConnected, setToken, clearToken, refreshToken };
 }

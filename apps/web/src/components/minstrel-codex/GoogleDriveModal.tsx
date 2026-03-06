@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { lovable } from '@/integrations/lovable/index';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect, useRef } from 'react';
 import { useGoogleToken } from '@/hooks/useGoogleToken';
 import ModalShell, { ModalButton } from './ModalShell';
+
+const DEVICE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-drive-device`;
 
 const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
 
@@ -37,7 +37,7 @@ export default function GoogleDriveModal({
   visible, onClose, onLoadContent, currentContent, currentFilename,
   localFolders, onSyncFolder,
 }: GoogleDriveModalProps) {
-  const { googleToken, isConnected, clearToken, justConnected, dismissJustConnected, userEmail, hasGoogleIdentity, refreshToken } = useGoogleToken();
+  const { googleToken, isConnected, clearToken, setToken, refreshToken } = useGoogleToken();
   const [files, setFiles] = useState<DriveFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -50,82 +50,98 @@ export default function GoogleDriveModal({
   const [syncTargetFolder, setSyncTargetFolder] = useState<{ id: string; name: string } | null>(null);
   const [needsReauth, setNeedsReauth] = useState(false);
 
+  // Device Authorization Flow state
+  const [deviceFlowActive, setDeviceFlowActive] = useState(false);
+  const [deviceCode, setDeviceCode] = useState('');
+  const [userCode, setUserCode] = useState('');
+  const [verificationUrl, setVerificationUrl] = useState('');
+  const [justConnectedLocal, setJustConnectedLocal] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const currentFolderId = breadcrumbs[breadcrumbs.length - 1]?.id || 'root';
 
-  // Get a valid token — try stored, then refresh
+  // Get a valid token — try stored, then try refresh
   const getToken = async (): Promise<string | null> => {
     if (googleToken) return googleToken;
-    // Try refreshing the session to get a new provider_token
     const refreshed = await refreshToken();
     if (refreshed) return refreshed;
-    // No token available — user needs to re-authenticate with Drive scope
     setNeedsReauth(true);
     return null;
   };
 
-  // When modal opens and we're connected, try to load files
-  useEffect(() => {
-    if (visible && isConnected) {
-      setBreadcrumbs([{ id: 'root', name: 'My Drive' }]);
-      setError('');
-      setStatus('');
-      setNeedsReauth(false);
-      if (!justConnected) {
-        setTab('browse');
-        (async () => {
-          const token = await getToken();
-          if (token) loadFiles(token, 'root');
-        })();
-      }
-    }
-  }, [visible, isConnected]);
+  const cancelDeviceFlow = () => {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    setDeviceFlowActive(false);
+    setDeviceCode(''); setUserCode(''); setVerificationUrl('');
+  };
 
-  const signIn = async () => {
+  const startDeviceFlow = async () => {
     setLoading(true); setError(''); setNeedsReauth(false);
     try {
-      const result = await lovable.auth.signInWithOAuth('google', {
-        redirect_uri: window.location.origin,
-        extraParams: {
-          scope: 'https://www.googleapis.com/auth/drive.file',
-          access_type: 'offline',
-          prompt: 'consent',
-        },
+      const res = await fetch(DEVICE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'request-code' }),
       });
-      if (result.error) {
-        setError((result.error as any).message || 'Sign-in failed');
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Failed to start device auth. Ensure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set as Supabase secrets.');
         setLoading(false);
         return;
       }
-      // After auth completes (redirect or bridge), check for provider_token
-      if (!result.redirected) {
-        await new Promise(r => setTimeout(r, 800));
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.provider_token) {
-          localStorage.setItem('pw-google-token', session.provider_token);
-          window.location.reload();
-          return;
-        }
-        const { data: refreshData } = await supabase.auth.refreshSession();
-        if (refreshData.session?.provider_token) {
-          localStorage.setItem('pw-google-token', refreshData.session.provider_token);
-          window.location.reload();
-          return;
-        }
-        // Auth succeeded but no Drive token — this is the managed auth limitation
-        // The user is authenticated with Google identity but we can't get the Drive API token
-        setError(
-          'Google sign-in succeeded, but Drive API access requires custom OAuth credentials. ' +
-          'Go to Lovable Cloud → Users → Authentication Settings → Google, and add your own Google OAuth Client ID & Secret with the drive.file scope enabled.'
-        );
-        setLoading(false);
-        return;
-      }
-      setTimeout(() => { setLoading(false); }, 5000);
+
+      setDeviceCode(data.device_code);
+      setUserCode(data.user_code);
+      setVerificationUrl(data.verification_url || 'https://www.google.com/device');
+      setDeviceFlowActive(true);
+
+      // Poll Google until user completes authorization
+      const intervalMs = (data.interval || 5) * 1000;
+      pollRef.current = setInterval(async () => {
+        try {
+          const pollRes = await fetch(DEVICE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'poll-token', deviceCode: data.device_code }),
+          });
+          const pollData = await pollRes.json();
+
+          if (pollData.access_token) {
+            clearInterval(pollRef.current!); pollRef.current = null;
+            setToken(pollData.access_token, pollData.refresh_token);
+            setDeviceFlowActive(false);
+            setJustConnectedLocal(true);
+          } else if (pollData.error === 'access_denied' || pollData.error === 'expired_token') {
+            clearInterval(pollRef.current!); pollRef.current = null;
+            setDeviceFlowActive(false);
+            setError(pollData.error === 'access_denied' ? 'Access denied. Please try again.' : 'Code expired. Please try again.');
+          }
+          // 'authorization_pending' and 'slow_down' → keep waiting
+        } catch { /* network hiccup — keep polling */ }
+      }, intervalMs);
     } catch (e: any) {
-      setError(e.message || 'Sign-in failed');
-      setLoading(false);
+      setError(e.message || 'Device auth failed');
     }
+    setLoading(false);
   };
+
+  // When modal opens and we're connected, load files
+  useEffect(() => {
+    if (visible && isConnected && !justConnectedLocal) {
+      setBreadcrumbs([{ id: 'root', name: 'My Drive' }]);
+      setError(''); setStatus(''); setNeedsReauth(false);
+      setTab('browse');
+      (async () => {
+        const token = await getToken();
+        if (token) loadFiles(token, 'root');
+      })();
+    }
+  }, [visible, isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Clean up poll interval when modal closes
+  useEffect(() => {
+    if (!visible) cancelDeviceFlow();
+  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadFiles = async (token: string, folderId: string) => {
     setLoading(true); setError('');
@@ -267,7 +283,7 @@ export default function GoogleDriveModal({
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [visible, isConnected, files, selectedIdx, googleToken, breadcrumbs, showNewFolder]);
+  }, [visible, isConnected, files, selectedIdx, breadcrumbs, showNewFolder]);
 
   if (!visible) return null;
 
@@ -286,48 +302,76 @@ export default function GoogleDriveModal({
           </div>
         )}
 
-        {!isConnected ? (
+        {!isConnected || justConnectedLocal ? (
           <div style={{ textAlign: 'center', padding: '32px 0' }}>
-            <div style={{ fontSize: '36px', marginBottom: '12px' }}>☁️</div>
-            <p style={{ marginBottom: '6px', fontSize: '14px', fontFamily: uiFont, fontWeight: '500' }}>Connect to Google Drive</p>
-            <p style={{ marginBottom: '24px', fontSize: '12px', opacity: 0.5, fontFamily: uiFont }}>Sign in to browse, upload, and sync</p>
-            <ModalButton label={loading ? 'Connecting…' : '🔑 Sign in with Google'} focused onClick={signIn} />
+            {justConnectedLocal ? (
+              <>
+                <div style={{ fontSize: '42px', marginBottom: '16px' }}>✅</div>
+                <p style={{ marginBottom: '20px', fontSize: '16px', fontFamily: uiFont, fontWeight: '600' }}>
+                  Connected to Google Drive
+                </p>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <ModalButton label="📂 Browse Drive" focused onClick={async () => {
+                    setJustConnectedLocal(false);
+                    setTab('browse');
+                    const token = await getToken();
+                    if (token) loadFiles(token, 'root');
+                  }} />
+                  <ModalButton label="🔄 Set Up Sync" focused={false} onClick={() => {
+                    setJustConnectedLocal(false);
+                    setTab('sync');
+                  }} />
+                </div>
+              </>
+            ) : deviceFlowActive ? (
+              <>
+                <div style={{ fontSize: '36px', marginBottom: '12px' }}>📱</div>
+                <p style={{ marginBottom: '8px', fontSize: '14px', fontFamily: uiFont, fontWeight: '500' }}>
+                  Authorize on your phone or another device
+                </p>
+                <p style={{ marginBottom: '12px', fontSize: '12px', opacity: 0.6, fontFamily: uiFont }}>
+                  Open this URL:
+                </p>
+                <div style={{
+                  padding: '10px 16px', marginBottom: '12px', borderRadius: '9px',
+                  background: 'var(--terminal-surface)', border: '1px solid var(--terminal-border)',
+                  fontSize: '13px', fontFamily: 'monospace', wordBreak: 'break-all',
+                }}>
+                  {verificationUrl}
+                </div>
+                <p style={{ marginBottom: '8px', fontSize: '12px', opacity: 0.6, fontFamily: uiFont }}>
+                  Then enter this code:
+                </p>
+                <div style={{
+                  fontSize: '30px', fontFamily: 'monospace', fontWeight: '700',
+                  letterSpacing: '0.2em', color: 'var(--terminal-accent)', marginBottom: '20px',
+                }}>
+                  {userCode}
+                </div>
+                <p style={{ marginBottom: '16px', fontSize: '12px', opacity: 0.45, fontFamily: uiFont }}>
+                  Waiting for authorization…
+                </p>
+                <ModalButton label="✕ Cancel" focused={false} onClick={cancelDeviceFlow} />
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: '36px', marginBottom: '12px' }}>☁️</div>
+                <p style={{ marginBottom: '6px', fontSize: '14px', fontFamily: uiFont, fontWeight: '500' }}>
+                  Connect to Google Drive
+                </p>
+                <p style={{ marginBottom: '24px', fontSize: '12px', opacity: 0.5, fontFamily: uiFont }}>
+                  No browser redirect — authorize from your phone
+                </p>
+                <ModalButton label={loading ? 'Starting…' : '🔑 Connect Google Drive'} focused onClick={startDeviceFlow} />
+              </>
+            )}
           </div>
         ) : needsReauth ? (
           <div style={{ textAlign: 'center', padding: '32px 0' }}>
             <div style={{ fontSize: '36px', marginBottom: '12px' }}>🔄</div>
             <p style={{ marginBottom: '6px', fontSize: '14px', fontFamily: uiFont, fontWeight: '500' }}>Drive access expired</p>
-            {userEmail && (
-              <p style={{ marginBottom: '8px', fontSize: '12px', fontFamily: uiFont, opacity: 0.6 }}>
-                {userEmail}
-              </p>
-            )}
-            <p style={{ marginBottom: '24px', fontSize: '12px', opacity: 0.5, fontFamily: uiFont }}>Re-authenticate to restore access</p>
-            <ModalButton label={loading ? 'Connecting…' : '🔑 Reconnect Google Drive'} focused onClick={signIn} />
-          </div>
-        ) : justConnected ? (
-          <div style={{ textAlign: 'center', padding: '32px 0' }}>
-            <div style={{ fontSize: '42px', marginBottom: '16px' }}>✅</div>
-            <p style={{ marginBottom: '6px', fontSize: '16px', fontFamily: uiFont, fontWeight: '600' }}>
-              Connected to Google Drive
-            </p>
-            {userEmail && (
-              <p style={{ marginBottom: '8px', fontSize: '13px', fontFamily: uiFont, opacity: 0.7 }}>
-                {userEmail}
-              </p>
-            )}
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '20px' }}>
-              <ModalButton label="📂 Browse Drive" focused onClick={async () => {
-                dismissJustConnected();
-                setTab('browse');
-                const token = await getToken();
-                if (token) loadFiles(token, 'root');
-              }} />
-              <ModalButton label="🔄 Set Up Sync" focused={false} onClick={() => {
-                dismissJustConnected();
-                setTab('sync');
-              }} />
-            </div>
+            <p style={{ marginBottom: '24px', fontSize: '12px', opacity: 0.5, fontFamily: uiFont }}>Reconnect to restore access</p>
+            <ModalButton label={loading ? 'Starting…' : '🔑 Reconnect Google Drive'} focused onClick={startDeviceFlow} />
           </div>
         ) : (
           <>

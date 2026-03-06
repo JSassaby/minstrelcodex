@@ -24,7 +24,7 @@ export default function AppleSignInModal({ visible, onClose }: AppleSignInModalP
 
   const signIn = async () => {
     setLoading(true); setError('');
-    const { error } = await lovable.auth.signInWithOAuth('apple', { redirect_uri: window.location.origin });
+    const { error } = await lovable.auth.signInWithOAuth('apple', { redirect_uri: window.location.origin + '/auth/callback' });
     if (error) { setError(error.message || 'Sign-in failed'); setLoading(false); }
   };
 

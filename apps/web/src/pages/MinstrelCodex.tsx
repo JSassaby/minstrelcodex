@@ -24,6 +24,8 @@ import { useFileStructure } from '@/hooks/useFileStructure';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import ThemePicker from '@/components/minstrel-codex/ThemePicker';
 import { useGoogleToken } from '@/hooks/useGoogleToken';
+import { useAuth } from '@/hooks/useAuth';
+import AuthModal from '@/components/minstrel-codex/AuthModal';
 import { useSyncEngine, GoogleDriveAdapter, db } from '@minstrelcodex/core';
 import { useMusicPlayer } from '@/hooks/useMusicPlayer';
 import { useAccessibility } from '@/hooks/useAccessibility';
@@ -154,6 +156,8 @@ export default function MinstrelCodex() {
   const fileStructure = useFileStructure();
   const theme = useAppTheme();
   const { googleToken, isConnected: googleConnected, clearToken: clearGoogleToken, refreshToken } = useGoogleToken();
+  const auth = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const driveAdapter = useMemo(
     () => (googleToken ? new GoogleDriveAdapter(googleToken) : null),
     [googleToken]
@@ -456,22 +460,6 @@ export default function MinstrelCodex() {
     showToast('Syncing to Google Drive...');
     triggerSync();
   }, [googleToken, triggerSync, showToast]);
-  // Connect to Google Drive via OAuth
-  const connectGoogle = useCallback(async () => {
-    showToast('Connecting to Google Drive...');
-    const { lovable } = await import('@/integrations/lovable/index');
-    const { error } = await lovable.auth.signInWithOAuth('google', {
-      redirect_uri: window.location.origin,
-      extraParams: {
-        scope: 'https://www.googleapis.com/auth/drive.file',
-        access_type: 'offline',
-        prompt: 'consent',
-      },
-    });
-    if (error) {
-      showToast(`Google sign-in failed: ${(error as any).message || error}`);
-    }
-  }, [showToast]);
 
   // Execute menu action
   const executeAction = useCallback((action: string) => {
@@ -1259,7 +1247,7 @@ export default function MinstrelCodex() {
           }}
           onConnectGoogle={() => {
             setSettingsPanelOpen(false);
-            connectGoogle();
+            setActiveModal('gdrive');
           }}
           onConnectApple={() => {
             setSettingsPanelOpen(false);
@@ -1713,6 +1701,20 @@ export default function MinstrelCodex() {
       <AppleSignInModal
         visible={activeModal === 'apple-signin'}
         onClose={closeModal}
+      />
+
+      {/* Email/Password Auth Modal */}
+      <AuthModal
+        visible={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSignIn={async (email, password) => {
+          const { error } = await auth.signIn(email, password);
+          return { error: error ? { message: error.message } : null };
+        }}
+        onSignUp={async (email, password) => {
+          const { error } = await auth.signUp(email, password);
+          return { error: error ? { message: error.message } : null };
+        }}
       />
 
       {/* Export Modal */}
