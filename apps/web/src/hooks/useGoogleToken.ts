@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-
+import { supabase } from '@/integrations/supabase/client';
 const ACCESS_KEY = 'mc-drive-access-token';
 const REFRESH_KEY = 'mc-drive-refresh-token';
 
@@ -34,9 +34,14 @@ export function useGoogleToken() {
     const stored = localStorage.getItem(REFRESH_KEY);
     if (!stored) return null;
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
       const res = await fetch(DEVICE_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ action: 'refresh-token', refreshToken: stored }),
       });
       const data = await res.json();

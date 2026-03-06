@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,10 +9,52 @@ const corsHeaders = {
 const DRIVE_API = 'https://www.googleapis.com/drive/v3';
 const UPLOAD_API = 'https://www.googleapis.com/upload/drive/v3';
 
+// Validate Google Drive IDs (alphanumeric, hyphens, underscores, or 'root')
+function isValidDriveId(id: string | undefined | null): boolean {
+  if (!id) return true; // optional fields
+  return id === 'root' || /^[a-zA-Z0-9_-]+$/.test(id);
+}
+
+// Validate folder/file names (reject path traversal and control chars)
+function isValidName(name: string | undefined | null): boolean {
+  if (!name) return true;
+  return name.length <= 255 && !/[\/\\\x00-\x1f]/.test(name);
+}
+
+async function verifySupabaseUser(req: Request): Promise<Response | null> {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  return null; // authenticated
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Verify Supabase JWT
+  const authError = await verifySupabaseUser(req);
+  if (authError) return authError;
 
   try {
     const { action, googleToken, fileId, folderId, fileName, folderName, content, mimeType, parentId } = await req.json();
@@ -21,6 +64,26 @@ serve(async (req) => {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // Validate all Drive IDs
+    for (const [name, value] of [['fileId', fileId], ['folderId', folderId], ['parentId', parentId]] as const) {
+      if (value && !isValidDriveId(value as string)) {
+        return new Response(JSON.stringify({ error: `Invalid ${name}` }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // Validate names
+    for (const [name, value] of [['fileName', fileName], ['folderName', folderName]] as const) {
+      if (value && !isValidName(value as string)) {
+        return new Response(JSON.stringify({ error: `Invalid ${name}` }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     const authHeaders = {
@@ -177,7 +240,7 @@ serve(async (req) => {
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
     console.error('Google Drive error:', msg);
-    return new Response(JSON.stringify({ error: msg }), {
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

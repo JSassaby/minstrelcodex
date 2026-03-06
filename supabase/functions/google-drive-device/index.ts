@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,22 +8,51 @@ const corsHeaders = {
 
 const SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
+async function verifySupabaseUser(req: Request): Promise<Response | null> {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  return null;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+
+  // Verify Supabase JWT
+  const authError = await verifySupabaseUser(req);
+  if (authError) return authError;
 
   const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
   const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET');
 
   if (!clientId || !clientSecret) {
     return new Response(JSON.stringify({
-      error: 'Google OAuth credentials not configured. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET as Supabase secrets.',
+      error: 'Google OAuth credentials not configured.',
     }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 
   try {
     const { action, deviceCode, refreshToken } = await req.json();
 
-    // Step 1: request a device code + user code from Google
     if (action === 'request-code') {
       const res = await fetch('https://oauth2.googleapis.com/device/code', {
         method: 'POST',
@@ -35,13 +65,11 @@ serve(async (req) => {
           status: res.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      // Returns: device_code, user_code, verification_url, expires_in, interval
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Step 2: poll until user completes authorization
     if (action === 'poll-token') {
       if (!deviceCode) {
         return new Response(JSON.stringify({ error: 'deviceCode required' }), {
@@ -59,17 +87,11 @@ serve(async (req) => {
         }),
       });
       const data = await res.json();
-      // Possible responses:
-      //   data.error === 'authorization_pending' → keep polling
-      //   data.error === 'slow_down' → increase poll interval
-      //   data.error === 'access_denied' → user denied
-      //   data.access_token → success
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Step 3 (ongoing): refresh an expired access token using the stored refresh token
     if (action === 'refresh-token') {
       if (!refreshToken) {
         return new Response(JSON.stringify({ error: 'refreshToken required' }), {
@@ -97,7 +119,7 @@ serve(async (req) => {
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: msg }), {
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

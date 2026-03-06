@@ -25,6 +25,7 @@ import { useAppTheme } from '@/hooks/useAppTheme';
 import ThemePicker from '@/components/minstrel-codex/ThemePicker';
 import { useGoogleToken } from '@/hooks/useGoogleToken';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import AuthModal from '@/components/minstrel-codex/AuthModal';
 import { useSyncEngine, GoogleDriveAdapter, db } from '@minstrelcodex/core';
 import { useMusicPlayer } from '@/hooks/useMusicPlayer';
@@ -158,9 +159,13 @@ export default function MinstrelCodex() {
   const { googleToken, isConnected: googleConnected, clearToken: clearGoogleToken, refreshToken } = useGoogleToken();
   const auth = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const getSupabaseToken = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token ?? null;
+  }, []);
   const driveAdapter = useMemo(
-    () => (googleToken ? new GoogleDriveAdapter(googleToken) : null),
-    [googleToken]
+    () => (googleToken ? new GoogleDriveAdapter(googleToken, 'root', getSupabaseToken) : null),
+    [googleToken, getSupabaseToken]
   );
   const { syncStatus, lastSyncTime: syncLastTime, triggerSync } = useSyncEngine(driveAdapter, {
     onTokenExpired: () => { refreshToken(); },
