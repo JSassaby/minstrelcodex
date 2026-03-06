@@ -221,8 +221,9 @@ export default function GoogleDriveModal({
     const name = currentFilename || 'Untitled.html';
     setStatus(`Uploading ${name} to ${breadcrumbs[breadcrumbs.length - 1].name}…`);
     try {
+      const authH = await getAuthHeaders();
       const res = await fetch(FUNCTION_URL, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: authH,
         body: JSON.stringify({
           action: 'upload', googleToken: token, fileName: name, content: currentContent,
           mimeType: 'text/html', parentId: currentFolderId === 'root' ? undefined : currentFolderId,
