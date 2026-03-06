@@ -3,10 +3,12 @@ import { useGoogleToken } from '@/hooks/useGoogleToken';
 import ModalShell, { ModalButton } from './ModalShell';
 
 const DEVICE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-drive-device`;
-
-function getAuthHeaders(): Record<string, string> {
-  return { 'Content-Type': 'application/json' };
-}
+// All edge function calls require an Authorization header (Supabase gateway enforces this).
+// The anon key is sufficient — Drive connection does not require user sign-in.
+const EDGE_HEADERS = {
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+};
 
 const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
 
@@ -64,14 +66,9 @@ export default function GoogleDriveModal({
 
   const currentFolderId = breadcrumbs[breadcrumbs.length - 1]?.id || 'root';
 
-  // Get a valid token — try stored, then try refresh
-  const getToken = async (): Promise<string | null> => {
-    if (googleToken) return googleToken;
-    const refreshed = await refreshToken();
-    if (refreshed) return refreshed;
-    setNeedsReauth(true);
-    return null;
-  };
+  // Return the stored token, or null — no side effects, no network calls.
+  // Token expiry is handled by 401 responses in loadFiles → clearToken → needsReauth.
+  const getToken = (): string | null => googleToken;
 
   const cancelDeviceFlow = () => {
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
@@ -82,9 +79,9 @@ export default function GoogleDriveModal({
   const startDeviceFlow = async () => {
     setLoading(true); setError(''); setNeedsReauth(false);
     try {
-      const authH = getAuthHeaders();
       const res = await fetch(DEVICE_URL, {
-        method: 'POST', headers: authH,
+        method: 'POST',
+        headers: EDGE_HEADERS,
         body: JSON.stringify({ action: 'request-code' }),
       });
       const data = await res.json();
@@ -103,9 +100,9 @@ export default function GoogleDriveModal({
       const intervalMs = (data.interval || 5) * 1000;
       pollRef.current = setInterval(async () => {
         try {
-          const pollHeaders = getAuthHeaders();
           const pollRes = await fetch(DEVICE_URL, {
-            method: 'POST', headers: pollHeaders,
+            method: 'POST',
+            headers: EDGE_HEADERS,
             body: JSON.stringify({ action: 'poll-token', deviceCode: data.device_code }),
           });
           const pollData = await pollRes.json();
@@ -129,18 +126,14 @@ export default function GoogleDriveModal({
     setLoading(false);
   };
 
-  // When modal opens and we're connected, load files
+  // When modal opens and a token exists, load files — explicit null guard, no network call otherwise
   useEffect(() => {
-    if (visible && isConnected && !justConnectedLocal) {
-      setBreadcrumbs([{ id: 'root', name: 'My Drive' }]);
-      setError(''); setStatus(''); setNeedsReauth(false);
-      setTab('browse');
-      (async () => {
-        const token = await getToken();
-        if (token) loadFiles(token, 'root');
-      })();
-    }
-  }, [visible, isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!visible || !googleToken || justConnectedLocal) return;
+    setBreadcrumbs([{ id: 'root', name: 'My Drive' }]);
+    setError(''); setStatus(''); setNeedsReauth(false);
+    setTab('browse');
+    loadFiles(googleToken, 'root');
+  }, [visible, googleToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Clean up poll interval when modal closes
   useEffect(() => {
@@ -150,9 +143,8 @@ export default function GoogleDriveModal({
   const loadFiles = async (token: string, folderId: string) => {
     setLoading(true); setError('');
     try {
-      const authH = getAuthHeaders();
       const res = await fetch(FUNCTION_URL, {
-        method: 'POST', headers: authH,
+        method: 'POST', headers: EDGE_HEADERS,
         body: JSON.stringify({ action: 'list', googleToken: token, folderId }),
       });
       const data = await res.json();
@@ -178,27 +170,26 @@ export default function GoogleDriveModal({
     setLoading(false);
   };
 
-  const navigateToFolder = async (folder: DriveFile) => {
+  const navigateToFolder = (folder: DriveFile) => {
     setBreadcrumbs(prev => [...prev, { id: folder.id, name: folder.name }]);
-    const token = await getToken();
+    const token = getToken();
     if (token) loadFiles(token, folder.id);
   };
 
-  const navigateToBreadcrumb = async (idx: number) => {
+  const navigateToBreadcrumb = (idx: number) => {
     const target = breadcrumbs[idx];
     setBreadcrumbs(prev => prev.slice(0, idx + 1));
-    const token = await getToken();
+    const token = getToken();
     if (token) loadFiles(token, target.id);
   };
 
   const downloadFile = async (file: DriveFile) => {
-    const token = await getToken();
+    const token = getToken();
     if (!token) return;
     setLoading(true); setStatus(`Downloading ${file.name}…`);
     try {
-      const authH = getAuthHeaders();
       const res = await fetch(FUNCTION_URL, {
-        method: 'POST', headers: authH,
+        method: 'POST', headers: EDGE_HEADERS,
         body: JSON.stringify({ action: 'download', googleToken: token, fileId: file.id }),
       });
       const data = await res.json();
@@ -209,15 +200,14 @@ export default function GoogleDriveModal({
   };
 
   const uploadFile = async () => {
-    const token = await getToken();
+    const token = getToken();
     if (!token || !currentContent) return;
     setLoading(true);
     const name = currentFilename || 'Untitled.html';
     setStatus(`Uploading ${name} to ${breadcrumbs[breadcrumbs.length - 1].name}…`);
     try {
-      const authH = getAuthHeaders();
       const res = await fetch(FUNCTION_URL, {
-        method: 'POST', headers: authH,
+        method: 'POST', headers: EDGE_HEADERS,
         body: JSON.stringify({
           action: 'upload', googleToken: token, fileName: name, content: currentContent,
           mimeType: 'text/html', parentId: currentFolderId === 'root' ? undefined : currentFolderId,
@@ -233,13 +223,12 @@ export default function GoogleDriveModal({
   };
 
   const createFolder = async () => {
-    const token = await getToken();
+    const token = getToken();
     if (!token || !newFolderName.trim()) return;
     setLoading(true);
     try {
-      const authH = getAuthHeaders();
       const res = await fetch(FUNCTION_URL, {
-        method: 'POST', headers: authH,
+        method: 'POST', headers: EDGE_HEADERS,
         body: JSON.stringify({
           action: 'create-folder', googleToken: token, folderName: newFolderName.trim(),
           parentId: currentFolderId === 'root' ? undefined : currentFolderId,
@@ -319,10 +308,10 @@ export default function GoogleDriveModal({
                   Connected to Google Drive
                 </p>
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <ModalButton label="📂 Browse Drive" focused onClick={async () => {
+                  <ModalButton label="📂 Browse Drive" focused onClick={() => {
                     setJustConnectedLocal(false);
                     setTab('browse');
-                    const token = await getToken();
+                    const token = getToken();
                     if (token) loadFiles(token, 'root');
                   }} />
                   <ModalButton label="🔄 Set Up Sync" focused={false} onClick={() => {
@@ -511,7 +500,7 @@ export default function GoogleDriveModal({
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                       <ModalButton label="📤 Upload here" focused={false} onClick={uploadFile} />
                       <ModalButton label="📁 New folder" focused={false} onClick={() => { setShowNewFolder(!showNewFolder); setNewFolderName(''); }} />
-                      <ModalButton label="🔄 Refresh" focused={false} onClick={async () => { const t = await getToken(); if (t) loadFiles(t, currentFolderId); }} />
+                      <ModalButton label="🔄 Refresh" focused={false} onClick={() => { const t = getToken(); if (t) loadFiles(t, currentFolderId); }} />
                     </div>
                   </>
                 )}

@@ -35,7 +35,10 @@ export function useGoogleToken() {
     try {
       const res = await fetch(DEVICE_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
         body: JSON.stringify({ action: 'refresh-token', refreshToken: stored }),
       });
       const data = await res.json();

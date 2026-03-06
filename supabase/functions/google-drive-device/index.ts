@@ -10,6 +10,14 @@ const SCOPE = 'https://www.googleapis.com/auth/drive.file';
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
+  // Accept Authorization: Bearer <jwt|anon-key> or apikey: <anon-key>
+  const authHeader = req.headers.get('authorization') || req.headers.get('apikey');
+  if (!authHeader) {
+    return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
   const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET');
 
