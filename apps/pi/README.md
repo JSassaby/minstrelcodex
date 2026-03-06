@@ -1,75 +1,65 @@
-# Minstrel Codex — Raspberry Pi 5 Kiosk
+# Minstrel Codex — Pi Setup
 
-Offline kiosk setup for Raspberry Pi OS Lite (64-bit).
-The app runs entirely locally — no internet required after setup.
-
----
-
-## Hardware
-
+## What you need
 - Raspberry Pi 5
-- MicroSD card (16 GB+)
-- USB drive (for transferring builds)
-- HDMI display + keyboard (for initial setup only)
+- SD card with Pi OS Lite (64-bit) installed
+- USB drive with the minstrelapp/ folder copied to it
+- Keyboard and monitor plugged into the Pi
 
 ---
 
-## Initial Pi OS Configuration
+## Step 1 — Copy the app to the Pi
 
-Flash **Raspberry Pi OS Lite (64-bit)** to the SD card using Raspberry Pi Imager.
-
-Before first boot, use the Imager's "Advanced options" (gear icon) to set:
-- **Username**: `pi_experiments`
-- **Password**: *(your choice)*
-- **SSH**: enabled (optional, useful for remote setup)
-- **Locale / timezone**: as appropriate
-
-Boot and log in as `pi_experiments`.
-
----
-
-## Step 1 — One-time system setup
-
-Run `setup.sh` once on the Pi. This installs X, Openbox, Chromium, nvm, Node 20, and `serve`.
+Plug your USB drive into the Pi.
+Then type this and press Enter:
 
 ```bash
-sudo bash apps/pi/setup.sh
+mkdir -p ~/minstrelapp && cp -r /media/pi_experiments/*/dist/* ~/minstrelapp/
 ```
-
-> You can transfer `apps/pi/` to the Pi via USB or SCP.
 
 ---
 
-## Step 2 — Build the app (on your dev machine)
+## Step 2 — Run setup (takes about 10 minutes)
+
+Type this and press Enter:
 
 ```bash
-npm run build:pi
+curl -fsSL https://raw.githubusercontent.com/JSassaby/minstrelcodex/main/apps/pi/setup.sh | bash
 ```
 
-This builds `apps/web` and prints a reminder to copy `apps/web/dist/` to the USB drive.
-
-Copy the **contents** of `apps/web/dist/` to the **root** of a USB drive
-(so `index.html` is at the drive root, not inside a `dist/` subfolder).
+Wait for it to finish. You'll see a message that says **"✓ Minstrel Codex is ready!"** when it's done.
 
 ---
 
-## Step 3 — Install on the Pi
+## Step 3 — Test it
 
-Plug the USB drive into the Pi, then:
+Before rebooting, make sure everything works by typing:
 
 ```bash
-sudo bash apps/pi/install.sh
+~/kiosk.sh
 ```
 
-This will:
-1. Detect the USB drive (looks for `index.html` under `/media/usb*`)
-2. Copy the app to `/home/pi_experiments/minstrel-codex/`
-3. Install and enable a `systemd` service that serves the app on port 3000
-4. Configure autologin on tty1
-5. Configure `.bash_profile` to run `startx` on tty1
-6. Configure Openbox to launch Chromium in kiosk mode at `http://localhost:3000`
+The app should open in fullscreen. Press **Alt+F4** to close it and go back to the terminal.
 
-Reboot to start the kiosk:
+---
+
+## Step 4 — Reboot
+
+Once you're happy it works, type:
+
+```bash
+sudo reboot
+```
+
+The Pi will restart and boot straight into the app. You're done!
+
+---
+
+## Updating the app
+
+When you have a new version, copy the new files to the Pi the same way as Step 1 — just plug in the USB drive and run the same copy command. No need to run setup again.
+
+If the app doesn't update on screen, reboot the Pi:
 
 ```bash
 sudo reboot
@@ -77,68 +67,14 @@ sudo reboot
 
 ---
 
-## Updating the app
+## Something went wrong?
 
-Build a new version on your dev machine:
+**The app didn't open after reboot**
+Try running `~/kiosk.sh` from the terminal to see any error messages.
 
-```bash
-npm run build:pi
-```
+**The copy command in Step 1 didn't work**
+Your USB drive might be mounted at a different path. Run `ls /media/pi_experiments/` to see what's there, then adjust the path.
 
-Copy `apps/web/dist/` contents to a USB drive root, plug it into the Pi, then:
-
-```bash
-sudo bash apps/pi/update.sh
-```
-
-The service restarts automatically. If the browser does not refresh, reboot: `sudo reboot`
-
----
-
-## Connecting to the Pi
-
-The Pi has no hostname configured. Find its IP address:
-
-- Check your router's DHCP client list, **or**
-- On the Pi: `hostname -I`
-
-SSH (if enabled): `ssh pi_experiments@<IP>`
-
----
-
-## Services
-
-| Service | Description |
-|---|---|
-| `minstrel-codex` | Serves the app on `http://localhost:3000` |
-
-```bash
-sudo systemctl status minstrel-codex
-sudo journalctl -u minstrel-codex -f
-sudo systemctl restart minstrel-codex
-```
-
----
-
-## Troubleshooting
-
-**Blank screen after boot**
-Check autologin and `.bash_profile`:
-```bash
-cat /etc/systemd/system/getty@tty1.service.d/autologin.conf
-cat ~/.bash_profile
-```
-
-**Chromium shows "connection refused"**
-```bash
-sudo systemctl status minstrel-codex
-```
-
-**USB drive not detected**
-`usbmount` mounts drives to `/media/usb0`, `/media/usb1`, etc. Verify:
-```bash
-ls /media/
-```
-
-**Exit kiosk**
-Press `Alt+F4` to close Chromium, or SSH in and run `sudo systemctl stop minstrel-codex`.
+**You need to get back to the terminal**
+SSH into the Pi from another computer: `ssh pi_experiments@<Pi's IP address>`
+To find the IP, plug in a keyboard and type `hostname -I`.
