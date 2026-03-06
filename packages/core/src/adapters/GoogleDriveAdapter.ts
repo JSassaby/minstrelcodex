@@ -1,4 +1,5 @@
 import type { CloudAdapter, RemoteFile } from './CloudAdapter';
+import { TokenExpiredError } from './CloudAdapter';
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-drive`;
 
@@ -17,8 +18,8 @@ export class GoogleDriveAdapter implements CloudAdapter {
   private token: string | null;
   private folderId: string;
 
-  // Cache of localId → driveFileId, loaded lazily on first list()
   private driveFileMap: Map<string, string> = new Map();
+  private folderIdCache: Map<string, string> = new Map();
   private listed = false;
 
   constructor(token: string | null, folderId = 'root') {
@@ -30,88 +31,106 @@ export class GoogleDriveAdapter implements CloudAdapter {
     return !!this.token;
   }
 
+  private async edgeFetch(body: Record<string, unknown>): Promise<Response> {
+    const res = await fetch(FUNCTION_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...body, googleToken: this.token }),
+    });
+    if (res.status === 401) throw new TokenExpiredError();
+    return res;
+  }
+
+  private async listFolder(
+    parentId: string,
+    prefix: string,
+    result: Map<string, RemoteFile>
+  ): Promise<void> {
+    const res = await this.edgeFetch({ action: 'list', folderId: parentId });
+    if (!res.ok) return;
+    const data = await res.json() as { files?: DriveFile[] };
+    for (const f of data.files ?? []) {
+      if (f.mimeType === 'application/vnd.google-apps.folder') {
+        const folderPath = prefix ? prefix + f.name : f.name;
+        this.folderIdCache.set(folderPath, f.id);
+        await this.listFolder(f.id, folderPath + '/', result);
+      } else {
+        const localId = prefix + f.name;
+        this.driveFileMap.set(localId, f.id);
+        result.set(localId, {
+          id: f.id,
+          name: localId,
+          modifiedTime: new Date(f.modifiedTime).getTime(),
+        });
+      }
+    }
+  }
+
   async list(): Promise<Map<string, RemoteFile>> {
     if (!this.token) return new Map();
-
-    let files: DriveFile[] = [];
-    try {
-      const res = await fetch(FUNCTION_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'list', googleToken: this.token, folderId: this.folderId }),
-      });
-      if (!res.ok) return new Map();
-      const data = await res.json() as { files?: DriveFile[] };
-      files = data.files ?? [];
-    } catch {
-      return new Map();
-    }
-
-    // Rebuild driveFileMap from live listing
     this.driveFileMap.clear();
+    this.folderIdCache.clear();
     const result = new Map<string, RemoteFile>();
-    for (const f of files) {
-      // Drive file name IS the local doc ID
-      this.driveFileMap.set(f.name, f.id);
-      result.set(f.name, {
-        id: f.id,
-        name: f.name,
-        modifiedTime: new Date(f.modifiedTime).getTime(),
-      });
-    }
+    await this.listFolder(this.folderId, '', result);
     this.listed = true;
     return result;
   }
 
   async pull(remoteId: string): Promise<string | null> {
     if (!this.token) return null;
-    try {
-      const res = await fetch(FUNCTION_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'download', googleToken: this.token, fileId: remoteId }),
-      });
-      if (!res.ok) return null;
-      const data = await res.json() as { content?: string };
-      return data.content ?? null;
-    } catch {
-      return null;
-    }
+    const res = await this.edgeFetch({ action: 'download', fileId: remoteId });
+    if (!res.ok) return null;
+    const data = await res.json() as { content?: string };
+    return data.content ?? null;
   }
 
-  async push(localId: string, content: string, remoteId?: string): Promise<string | null> {
+  private async ensureFolderPath(parts: string[]): Promise<string> {
+    let currentParentId = this.folderId;
+    let currentPath = '';
+    for (const part of parts) {
+      currentPath = currentPath ? currentPath + '/' + part : part;
+      if (this.folderIdCache.has(currentPath)) {
+        currentParentId = this.folderIdCache.get(currentPath)!;
+        continue;
+      }
+      const res = await this.edgeFetch({ action: 'create-folder', folderName: part, parentId: currentParentId });
+      if (res.ok) {
+        const data = await res.json() as { folder?: { id?: string } };
+        const fid = data.folder?.id;
+        if (fid) {
+          this.folderIdCache.set(currentPath, fid);
+          currentParentId = fid;
+        }
+      }
+    }
+    return currentParentId;
+  }
+
+  async push(localId: string, content: string): Promise<string | null> {
     if (!this.token) return null;
+    if (!this.listed) await this.list();
 
-    // Ensure we have an up-to-date driveFileMap if not already listed
-    if (!this.listed) {
-      await this.list();
-    }
+    const parts = localId.split('/');
+    const fileName = parts.pop()!;
+    const parentId = parts.length > 0
+      ? await this.ensureFolderPath(parts)
+      : this.folderId;
 
-    const existingId = remoteId ?? this.driveFileMap.get(localId);
+    const existingId = this.driveFileMap.get(localId);
+    const body: Record<string, unknown> = {
+      action: 'upload',
+      fileName,
+      content,
+      mimeType: 'text/plain',
+      parentId,
+    };
+    if (existingId) body.fileId = existingId;
 
-    try {
-      const body: Record<string, string> = {
-        action: 'upload',
-        googleToken: this.token,
-        fileName: localId,
-        content,
-        mimeType: 'text/plain',
-        parentId: this.folderId,
-      };
-      if (existingId) body.fileId = existingId;
-
-      const res = await fetch(FUNCTION_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) return null;
-      const data = await res.json() as { file?: { id?: string } };
-      const newId = data.file?.id ?? null;
-      if (newId) this.driveFileMap.set(localId, newId);
-      return newId;
-    } catch {
-      return null;
-    }
+    const res = await this.edgeFetch(body);
+    if (!res.ok) return null;
+    const data = await res.json() as { file?: { id?: string } };
+    const newId = data.file?.id ?? null;
+    if (newId) this.driveFileMap.set(localId, newId);
+    return newId;
   }
 }

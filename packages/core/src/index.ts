@@ -18,6 +18,7 @@ export type { DocumentRecord, FileStructureRecord, RecentFileRecord, PreferenceR
 
 // Cloud adapters
 export type { CloudAdapter, RemoteFile } from './adapters/CloudAdapter';
+export { TokenExpiredError } from './adapters/CloudAdapter';
 export { GoogleDriveAdapter } from './adapters/GoogleDriveAdapter';
 
 // Sync engine

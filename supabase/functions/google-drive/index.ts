@@ -29,23 +29,26 @@ serve(async (req) => {
 
     switch (action) {
       case 'list': {
-        // List files and folders in a specific parent (or root)
         const parent = folderId || 'root';
-        const q = encodeURIComponent(
-          `'${parent}' in parents and trashed = false`
-        );
-        const res = await fetch(
-          `${DRIVE_API}/files?q=${q}&fields=files(id,name,mimeType,modifiedTime,size,parents)&orderBy=folder,name&pageSize=100`,
-          { headers: authHeaders }
-        );
-        const data = await res.json();
-        if (!res.ok) {
-          return new Response(JSON.stringify({ error: data.error?.message || 'Failed to list files' }), {
-            status: res.status,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        return new Response(JSON.stringify({ files: data.files || [] }), {
+        const q = encodeURIComponent(`'${parent}' in parents and trashed = false`);
+        const fields = encodeURIComponent('nextPageToken,files(id,name,mimeType,modifiedTime,size,parents)');
+        const allFiles: unknown[] = [];
+        let pageToken: string | undefined;
+        do {
+          let url = `${DRIVE_API}/files?q=${q}&fields=${fields}&orderBy=folder,name&pageSize=1000`;
+          if (pageToken) url += `&pageToken=${encodeURIComponent(pageToken)}`;
+          const res = await fetch(url, { headers: authHeaders });
+          const data = await res.json();
+          if (!res.ok) {
+            return new Response(JSON.stringify({ error: data.error?.message || 'Failed to list files' }), {
+              status: res.status,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          allFiles.push(...(data.files || []));
+          pageToken = data.nextPageToken;
+        } while (pageToken);
+        return new Response(JSON.stringify({ files: allFiles }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }

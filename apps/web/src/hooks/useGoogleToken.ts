@@ -71,8 +71,7 @@ export function useGoogleToken() {
     return null;
   }, []);
 
-  // Connected if we have a token, OR if user has Google identity (token may just need refresh)
-  const isConnected = !!googleToken || hasGoogleIdentity;
+  const isConnected = !!googleToken;
 
   return { googleToken, isConnected, clearToken, justConnected, dismissJustConnected, userEmail, hasGoogleIdentity, refreshToken };
 }

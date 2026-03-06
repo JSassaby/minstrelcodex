@@ -1,18 +1,25 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { db, docsCache } from '../db';
 import type { CloudAdapter } from '../adapters/CloudAdapter';
+import { TokenExpiredError } from '../adapters/CloudAdapter';
 
 export type SyncStatus = 'synced' | 'syncing' | 'error' | 'offline' | 'disconnected';
 
 const PUSH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
-export function useSyncEngine(adapter: CloudAdapter | null) {
+interface SyncEngineOptions {
+  onTokenExpired?: () => void;
+}
+
+export function useSyncEngine(adapter: CloudAdapter | null, options: SyncEngineOptions = {}) {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('disconnected');
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
-  // Stable ref so interval/callbacks never need to re-bind
   const adapterRef = useRef<CloudAdapter | null>(adapter);
   useEffect(() => { adapterRef.current = adapter; }, [adapter]);
+
+  const onTokenExpiredRef = useRef(options.onTokenExpired);
+  useEffect(() => { onTokenExpiredRef.current = options.onTokenExpired; }, [options.onTokenExpired]);
 
   const performSync = useCallback(async (direction: 'pull' | 'push' | 'both') => {
     const a = adapterRef.current;
@@ -28,6 +35,8 @@ export function useSyncEngine(adapter: CloudAdapter | null) {
     setSyncStatus('syncing');
 
     try {
+      const updatedIds: string[] = [];
+
       // ── Pull: remote wins if remote is newer ────────────────────────
       if (direction === 'pull' || direction === 'both') {
         const remoteFiles = await a.list();
@@ -47,8 +56,15 @@ export function useSyncEngine(adapter: CloudAdapter | null) {
                 lastModified,
                 syncStatus: 'synced',
               });
+              updatedIds.push(localId);
             }
           }
+        }
+
+        if (updatedIds.length > 0) {
+          window.dispatchEvent(
+            new CustomEvent('minstrel:remote-pull', { detail: { updatedIds } })
+          );
         }
       }
 
@@ -67,6 +83,11 @@ export function useSyncEngine(adapter: CloudAdapter | null) {
       setSyncStatus('synced');
       setLastSyncTime(new Date());
     } catch (err) {
+      if (err instanceof TokenExpiredError) {
+        setSyncStatus('error');
+        onTokenExpiredRef.current?.();
+        return;
+      }
       console.error('[useSyncEngine] sync error:', err);
       setSyncStatus('error');
     }
@@ -78,12 +99,12 @@ export function useSyncEngine(adapter: CloudAdapter | null) {
     performSync('both');
   }, []); // run once on mount
 
-  // Every 5 minutes: push pending
+  // Every 5 minutes: push pending — restarts when adapter becomes available
   useEffect(() => {
     if (!adapter) return;
     const interval = setInterval(() => performSync('push'), PUSH_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, []); // stable — reads from adapterRef
+  }, [adapter]); // re-run when adapter changes so interval is set up when token loads
 
   // React to adapter connection changes
   useEffect(() => {

@@ -1,30 +1,30 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import BootScreen from '@/components/private-writer/BootScreen';
-import Editor from '@/components/private-writer/Editor';
-import type { EditorHandle } from '@/components/private-writer/Editor';
-import MenuBar, { MENUS, getSubmenuItems } from '@/components/private-writer/MenuBar';
-import StatusBar from '@/components/private-writer/StatusBar';
-import FileBrowser from '@/components/private-writer/FileBrowser';
-import HelpText from '@/components/private-writer/HelpText';
-import HelpPanel from '@/components/private-writer/HelpPanel';
-import LiveStats from '@/components/private-writer/LiveStats';
-import GoogleDriveModal from '@/components/private-writer/GoogleDriveModal';
-import AppleSignInModal from '@/components/private-writer/AppleSignInModal';
-import NovelProjectWizard from '@/components/private-writer/NovelProjectWizard';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import BootScreen from '@/components/minstrel-codex/BootScreen';
+import Editor from '@/components/minstrel-codex/Editor';
+import type { EditorHandle } from '@/components/minstrel-codex/Editor';
+import MenuBar, { MENUS, getSubmenuItems } from '@/components/minstrel-codex/MenuBar';
+import StatusBar from '@/components/minstrel-codex/StatusBar';
+import FileBrowser from '@/components/minstrel-codex/FileBrowser';
+import HelpText from '@/components/minstrel-codex/HelpText';
+import HelpPanel from '@/components/minstrel-codex/HelpPanel';
+import LiveStats from '@/components/minstrel-codex/LiveStats';
+import GoogleDriveModal from '@/components/minstrel-codex/GoogleDriveModal';
+import AppleSignInModal from '@/components/minstrel-codex/AppleSignInModal';
+import NovelProjectWizard from '@/components/minstrel-codex/NovelProjectWizard';
 // StorageMenu removed — Drive access is now via File menu → Google Drive
-import type { NovelProjectConfig, StorageLocation } from '@/components/private-writer/NovelProjectWizard';
-import ExportModal from '@/components/private-writer/ExportModal';
-import ModalShell, { ModalButton, ModalInput } from '@/components/private-writer/ModalShell';
-import SettingsPanel from '@/components/private-writer/SettingsPanel';
-import MusicPlayer from '@/components/private-writer/MusicPlayer';
+import type { NovelProjectConfig, StorageLocation } from '@/components/minstrel-codex/NovelProjectWizard';
+import ExportModal from '@/components/minstrel-codex/ExportModal';
+import ModalShell, { ModalButton, ModalInput } from '@/components/minstrel-codex/ModalShell';
+import SettingsPanel from '@/components/minstrel-codex/SettingsPanel';
+import MusicPlayer from '@/components/minstrel-codex/MusicPlayer';
 import { t } from '@/lib/languages';
 import { typingPassages } from '@/lib/typingPassages';
 import { useDocumentStorage } from '@/hooks/useDocumentStorage';
 import { useFileStructure } from '@/hooks/useFileStructure';
 import { useAppTheme } from '@/hooks/useAppTheme';
-import ThemePicker from '@/components/private-writer/ThemePicker';
+import ThemePicker from '@/components/minstrel-codex/ThemePicker';
 import { useGoogleToken } from '@/hooks/useGoogleToken';
-import { useSyncEngine, GoogleDriveAdapter } from '@minstrelcodex/core';
+import { useSyncEngine, GoogleDriveAdapter, db } from '@minstrelcodex/core';
 import { useMusicPlayer } from '@/hooks/useMusicPlayer';
 import { useAccessibility } from '@/hooks/useAccessibility';
 import type { ModalType, Language, Difficulty, PinConfig } from '@minstrelcodex/core';
@@ -46,7 +46,7 @@ function ReadingGuide({ opacity }: { opacity: number }) {
 }
 
 
-export default function PrivateWriter() {
+export default function MinstrelCodex() {
   // Core state
   const [booted, setBooted] = useState(false);
   const [language, setLanguage] = useState<Language>(() => {
@@ -153,9 +153,14 @@ export default function PrivateWriter() {
   const docStorage = useDocumentStorage();
   const fileStructure = useFileStructure();
   const theme = useAppTheme();
-  const { googleToken, isConnected: googleConnected, clearToken: clearGoogleToken } = useGoogleToken();
-  const driveAdapter = googleToken ? new GoogleDriveAdapter(googleToken) : null;
-  const { syncStatus, lastSyncTime: syncLastTime, triggerSync } = useSyncEngine(driveAdapter);
+  const { googleToken, isConnected: googleConnected, clearToken: clearGoogleToken, refreshToken } = useGoogleToken();
+  const driveAdapter = useMemo(
+    () => (googleToken ? new GoogleDriveAdapter(googleToken) : null),
+    [googleToken]
+  );
+  const { syncStatus, lastSyncTime: syncLastTime, triggerSync } = useSyncEngine(driveAdapter, {
+    onTokenExpired: () => { refreshToken(); },
+  });
   const editorRef = useRef<EditorHandle>(null);
   const musicPlayer = useMusicPlayer();
   const a11y = useAccessibility();
@@ -183,6 +188,19 @@ export default function PrivateWriter() {
     }
     prevGoogleToken.current = googleToken;
   }, [googleToken, triggerSync]);
+
+  // Reload editor content when remote pull updates the currently open document
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { updatedIds } = (e as CustomEvent<{ updatedIds: string[] }>).detail;
+      const currentId = docStorage.currentDocument.filename;
+      if (currentId && updatedIds.includes(currentId)) {
+        docStorage.loadDocument(currentId);
+      }
+    };
+    window.addEventListener('minstrel:remote-pull', handler);
+    return () => window.removeEventListener('minstrel:remote-pull', handler);
+  }, [docStorage]);
 
   // Sync WiFi with real navigator.onLine
   useEffect(() => {
@@ -429,37 +447,15 @@ export default function PrivateWriter() {
 
   // (showToast declared earlier, before voice/tts functions)
 
-  // Google Drive sync helper
+  // Google Drive sync helper — delegates to useSyncEngine
   const syncToGoogleDrive = useCallback(async () => {
     if (!googleToken) {
       showToast('Connect Google Drive first (STORAGE menu)');
       return;
     }
-    const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-drive`;
-    const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
-    const entries = Object.entries(docs);
-    if (entries.length === 0) {
-      showToast('No files to sync.');
-      return;
-    }
-    showToast(`Syncing ${entries.length} files to Google Drive...`);
-    let uploaded = 0;
-    let failed = 0;
-    for (const [filePath, fileData] of entries) {
-      try {
-        const content = (fileData as any).content || ' ';
-        const fileName = filePath.replace(/\//g, ' - ');
-        const res = await fetch(FUNCTION_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'upload', googleToken, fileName, content, mimeType: 'text/plain' }),
-        });
-        if (res.ok) uploaded++;
-        else failed++;
-      } catch { failed++; }
-    }
-    showToast(failed > 0 ? `${uploaded} synced, ${failed} failed.` : `✓ ${uploaded} files synced to Google Drive`);
-  }, [googleToken, showToast]);
+    showToast('Syncing to Google Drive...');
+    triggerSync();
+  }, [googleToken, triggerSync, showToast]);
   // Connect to Google Drive via OAuth
   const connectGoogle = useCallback(async () => {
     showToast('Connecting to Google Drive...');
@@ -1682,7 +1678,7 @@ export default function PrivateWriter() {
         currentContent={editorContent}
         currentFilename={docStorage.currentDocument.filename}
         localFolders={fileStructure.getFolders()}
-        onSyncFolder={async (folderPath, driveFolderId, driveFolderName) => {
+        onSyncFolder={async (folderPath, _driveFolderId, driveFolderName) => {
           if (!googleToken) {
             showToast('Connect Google Drive first');
             return;
@@ -1693,25 +1689,20 @@ export default function PrivateWriter() {
             return;
           }
           showToast(`Syncing ${files.length} files to ${driveFolderName}…`);
-          const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-drive`;
-          const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
+          const docs = await db.documents.where('id').anyOf(files).toArray();
+          const adapter = driveAdapter;
+          if (!adapter) return;
           let uploaded = 0;
           let failed = 0;
-          for (const filePath of files) {
+          for (const doc of docs) {
             try {
-              const content = docs[filePath]?.content || ' ';
-              const fileName = filePath.split('/').pop() || filePath;
-              const res = await fetch(FUNCTION_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  action: 'upload', googleToken, fileName, content,
-                  mimeType: 'text/plain',
-                  parentId: driveFolderId === 'root' ? undefined : driveFolderId,
-                }),
-              });
-              if (res.ok) uploaded++;
-              else failed++;
+              const remoteId = await adapter.push(doc.id, doc.content);
+              if (remoteId !== null) {
+                await db.documents.update(doc.id, { syncStatus: 'synced' });
+                uploaded++;
+              } else {
+                failed++;
+              }
             } catch { failed++; }
           }
           showToast(failed > 0 ? `${uploaded} synced, ${failed} failed.` : `✓ ${uploaded} files synced to ${driveFolderName}`);
@@ -1811,32 +1802,27 @@ export default function PrivateWriter() {
           setNovelWizardOpen(false);
 
           if (config.storageLocation === 'google-drive') {
-            if (!googleToken) {
+            if (!driveAdapter) {
               showToast(`Project created locally. Connect Google Drive via STORAGE menu to sync.`);
               return;
             }
-
             showToast(`Uploading "${config.title}" to Google Drive...`);
-            const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-drive`;
-            const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
-            const projectFiles = Object.entries(docs).filter(([key]) => key.startsWith(config.title + '/'));
-
+            const projectDocs = await db.documents
+              .filter(d => d.id.startsWith(config.title + '/'))
+              .toArray();
             let uploaded = 0;
             let failed = 0;
-            for (const [filePath, fileData] of projectFiles) {
+            for (const doc of projectDocs) {
               try {
-                const content = (fileData as any).content || ' ';
-                const fileName = filePath.replace(/\//g, ' - ');
-                const res = await fetch(FUNCTION_URL, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ action: 'upload', googleToken, fileName, content, mimeType: 'text/plain' }),
-                });
-                if (res.ok) uploaded++;
-                else failed++;
+                const remoteId = await driveAdapter.push(doc.id, doc.content);
+                if (remoteId !== null) {
+                  await db.documents.update(doc.id, { syncStatus: 'synced' });
+                  uploaded++;
+                } else {
+                  failed++;
+                }
               } catch { failed++; }
             }
-
             if (failed > 0) {
               showToast(`Project created. ${uploaded} files uploaded, ${failed} failed.`);
             } else {

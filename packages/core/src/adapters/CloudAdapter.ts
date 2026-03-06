@@ -4,6 +4,13 @@ export interface RemoteFile {
   modifiedTime: number; // unix ms
 }
 
+export class TokenExpiredError extends Error {
+  constructor() {
+    super('Google access token expired');
+    this.name = 'TokenExpiredError';
+  }
+}
+
 export interface CloudAdapter {
   /** Human-readable provider name */
   readonly name: string;
