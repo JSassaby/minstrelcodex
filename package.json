@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "npm run dev --workspace=apps/web",
     "build": "npm run build --workspace=apps/web",
-    "build:dev": "npm run build --workspace=apps/web"
+    "build:dev": "npm run build --workspace=apps/web",
+    "build:pi": "npm run build --workspace=apps/web && echo 'Build complete. Copy apps/web/dist/ contents to the root of a USB drive, then run: sudo bash apps/pi/install.sh'"
   }
 }
