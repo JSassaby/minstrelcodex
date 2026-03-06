@@ -32,16 +32,9 @@ export class GoogleDriveAdapter implements CloudAdapter {
   }
 
   private async edgeFetch(body: Record<string, unknown>): Promise<Response> {
-    const supabaseToken = await this.getSupabaseToken();
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-    if (supabaseToken) {
-      headers['Authorization'] = `Bearer ${supabaseToken}`;
-    }
     const res = await fetch(FUNCTION_URL, {
       method: 'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...body, googleToken: this.token }),
     });
     if (res.status === 401) throw new TokenExpiredError();
