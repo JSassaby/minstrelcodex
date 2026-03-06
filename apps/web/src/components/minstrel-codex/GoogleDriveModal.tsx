@@ -156,8 +156,9 @@ export default function GoogleDriveModal({
   const loadFiles = async (token: string, folderId: string) => {
     setLoading(true); setError('');
     try {
+      const authH = await getAuthHeaders();
       const res = await fetch(FUNCTION_URL, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: authH,
         body: JSON.stringify({ action: 'list', googleToken: token, folderId }),
       });
       const data = await res.json();
