@@ -158,9 +158,13 @@ export default function MinstrelCodex() {
   const { googleToken, isConnected: googleConnected, clearToken: clearGoogleToken, refreshToken } = useGoogleToken();
   const auth = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const getSupabaseToken = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token ?? null;
+  }, []);
   const driveAdapter = useMemo(
-    () => (googleToken ? new GoogleDriveAdapter(googleToken) : null),
-    [googleToken]
+    () => (googleToken ? new GoogleDriveAdapter(googleToken, 'root', getSupabaseToken) : null),
+    [googleToken, getSupabaseToken]
   );
   const { syncStatus, lastSyncTime: syncLastTime, triggerSync } = useSyncEngine(driveAdapter, {
     onTokenExpired: () => { refreshToken(); },
