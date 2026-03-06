@@ -25,6 +25,7 @@ import { useAppTheme } from '@/hooks/useAppTheme';
 import ThemePicker from '@/components/minstrel-codex/ThemePicker';
 import { useGoogleToken } from '@/hooks/useGoogleToken';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import AuthModal from '@/components/minstrel-codex/AuthModal';
 import { useSyncEngine, GoogleDriveAdapter, db } from '@minstrelcodex/core';
 import { useMusicPlayer } from '@/hooks/useMusicPlayer';
