@@ -1,12 +1,11 @@
 import { useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 const ACCESS_KEY = 'mc-drive-access-token';
 const REFRESH_KEY = 'mc-drive-refresh-token';
 
 const DEVICE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-drive-device`;
 
 /**
- * Manages the Google Drive access token independently of Supabase auth.
+ * Manages the Google Drive access token independently of any auth.
  * Tokens are obtained via the OAuth Device Authorization Flow (RFC 8628)
  * and stored in localStorage. No OAuth redirects — entirely in-app.
  */
@@ -34,14 +33,9 @@ export function useGoogleToken() {
     const stored = localStorage.getItem(REFRESH_KEY);
     if (!stored) return null;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
       const res = await fetch(DEVICE_URL, {
         method: 'POST',
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'refresh-token', refreshToken: stored }),
       });
       const data = await res.json();
