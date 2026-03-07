@@ -30,6 +30,7 @@ interface StatusBarProps {
   sprintWordsWritten?: number;
   onSprintStart?: () => void;
   onSprintTogglePause?: () => void;
+  onStatsClick?: () => void;
 }
 
 function BatteryIcon({ level }: { level: number }) {
@@ -101,7 +102,7 @@ export default function StatusBar({
   onVoiceClick,
   syncStatus, lastSyncTime, onSyncClick,
   sprintActive, sprintPaused, sprintTimeLeft = 0, sprintWordsWritten = 0,
-  onSprintStart, onSprintTogglePause,
+  onSprintStart, onSprintTogglePause, onStatsClick,
 }: StatusBarProps) {
   const displayName = filename ? (filename.split('/').pop() || filename) : t(language, 'status.untitled');
   const words = content.trim() ? content.trim().split(/\s+/).length : 0;
@@ -180,6 +181,17 @@ export default function StatusBar({
           <span style={{ width: '1px', height: '10px', background: 'var(--terminal-border)', opacity: 0.5 }} />
         )}
 
+        {onStatsClick && (
+          <span
+            onClick={onStatsClick}
+            title="Manuscript statistics (Ctrl+Shift+M)"
+            style={{ cursor: 'pointer', opacity: 0.35, letterSpacing: '0.04em' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '0.75'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.35'; }}
+          >
+            STATS
+          </span>
+        )}
         {musicPlaying && (
           <span
             onClick={onMusicClick}

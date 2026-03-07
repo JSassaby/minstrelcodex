@@ -14,7 +14,7 @@ export type {
 
 // Database
 export { db, docsCache, migrateFromLocalStorage } from './db';
-export type { DocumentRecord, FileStructureRecord, RecentFileRecord, PreferenceRecord } from './db';
+export type { DocumentRecord, FileStructureRecord, RecentFileRecord, PreferenceRecord, NoteRecord, WritingStatRecord } from './db';
 
 // Cloud adapters
 export type { CloudAdapter, RemoteFile } from './adapters/CloudAdapter';

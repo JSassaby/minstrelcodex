@@ -28,6 +28,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import AuthModal from '@/components/minstrel-codex/AuthModal';
 import { useSyncEngine, GoogleDriveAdapter, db } from '@minstrelcodex/core';
+import ChapterOverviewPanel from '@/components/minstrel-codex/ChapterOverviewPanel';
+import NotesPanel from '@/components/minstrel-codex/NotesPanel';
+import ManuscriptStatsModal from '@/components/minstrel-codex/ManuscriptStatsModal';
 import { useMusicPlayer } from '@/hooks/useMusicPlayer';
 import { useAccessibility } from '@/hooks/useAccessibility';
 import type { ModalType, Language, Difficulty, PinConfig } from '@minstrelcodex/core';
@@ -150,6 +153,23 @@ export default function MinstrelCodex() {
     JSON.parse(localStorage.getItem('mc-sprint-best') || '{"words":0,"wpm":0}')
   );
 
+  // Feature 5 — Chapter Overview
+  const [chapterOverviewOpen, setChapterOverviewOpen] = useState(false);
+  const [wordCountTarget, setWordCountTarget] = useState(() =>
+    parseInt(localStorage.getItem('mc-word-count-target') || '80000', 10)
+  );
+
+  // Feature 6 — Notes panel
+  const [notesPanelOpen, setNotesPanelOpen] = useState(false);
+
+  // Feature 7 — Manuscript stats
+  const [statsModalOpen, setStatsModalOpen] = useState(false);
+
+  // Writing stats tracking
+  const sessionStartWordsRef = useRef<number | null>(null);
+  const lastTrackedWordsRef = useRef(0);
+  const editorContentRef = useRef(editorContent);
+
   // Font family
   const [fontFamily, setFontFamily] = useState(() => {
     return localStorage.getItem('pw-font-family') || "'Courier Prime', 'Courier New', monospace";
@@ -254,6 +274,33 @@ export default function MinstrelCodex() {
     }
   }, [booted, locked]);
 
+  // Keep editorContentRef in sync (for stable effects)
+  useEffect(() => { editorContentRef.current = editorContent; }, [editorContent]);
+
+  // Writing stats: track words written per day in Dexie (every 30s)
+  useEffect(() => {
+    const countWordsInHtml = (html: string) => {
+      const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      return text ? text.split(' ').filter((w: string) => w.length > 0).length : 0;
+    };
+    const interval = setInterval(async () => {
+      const current = countWordsInHtml(editorContentRef.current);
+      if (sessionStartWordsRef.current === null) {
+        sessionStartWordsRef.current = current;
+        lastTrackedWordsRef.current = current;
+        return;
+      }
+      if (current > lastTrackedWordsRef.current) {
+        const newWords = current - lastTrackedWordsRef.current;
+        lastTrackedWordsRef.current = current;
+        const today = new Date().toISOString().split('T')[0];
+        const existing = await db.writingStats.get(today);
+        db.writingStats.put({ date: today, words: (existing?.words || 0) + newWords }).catch(console.error);
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []); // stable — reads from refs
+
   // Sprint countdown timer
   useEffect(() => {
     if (!sprintActive || sprintPaused) return;
@@ -354,6 +401,15 @@ export default function MinstrelCodex() {
     setToastVisible(true);
     setTimeout(() => setToastVisible(false), 2500);
   }, []);
+
+  // Word count target handler
+  const handleWordCountTargetChange = useCallback((n: number) => {
+    setWordCountTarget(n);
+    localStorage.setItem('mc-word-count-target', String(n));
+  }, []);
+
+  // Current project ID (first path segment of open file)
+  const currentProjectId = docStorage.currentDocument.filename?.split('/')[0] || '';
 
   // Focus mode toggle
   const toggleFocusMode = useCallback(() => {
@@ -887,6 +943,24 @@ export default function MinstrelCodex() {
         return;
       }
 
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'O' || e.key === 'o')) {
+        e.preventDefault();
+        setChapterOverviewOpen(prev => !prev);
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'N' || e.key === 'n')) {
+        e.preventDefault();
+        setNotesPanelOpen(prev => !prev);
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'M' || e.key === 'M')) {
+        e.preventDefault();
+        setStatsModalOpen(true);
+        return;
+      }
+
       // TTS readback: Ctrl+Shift+R
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'R' || e.key === 'r')) {
         e.preventDefault();
@@ -916,6 +990,7 @@ export default function MinstrelCodex() {
     typingPhase, typingBtnIdx, typingDifficulty,
     docStorage, fileStructure, theme, editorContent, executeAction, closeModal,
     toggleVoiceInput, toggleTTS, toggleFocusMode,
+    chapterOverviewOpen, notesPanelOpen,
   ]);
 
   // Menu key handler
@@ -1347,6 +1422,27 @@ export default function MinstrelCodex() {
           onSwitchTheme={(mode) => theme.switchTheme(mode)}
         />
 
+        <ChapterOverviewPanel
+          visible={chapterOverviewOpen && !focusMode}
+          structure={fileStructure.structure}
+          allDocuments={allDocs}
+          currentFilename={docStorage.currentDocument.filename}
+          wordCountTarget={wordCountTarget}
+          onWordCountTargetChange={handleWordCountTargetChange}
+          onOpenFile={(filename) => {
+            const content = docStorage.loadDocument(filename);
+            if (content !== null) { setEditorContent(content); editorRef.current?.setContent(content); }
+          }}
+          onClose={() => setChapterOverviewOpen(false)}
+          getNovelProjects={fileStructure.getNovelProjects}
+        />
+
+        <NotesPanel
+          visible={notesPanelOpen && !focusMode}
+          projectId={currentProjectId}
+          onClose={() => setNotesPanelOpen(false)}
+        />
+
         <FileBrowser
           visible={fileBrowserOpen}
           focused={fileBrowserFocused}
@@ -1475,6 +1571,7 @@ export default function MinstrelCodex() {
           sprintWordsWritten={sprintWordsWritten}
           onSprintStart={() => setSprintSetupOpen(true)}
           onSprintTogglePause={() => setSprintPaused(prev => !prev)}
+          onStatsClick={() => setStatsModalOpen(true)}
         />
       )}
 
@@ -2028,6 +2125,15 @@ export default function MinstrelCodex() {
           <ModalButton label="CANCEL" focused={modalButtonIndex === 2} onClick={closeModal} />
         </div>
       </ModalShell>
+
+      {/* Manuscript Stats Modal */}
+      <ManuscriptStatsModal
+        visible={statsModalOpen}
+        structure={fileStructure.structure}
+        allDocuments={allDocs}
+        wordCountTarget={wordCountTarget}
+        onClose={() => setStatsModalOpen(false)}
+      />
 
       {/* Sprint Setup Modal */}
       <ModalShell visible={sprintSetupOpen} title="⏱ WRITING SPRINT" onClose={() => setSprintSetupOpen(false)}>

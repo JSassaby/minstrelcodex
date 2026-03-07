@@ -22,11 +22,27 @@ export interface PreferenceRecord {
   value: string;
 }
 
+export interface NoteRecord {
+  id: string;
+  projectId: string;
+  type: 'character' | 'place';
+  name: string;
+  description: string;
+  body: string;
+}
+
+export interface WritingStatRecord {
+  date: string; // YYYY-MM-DD — primary key
+  words: number;
+}
+
 class MinstrelDB extends Dexie {
   documents!: Table<DocumentRecord, string>;
   fileStructure!: Table<FileStructureRecord, string>;
   recentFiles!: Table<RecentFileRecord, number>;
   preferences!: Table<PreferenceRecord, string>;
+  notes!: Table<NoteRecord, string>;
+  writingStats!: Table<WritingStatRecord, string>;
 
   constructor() {
     super('minstrel-codex');
@@ -35,6 +51,10 @@ class MinstrelDB extends Dexie {
       fileStructure: 'id',
       recentFiles: '++order, filename',
       preferences: 'key',
+    });
+    this.version(2).stores({
+      notes: 'id, projectId, type',
+      writingStats: 'date',
     });
   }
 }
