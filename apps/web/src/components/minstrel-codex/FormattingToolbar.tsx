@@ -10,9 +10,11 @@ interface FormattingToolbarProps {
   fontSize: number;
   fontFamily: string;
   sidebarOpen?: boolean;
+  focusMode?: boolean;
   onChangeFontSize: (delta: number) => void;
   onChangeFontFamily: (font: string) => void;
   onToggleSidebar?: () => void;
+  onToggleFocusMode?: () => void;
 }
 
 interface ToolbarButton {
@@ -48,7 +50,8 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export default function FormattingToolbar({
-  editor, readOnly, fontSize, fontFamily, sidebarOpen, onChangeFontSize, onChangeFontFamily, onToggleSidebar,
+  editor, readOnly, fontSize, fontFamily, sidebarOpen, focusMode,
+  onChangeFontSize, onChangeFontFamily, onToggleSidebar, onToggleFocusMode,
 }: FormattingToolbarProps) {
   const [fontMenuOpen, setFontMenuOpen] = useState(false);
   const [addingFont, setAddingFont] = useState(false);
@@ -115,6 +118,8 @@ export default function FormattingToolbar({
     { label: '|', shortcut: '', action: () => {}, isActive: false },
     { label: '• List', shortcut: 'Ctrl+Shift+8', action: () => editor.chain().focus().toggleBulletList().run(), isActive: editor.isActive('bulletList') },
     ...(!sidebarOpen ? [{ label: '1. List', shortcut: 'Ctrl+Shift+7', action: () => editor.chain().focus().toggleOrderedList().run(), isActive: editor.isActive('orderedList') }] : []),
+    { label: '|', shortcut: '', action: () => {}, isActive: false },
+    { label: '* * *', shortcut: 'Ctrl+Shift+Enter', action: () => editor.chain().focus().setHorizontalRule().run(), isActive: false },
   ];
 
   const divider = (key: string) => (
@@ -136,6 +141,22 @@ export default function FormattingToolbar({
             📁 Files
           </button>
           {divider('sep-files')}
+        </>
+      )}
+
+      {/* Focus mode toggle */}
+      {onToggleFocusMode && (
+        <>
+          <button
+            onClick={onToggleFocusMode}
+            title="Focus mode (F11)"
+            style={pillBtn(!!focusMode)}
+            onMouseEnter={e => { if (!focusMode) { (e.currentTarget as HTMLElement).style.opacity = '1'; (e.currentTarget as HTMLElement).style.background = 'var(--terminal-border)'; } }}
+            onMouseLeave={e => { if (!focusMode) { (e.currentTarget as HTMLElement).style.opacity = '0.75'; (e.currentTarget as HTMLElement).style.background = 'var(--terminal-surface)'; } }}
+          >
+            ⛶ Focus
+          </button>
+          {divider('sep-focus')}
         </>
       )}
 

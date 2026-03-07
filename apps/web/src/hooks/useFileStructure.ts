@@ -209,7 +209,7 @@ export function useFileStructure() {
     return result;
   }, [structure]);
 
-  const createFileInFolder = useCallback((filename: string, folderPath: string[]) => {
+  const createFileInFolder = useCallback((filename: string, folderPath: string[], initialContent = '') => {
     // Compute the doc key outside the setStructure callback (derived only from params).
     const docKey = folderPath.length > 0 ? `${folderPath.join('/')}/${filename}` : filename;
 
@@ -228,10 +228,10 @@ export function useFileStructure() {
     });
 
     // Pre-populate shared cache so loadDocument() is a cache hit.
-    docsCache[docKey] = { content: '', lastModified: new Date().toISOString() };
-    // Create empty document record in Dexie — background.
+    docsCache[docKey] = { content: initialContent, lastModified: new Date().toISOString() };
+    // Create document record in Dexie — background.
     db.documents
-      .put({ id: docKey, content: '', lastModified: new Date().toISOString(), syncStatus: 'pending' })
+      .put({ id: docKey, content: initialContent, lastModified: new Date().toISOString(), syncStatus: 'pending' })
       .catch(console.error);
   }, []);
 

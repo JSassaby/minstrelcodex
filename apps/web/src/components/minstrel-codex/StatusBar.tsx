@@ -24,6 +24,12 @@ interface StatusBarProps {
   syncStatus?: SyncStatus;
   lastSyncTime?: Date | null;
   onSyncClick?: () => void;
+  sprintActive?: boolean;
+  sprintPaused?: boolean;
+  sprintTimeLeft?: number;
+  sprintWordsWritten?: number;
+  onSprintStart?: () => void;
+  onSprintTogglePause?: () => void;
 }
 
 function BatteryIcon({ level }: { level: number }) {
@@ -94,6 +100,8 @@ export default function StatusBar({
   a11yHighContrast, a11yDyslexiaFont, a11yReducedMotion, a11yReadingGuide,
   onVoiceClick,
   syncStatus, lastSyncTime, onSyncClick,
+  sprintActive, sprintPaused, sprintTimeLeft = 0, sprintWordsWritten = 0,
+  onSprintStart, onSprintTogglePause,
 }: StatusBarProps) {
   const displayName = filename ? (filename.split('/').pop() || filename) : t(language, 'status.untitled');
   const words = content.trim() ? content.trim().split(/\s+/).length : 0;
@@ -126,6 +134,35 @@ export default function StatusBar({
         </span>
         <span>{words.toLocaleString()} {t(language, 'status.words')}</span>
         <span>{chars.toLocaleString()} {t(language, 'status.chars')}</span>
+
+        {/* Sprint display */}
+        {sprintActive ? (
+          <>
+            <span style={{ width: '1px', height: '10px', background: 'var(--terminal-border)', opacity: 0.5 }} />
+            <span
+              onClick={onSprintTogglePause}
+              title={sprintPaused ? 'Resume sprint' : 'Pause sprint'}
+              style={{ color: 'var(--terminal-accent)', fontWeight: '600', cursor: 'pointer', opacity: sprintPaused ? 0.6 : 0.95 }}
+            >
+              {sprintPaused ? '⏸' : '⏱'}{' '}
+              {String(Math.floor(sprintTimeLeft / 60)).padStart(2, '0')}:{String(sprintTimeLeft % 60).padStart(2, '0')}
+              {' '}+{sprintWordsWritten}w
+            </span>
+          </>
+        ) : (
+          <>
+            <span style={{ width: '1px', height: '10px', background: 'var(--terminal-border)', opacity: 0.5 }} />
+            <span
+              onClick={onSprintStart}
+              title="Start a writing sprint"
+              style={{ cursor: 'pointer', opacity: 0.35 }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '0.75'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.35'; }}
+            >
+              SPRINT
+            </span>
+          </>
+        )}
       </div>
 
       {/* Right — system + a11y indicators */}

@@ -133,6 +133,23 @@ export default function MinstrelCodex() {
   const [toastMessage, setToastMessage] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
 
+  // Focus / Typewriter mode
+  const [focusMode, setFocusMode] = useState(() => localStorage.getItem('mc-focus-mode') === 'true');
+
+  // Writing sprint
+  const SPRINT_DURATIONS = [15, 25, 30, 45, 60];
+  const [sprintSetupOpen, setSprintSetupOpen] = useState(false);
+  const [sprintCompleteOpen, setSprintCompleteOpen] = useState(false);
+  const [sprintActive, setSprintActive] = useState(false);
+  const [sprintPaused, setSprintPaused] = useState(false);
+  const [sprintDuration, setSprintDuration] = useState(25);
+  const [sprintTimeLeft, setSprintTimeLeft] = useState(0);
+  const sprintStartWordsRef = useRef(0);
+  const [sprintResult, setSprintResult] = useState({ wordsWritten: 0, minutes: 25, wpm: 0 });
+  const [sprintBest, setSprintBest] = useState<{ words: number; wpm: number }>(() =>
+    JSON.parse(localStorage.getItem('mc-sprint-best') || '{"words":0,"wpm":0}')
+  );
+
   // Font family
   const [fontFamily, setFontFamily] = useState(() => {
     return localStorage.getItem('pw-font-family') || "'Courier Prime', 'Courier New', monospace";
@@ -237,6 +254,34 @@ export default function MinstrelCodex() {
     }
   }, [booted, locked]);
 
+  // Sprint countdown timer
+  useEffect(() => {
+    if (!sprintActive || sprintPaused) return;
+    const interval = setInterval(() => {
+      setSprintTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          const rawText = editorContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+          const currentWords = rawText ? rawText.split(' ').filter(w => w.length > 0).length : 0;
+          const wordsWritten = Math.max(0, currentWords - sprintStartWordsRef.current);
+          const wpm = sprintDuration > 0 ? Math.round(wordsWritten / sprintDuration) : 0;
+          const result = { wordsWritten, minutes: sprintDuration, wpm };
+          setSprintResult(result);
+          if (wordsWritten > sprintBest.words || (wordsWritten === sprintBest.words && wpm > sprintBest.wpm)) {
+            const newBest = { words: wordsWritten, wpm };
+            setSprintBest(newBest);
+            localStorage.setItem('mc-sprint-best', JSON.stringify(newBest));
+          }
+          setSprintActive(false);
+          setSprintCompleteOpen(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [sprintActive, sprintPaused, sprintDuration, sprintBest, editorContent]);
+
   // Live stats ticker
   useEffect(() => {
     if (!liveStatsEnabled) return;
@@ -309,6 +354,41 @@ export default function MinstrelCodex() {
     setToastVisible(true);
     setTimeout(() => setToastVisible(false), 2500);
   }, []);
+
+  // Focus mode toggle
+  const toggleFocusMode = useCallback(() => {
+    setFocusMode(prev => {
+      const next = !prev;
+      localStorage.setItem('mc-focus-mode', String(next));
+      return next;
+    });
+  }, []);
+
+  // Sprint: live word count delta
+  const sprintWordsWritten = (() => {
+    if (!sprintActive) return 0;
+    const rawText = editorContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const current = rawText ? rawText.split(' ').filter((w: string) => w.length > 0).length : 0;
+    return Math.max(0, current - sprintStartWordsRef.current);
+  })();
+
+  // H1 blur rename handler
+  const handleH1Blur = useCallback((text: string) => {
+    const currentFile = docStorage.currentDocument.filename;
+    if (!currentFile) return;
+    const parts = currentFile.split('/');
+    const basename = parts[parts.length - 1];
+    const ext = basename.includes('.') ? basename.slice(basename.lastIndexOf('.')) : '';
+    const nameWithoutExt = ext ? basename.slice(0, -ext.length) : basename;
+    if (nameWithoutExt === text) return; // no change
+    const newBasename = text + ext;
+    const newFilename = parts.length > 1
+      ? [...parts.slice(0, -1), newBasename].join('/')
+      : newBasename;
+    fileStructure.renameFile(currentFile, newFilename);
+    docStorage.setCurrentDocument(prev => ({ ...prev, filename: newFilename }));
+    showToast(`File renamed to "${newBasename}"`);
+  }, [docStorage, fileStructure, showToast]);
 
   // Voice input (Web Speech API)
   const voiceRecognitionRef = useRef<any>(null);
@@ -768,7 +848,13 @@ export default function MinstrelCodex() {
 
       if (e.key === 'F11') {
         e.preventDefault();
-        executeAction('fullscreen');
+        toggleFocusMode();
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'Enter' || e.key === '\r')) {
+        e.preventDefault();
+        editorRef.current?.insertSceneBreak();
         return;
       }
 
@@ -829,7 +915,7 @@ export default function MinstrelCodex() {
     typingPhase, typingBtnIdx, typingDifficulty,
     typingPhase, typingBtnIdx, typingDifficulty,
     docStorage, fileStructure, theme, editorContent, executeAction, closeModal,
-    toggleVoiceInput, toggleTTS,
+    toggleVoiceInput, toggleTTS, toggleFocusMode,
   ]);
 
   // Menu key handler
@@ -1278,7 +1364,28 @@ export default function MinstrelCodex() {
           }}
           onNewFile={() => executeAction('new')}
           onCreateFile={(filename, folderPath) => {
-            fileStructure.createFileInFolder(filename, folderPath);
+            // Count existing files in the target folder to determine chapter number
+            let current = fileStructure.structure.root;
+            for (const p of folderPath) {
+              if (!current.children?.[p]) break;
+              current = current.children[p];
+            }
+            const existingFileCount = Object.values(current.children || {})
+              .filter(n => n.type === 'file').length;
+
+            const isChapterFolder = folderPath.some(p => p.toLowerCase() === 'chapters');
+            const ordinals = [
+              'One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
+              'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen',
+              'Eighteen','Nineteen','Twenty','Twenty-One','Twenty-Two','Twenty-Three',
+              'Twenty-Four','Twenty-Five','Twenty-Six','Twenty-Seven','Twenty-Eight',
+              'Twenty-Nine','Thirty',
+            ];
+            const chapterNum = existingFileCount + 1;
+            const title = isChapterFolder
+              ? `Chapter ${ordinals[chapterNum - 1] ?? String(chapterNum)}`
+              : 'Untitled';
+            fileStructure.createFileInFolder(filename, folderPath, `<h1>${title}</h1>`);
           }}
           onNewFolder={(name) => fileStructure.createFolder(name)}
           onDeleteFile={(filename) => fileStructure.deleteFile(filename)}
@@ -1315,48 +1422,61 @@ export default function MinstrelCodex() {
             ref={editorRef}
             readOnly={!!activeModal || menuOpen}
             sidebarOpen={fileBrowserOpen}
+            focusMode={focusMode}
             onChangeFontSize={(delta) => theme.changeFontSize(delta)}
             onChangeFontFamily={(font) => {
               setFontFamily(font);
               localStorage.setItem('pw-font-family', font);
             }}
             onToggleSidebar={() => executeAction('togglesidebar')}
+            onToggleFocusMode={toggleFocusMode}
+            onH1Blur={handleH1Blur}
           />
         </div>
       </div>
 
-      <HelpText
-        visible={helpVisible}
-        lines={[
-          t(language, 'help.line1'),
-          t(language, 'help.line2'),
-          t(language, 'help.line3'),
-        ]}
-      />
+      {!focusMode && (
+        <HelpText
+          visible={helpVisible}
+          lines={[
+            t(language, 'help.line1'),
+            t(language, 'help.line2'),
+            t(language, 'help.line3'),
+          ]}
+        />
+      )}
 
-      <StatusBar
-        language={language}
-        filename={docStorage.currentDocument.filename}
-        saved={docStorage.currentDocument.saved}
-        content={editorContent}
-        battery={battery}
-        wifiOn={wifiOn}
-        musicPlaying={musicPlayer.playing}
-        musicTrackName={musicPlayer.tracks.find(t => t.id === musicPlayer.currentTrackId)?.name}
-        onMusicClick={() => setMusicPlayerOpen(prev => !prev)}
-        voiceListening={voiceListening}
-        ttsActive={ttsActive}
-        a11yVoiceEnabled={a11y.settings.voiceInputEnabled}
-        a11yTtsEnabled={a11y.settings.ttsEnabled}
-        a11yHighContrast={a11y.settings.highContrast}
-        a11yDyslexiaFont={a11y.settings.dyslexiaFont}
-        a11yReducedMotion={a11y.settings.reducedMotion}
-        a11yReadingGuide={a11y.settings.readingGuide}
-        onVoiceClick={toggleVoiceInput}
-        syncStatus={syncStatus}
-        lastSyncTime={syncLastTime}
-        onSyncClick={triggerSync}
-      />
+      {!focusMode && (
+        <StatusBar
+          language={language}
+          filename={docStorage.currentDocument.filename}
+          saved={docStorage.currentDocument.saved}
+          content={editorContent}
+          battery={battery}
+          wifiOn={wifiOn}
+          musicPlaying={musicPlayer.playing}
+          musicTrackName={musicPlayer.tracks.find(t => t.id === musicPlayer.currentTrackId)?.name}
+          onMusicClick={() => setMusicPlayerOpen(prev => !prev)}
+          voiceListening={voiceListening}
+          ttsActive={ttsActive}
+          a11yVoiceEnabled={a11y.settings.voiceInputEnabled}
+          a11yTtsEnabled={a11y.settings.ttsEnabled}
+          a11yHighContrast={a11y.settings.highContrast}
+          a11yDyslexiaFont={a11y.settings.dyslexiaFont}
+          a11yReducedMotion={a11y.settings.reducedMotion}
+          a11yReadingGuide={a11y.settings.readingGuide}
+          onVoiceClick={toggleVoiceInput}
+          syncStatus={syncStatus}
+          lastSyncTime={syncLastTime}
+          onSyncClick={triggerSync}
+          sprintActive={sprintActive}
+          sprintPaused={sprintPaused}
+          sprintTimeLeft={sprintTimeLeft}
+          sprintWordsWritten={sprintWordsWritten}
+          onSprintStart={() => setSprintSetupOpen(true)}
+          onSprintTogglePause={() => setSprintPaused(prev => !prev)}
+        />
+      )}
 
         {/* Music Player Sidebar */}
         <MusicPlayer
@@ -1906,6 +2026,82 @@ export default function MinstrelCodex() {
             }
           }} />
           <ModalButton label="CANCEL" focused={modalButtonIndex === 2} onClick={closeModal} />
+        </div>
+      </ModalShell>
+
+      {/* Sprint Setup Modal */}
+      <ModalShell visible={sprintSetupOpen} title="⏱ WRITING SPRINT" onClose={() => setSprintSetupOpen(false)}>
+        <div style={{ margin: '16px 0' }}>
+          <p style={{ textAlign: 'center', marginBottom: '20px', opacity: 0.8 }}>
+            Choose a duration and start writing. The timer counts down in the status bar.
+          </p>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '20px' }}>
+            {SPRINT_DURATIONS.map(d => (
+              <button
+                key={d}
+                onClick={() => setSprintDuration(d)}
+                style={{
+                  padding: '10px 18px',
+                  border: sprintDuration === d ? '2px solid var(--terminal-accent)' : '1px solid var(--terminal-text)',
+                  background: sprintDuration === d ? 'var(--terminal-accent)' : 'transparent',
+                  color: sprintDuration === d ? 'var(--terminal-bg)' : 'var(--terminal-text)',
+                  cursor: 'pointer',
+                  fontFamily: "'Courier Prime', monospace",
+                  fontSize: '14px',
+                }}
+              >
+                {d} min
+              </button>
+            ))}
+          </div>
+          {sprintBest.words > 0 && (
+            <div style={{ textAlign: 'center', fontSize: '12px', opacity: 0.6, marginBottom: '16px' }}>
+              Personal best: {sprintBest.words} words · {sprintBest.wpm} WPM
+            </div>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+          <ModalButton label="START SPRINT" focused onClick={() => {
+            const rawText = editorContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+            const startWords = rawText ? rawText.split(' ').filter((w: string) => w.length > 0).length : 0;
+            sprintStartWordsRef.current = startWords;
+            setSprintTimeLeft(sprintDuration * 60);
+            setSprintPaused(false);
+            setSprintActive(true);
+            setSprintSetupOpen(false);
+          }} />
+          <ModalButton label="CANCEL" focused={false} onClick={() => setSprintSetupOpen(false)} />
+        </div>
+      </ModalShell>
+
+      {/* Sprint Complete Modal */}
+      <ModalShell visible={sprintCompleteOpen} title="✓ SPRINT COMPLETE" onClose={() => setSprintCompleteOpen(false)}>
+        <div style={{ margin: '16px 0' }}>
+          <div style={{ textAlign: 'center', fontSize: '18px', marginBottom: '24px' }}>
+            You wrote <strong>{sprintResult.wordsWritten}</strong> words in {sprintResult.minutes} minutes!
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+            <div style={{ border: '1px solid var(--terminal-text)', padding: '16px', textAlign: 'center' }}>
+              <div style={{ fontSize: '12px', opacity: 0.7 }}>WORDS WRITTEN</div>
+              <div style={{ fontSize: '28px', fontWeight: 'bold' }}>{sprintResult.wordsWritten}</div>
+            </div>
+            <div style={{ border: '1px solid var(--terminal-text)', padding: '16px', textAlign: 'center' }}>
+              <div style={{ fontSize: '12px', opacity: 0.7 }}>AVERAGE WPM</div>
+              <div style={{ fontSize: '28px', fontWeight: 'bold' }}>{sprintResult.wpm}</div>
+            </div>
+          </div>
+          {sprintBest.words > 0 && (
+            <div style={{ textAlign: 'center', fontSize: '12px', opacity: 0.6, marginBottom: '16px' }}>
+              Personal best: {sprintBest.words} words · {sprintBest.wpm} WPM
+            </div>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+          <ModalButton label="SPRINT AGAIN" focused onClick={() => {
+            setSprintCompleteOpen(false);
+            setSprintSetupOpen(true);
+          }} />
+          <ModalButton label="CLOSE" focused={false} onClick={() => setSprintCompleteOpen(false)} />
         </div>
       </ModalShell>
 
