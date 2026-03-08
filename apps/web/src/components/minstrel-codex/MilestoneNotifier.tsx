@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import ShareMilestoneModal from './ShareMilestoneModal';
 import type { MilestoneEvent } from './milestoneDetection';
 
@@ -7,11 +7,9 @@ import type { MilestoneEvent } from './milestoneDetection';
  * Shows one at a time; dismissing advances to the next.
  */
 export default function MilestoneNotifier() {
-  // Exposed via window event for simplicity (avoids prop drilling through 2000-line page)
   const [queue, setQueue] = useState<MilestoneEvent[]>([]);
 
-  // Listen for milestone events
-  useState(() => {
+  useEffect(() => {
     const handler = (e: Event) => {
       const { milestones } = (e as CustomEvent<{ milestones: MilestoneEvent[] }>).detail;
       if (milestones.length > 0) {
@@ -20,7 +18,7 @@ export default function MilestoneNotifier() {
     };
     window.addEventListener('minstrel:milestone', handler);
     return () => window.removeEventListener('minstrel:milestone', handler);
-  });
+  }, []);
 
   const current = queue[0] ?? null;
 
