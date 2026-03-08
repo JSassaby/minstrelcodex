@@ -2,7 +2,7 @@ import type { CloudAdapter, RemoteFile } from './CloudAdapter';
 import { TokenExpiredError } from './CloudAdapter';
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-drive`;
-const APP_FOLDER_NAME = 'Minstrel Codex';
+const APP_FOLDER_NAME = 'Minstrel';
 
 interface DriveFile {
   id: string;
