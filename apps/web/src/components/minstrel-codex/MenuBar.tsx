@@ -134,12 +134,10 @@ export default function MenuBar({
       borderRadius: '14px',
       overflow: 'hidden',
       padding: '6px',
-      // Glassmorphism
-      background: 'rgba(8, 14, 30, 0.85)',
-      backdropFilter: 'blur(24px)',
-      WebkitBackdropFilter: 'blur(24px)',
+      // Solid opaque background
+      background: '#080e1e',
       border: '1px solid rgba(0, 212, 200, 0.12)',
-      boxShadow: '0 12px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 212, 200, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.04)',
+      boxShadow: '0 12px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 212, 200, 0.06)',
     };
   }, [mouseActive, hoverMenuIdx, visible, menuIndex]);
 
