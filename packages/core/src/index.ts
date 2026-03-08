@@ -24,3 +24,29 @@ export { GoogleDriveAdapter } from './adapters/GoogleDriveAdapter';
 // Sync engine
 export { useSyncEngine } from './hooks/useSyncEngine';
 export type { SyncStatus } from './hooks/useSyncEngine';
+
+// Gamification
+export {
+  WRITER_RANKS,
+  DEFAULT_PROFILE,
+  SESSION_MIN_WORDS,
+  SESSION_MIN_MINUTES,
+  SESSION_IDLE_MS,
+  calculateSessionXP,
+  getStreakMultiplier,
+  getFocusMultiplier,
+  getLevelForXP,
+  useWriterProfile,
+  useStreakEngine,
+  useSessionTracker,
+  useXPEngine,
+} from './gamification';
+export type {
+  CraftSkillType,
+  WritingSessionRecord,
+  AchievementRecord,
+  CraftSkillRecord,
+  WriterProfile,
+  WriterRank,
+  SessionXPBreakdown,
+} from './gamification';
