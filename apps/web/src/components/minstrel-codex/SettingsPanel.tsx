@@ -797,7 +797,7 @@ export default function SettingsPanel({
               </div>
             ))}
             <div style={{ marginTop: '20px', padding: '14px 16px', border: '1px solid var(--terminal-border)', borderRadius: '10px', fontSize: '12px', opacity: 0.6, lineHeight: 1.65, fontFamily: uiFont, background: 'var(--terminal-surface)' }}>
-              Note: only English (UK), English (US), and Afrikaans have full translations. All other languages display the interface in English while setting the spellcheck locale for your system browser.
+              Language affects spell check. Additional dictionaries can be installed via Settings &gt; Access.
             </div>
           </div>
         )}

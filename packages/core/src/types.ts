@@ -51,16 +51,12 @@ export type ModalType =
 
 export type Language =
   | 'en-GB' | 'en-US' | 'af'
-  | 'fr' | 'fr-CA'
-  | 'es' | 'es-LA'
-  | 'de' | 'de-AT' | 'de-CH'
-  | 'it' | 'pt' | 'pt-BR'
-  | 'nl' | 'sv' | 'no' | 'da' | 'fi'
-  | 'pl' | 'cs' | 'sk' | 'hu' | 'ro' | 'hr' | 'sl' | 'bg'
-  | 'ru' | 'uk' | 'tr' | 'el'
-  | 'id' | 'ms' | 'vi' | 'th'
-  | 'ja' | 'ko' | 'zh-CN' | 'zh-TW'
-  | 'ar' | 'he' | 'sw' | 'zu' | 'xh';
+  | 'fr' | 'es' | 'es-LA' | 'de' | 'it'
+  | 'pt' | 'pt-BR' | 'nl' | 'sv' | 'nb' | 'da' | 'fi'
+  | 'pl' | 'cs' | 'hu' | 'ro' | 'tr'
+  | 'ru' | 'uk' | 'ar' | 'he' | 'hi'
+  | 'ja' | 'zh-CN' | 'zh-TW' | 'ko'
+  | 'sw' | 'zu' | 'xh' | 'st' | 'tn';
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 

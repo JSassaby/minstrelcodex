@@ -87,13 +87,6 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({
     setTitleValue(documentTitle || '');
   }, [documentTitle]);
 
-  // Apply font family via CSS custom property
-  useEffect(() => {
-    if (pageRef.current) {
-      pageRef.current.style.setProperty('--editor-font', fontFamily);
-    }
-  }, [fontFamily]);
-
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -155,6 +148,13 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({
   useEffect(() => {
     if (editor) setTimeout(() => editor.commands.focus(), 100);
   }, [editor]);
+
+  // Apply font family via CSS custom property — runs when editor mounts or font changes
+  useEffect(() => {
+    if (pageRef.current) {
+      pageRef.current.style.setProperty('--editor-font', fontFamily);
+    }
+  }, [fontFamily, editor]);
 
   if (!editor) return null;
 

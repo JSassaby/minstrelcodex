@@ -20,6 +20,7 @@ export const BUILT_IN_FONTS: FontOption[] = [
   { label: 'VT323', value: "'VT323', monospace", category: 'mono', builtIn: true },
   { label: 'Space Mono', value: "'Space Mono', monospace", category: 'mono', builtIn: true },
   // Serif
+  { label: 'Georgia', value: "Georgia, 'Times New Roman', serif", category: 'serif', builtIn: true },
   { label: 'Lora', value: "'Lora', Georgia, serif", category: 'serif', builtIn: true },
   { label: 'Merriweather', value: "'Merriweather', Georgia, serif", category: 'serif', builtIn: true },
   { label: 'Playfair Display', value: "'Playfair Display', Georgia, serif", category: 'serif', builtIn: true },

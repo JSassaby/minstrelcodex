@@ -867,6 +867,21 @@ export default function FileBrowser({
           </button>
         )}
       </div>
+
+      {/* Keyboard hint bar */}
+      <div style={{
+        padding: '8px 14px',
+        borderTop: '1px solid rgba(0,0,0,0.07)',
+        fontSize: '10px',
+        opacity: 0.55,
+        textAlign: 'center',
+        flexShrink: 0,
+        fontFamily: uiFont,
+        letterSpacing: '0.04em',
+        background: 'rgba(0,0,0,0.02)',
+      }}>
+        ↑↓ navigate · Enter open · Esc close
+      </div>
     </div>
   );
 }

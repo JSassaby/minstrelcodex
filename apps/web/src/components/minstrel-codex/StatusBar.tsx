@@ -143,7 +143,7 @@ export default function StatusBar({
           <span
             onClick={onSprintTogglePause}
             title={sprintPaused ? 'Resume sprint' : 'Pause sprint'}
-            style={{ color: 'var(--terminal-accent)', fontWeight: '600', cursor: 'pointer', opacity: sprintPaused ? 0.6 : 0.95, marginLeft: '24px' }}
+            style={{ color: 'var(--terminal-accent)', fontWeight: '600', cursor: 'pointer', opacity: sprintPaused ? 0.6 : 0.95, marginLeft: '20px' }}
           >
             {sprintPaused ? '⏸' : '⏱'}{' '}
             {String(Math.floor(sprintTimeLeft / 60)).padStart(2, '0')}:{String(sprintTimeLeft % 60).padStart(2, '0')}
@@ -153,7 +153,7 @@ export default function StatusBar({
           <span
             onClick={onSprintStart}
             title="Start a writing sprint"
-            style={{ cursor: 'pointer', opacity: 0.35, marginLeft: '24px' }}
+            style={{ cursor: 'pointer', opacity: 0.35, marginLeft: '20px' }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '0.75'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.35'; }}
           >
