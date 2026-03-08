@@ -37,15 +37,26 @@ export default function AuthCallback() {
   return (
     <div style={{
       display: 'flex',
+      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       height: '100vh',
+      gap: '20px',
       background: '#000',
       color: '#0f0',
       fontFamily: 'monospace',
       fontSize: '14px',
     }}>
-      Signing in...
+      <div style={{
+        width: '24px',
+        height: '24px',
+        border: '2px solid rgba(0, 255, 0, 0.2)',
+        borderTop: '2px solid #0f0',
+        borderRadius: '50%',
+        animation: 'spin 0.8s linear infinite',
+      }} />
+      <span style={{ opacity: 0.8 }}>Signing in...</span>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
