@@ -55,7 +55,7 @@ export default function AuthCallback() {
         borderRadius: '50%',
         animation: 'spin 0.8s linear infinite',
       }} />
-      <span style={{ opacity: 0.8 }}>Signing in...</span>
+      <span style={{ opacity: 0.8 }}>Loading...</span>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
