@@ -5,7 +5,7 @@ import { TokenExpiredError } from '../adapters/CloudAdapter';
 
 export type SyncStatus = 'synced' | 'syncing' | 'error' | 'offline' | 'disconnected';
 
-const PUSH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const SYNC_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes — full bidirectional sync
 
 interface SyncEngineOptions {
   onTokenExpired?: () => void;
@@ -110,10 +110,10 @@ export function useSyncEngine(adapter: CloudAdapter | null, options: SyncEngineO
     performSync('both');
   }, []); // run once on mount
 
-  // Every 5 minutes: push pending — restarts when adapter becomes available
+  // Every 2 minutes: full bidirectional sync
   useEffect(() => {
     if (!adapter) return;
-    const interval = setInterval(() => performSync('push'), PUSH_INTERVAL_MS);
+    const interval = setInterval(() => performSync('both'), SYNC_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [adapter]); // re-run when adapter changes so interval is set up when token loads
 
