@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import ModalShell, { ModalButton } from './ModalShell';
 import type { FileNode } from '@minstrelcodex/core';
+import { docsCache } from '@minstrelcodex/core';
 
 const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
 
@@ -20,6 +21,8 @@ interface TreeItem {
   docKey: string;
   depth: number;
 }
+
+type ExportFormat = 'docx' | 'pdf' | 'txt';
 
 function buildTreeItems(node: FileNode, path: string[] = [], depth: number = 0): TreeItem[] {
   const result: TreeItem[] = [];
@@ -51,16 +54,18 @@ function stripHtml(html: string): string {
   return div.innerText || div.textContent || '';
 }
 
-function getDocContent(docKey: string): string {
-  const docs = JSON.parse(localStorage.getItem('pw-documents') || '{}');
-  const data = docs[docKey];
-  if (!data) return '';
-  return stripHtml(typeof data === 'string' ? data : (data.content || ''));
+/** Read content from docsCache (Dexie-backed), returns { html, plain } */
+function getDocContent(docKey: string): { html: string; plain: string } {
+  const entry = docsCache[docKey];
+  if (!entry) return { html: '', plain: '' };
+  const html = typeof entry === 'string' ? entry : (entry.content || '');
+  return { html, plain: stripHtml(html) };
 }
 
 export default function ExportModal({ visible, onClose, fileStructure, getFolders, findFilesInFolder, showToast }: ExportModalProps) {
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
-  const [format, setFormat] = useState<'pdf' | 'txt'>('pdf');
+  const [format, setFormat] = useState<ExportFormat>('docx');
+  const [exporting, setExporting] = useState(false);
 
   const treeItems = useMemo(() => buildTreeItems(fileStructure), [fileStructure]);
 
@@ -83,21 +88,22 @@ export default function ExportModal({ visible, onClose, fileStructure, getFolder
     });
   }, [treeItems]);
 
-  const collectContent = useCallback((): { title: string; text: string }[] => {
-    const results: { title: string; text: string }[] = [];
+  const collectSections = useCallback(() => {
+    const results: { title: string; html: string; plain: string }[] = [];
     for (const item of treeItems) {
       if (item.type === 'file' && selectedKeys.has(item.docKey)) {
-        const text = getDocContent(item.docKey);
-        if (text.trim()) results.push({ title: item.name, text });
+        const { html, plain } = getDocContent(item.docKey);
+        if (plain.trim()) results.push({ title: item.name, html, plain });
       }
     }
     return results;
   }, [selectedKeys, treeItems]);
 
+  // ── TXT export ──────────────────────────────────────────────────────
   const exportTxt = useCallback(() => {
-    const sections = collectContent();
+    const sections = collectSections();
     if (sections.length === 0) { showToast('No content to export.'); return; }
-    const combined = sections.map(s => `=== ${s.title} ===\n\n${s.text}`).join('\n\n\n');
+    const combined = sections.map(s => `=== ${s.title} ===\n\n${s.plain}`).join('\n\n\n');
     const blob = new Blob([combined], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -105,10 +111,11 @@ export default function ExportModal({ visible, onClose, fileStructure, getFolder
     URL.revokeObjectURL(url);
     showToast(`Exported ${sections.length} files as .txt`);
     onClose();
-  }, [collectContent, showToast, onClose]);
+  }, [collectSections, showToast, onClose]);
 
+  // ── PDF export ──────────────────────────────────────────────────────
   const exportPdf = useCallback(async () => {
-    const sections = collectContent();
+    const sections = collectSections();
     if (sections.length === 0) { showToast('No content to export.'); return; }
     try {
       const { jsPDF } = await import('jspdf');
@@ -124,7 +131,7 @@ export default function ExportModal({ visible, onClose, fileStructure, getFolder
         doc.setFontSize(14); doc.setFont('helvetica', 'bold');
         doc.text(section.title, margin, y); y += 10;
         doc.setFontSize(11); doc.setFont('helvetica', 'normal');
-        const lines = doc.splitTextToSize(section.text, maxWidth);
+        const lines = doc.splitTextToSize(section.plain, maxWidth);
         for (const line of lines) {
           if (y > 280) { doc.addPage(); y = margin; }
           doc.text(line, margin, y); y += lineHeight;
@@ -135,15 +142,61 @@ export default function ExportModal({ visible, onClose, fileStructure, getFolder
       showToast(`Exported ${sections.length} files as PDF`);
       onClose();
     } catch (err) { showToast('PDF export failed.'); console.error(err); }
-  }, [collectContent, showToast, onClose]);
+  }, [collectSections, showToast, onClose]);
 
-  const handleExport = useCallback(() => {
-    if (format === 'txt') exportTxt(); else exportPdf();
-  }, [format, exportTxt, exportPdf]);
+  // ── DOCX export ─────────────────────────────────────────────────────
+  const exportDocx = useCallback(async () => {
+    const sections = collectSections();
+    if (sections.length === 0) { showToast('No content to export.'); return; }
+    try {
+      const HtmlToDocx = (await import('@turbodocx/html-to-docx')).default;
+
+      // Build a combined HTML document with section titles
+      const combinedHtml = sections.map(s =>
+        `<h1>${s.title.replace(/\.txt$/i, '')}</h1>${s.html}`
+      ).join('<br/><hr/><br/>');
+
+      const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>${combinedHtml}</body></html>`;
+
+      const blob = await HtmlToDocx(fullHtml, undefined, {
+        title: `Minstrel Export – ${new Date().toLocaleDateString()}`,
+        margins: { top: 1440, right: 1440, bottom: 1440, left: 1440 }, // twips (1 inch)
+      });
+
+      const url = URL.createObjectURL(blob as Blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `export-${new Date().toISOString().split('T')[0]}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`Exported ${sections.length} files as .docx`);
+      onClose();
+    } catch (err) {
+      showToast('DOCX export failed.');
+      console.error('[ExportModal] DOCX error:', err);
+    }
+  }, [collectSections, showToast, onClose]);
+
+  // ── Dispatch ────────────────────────────────────────────────────────
+  const handleExport = useCallback(async () => {
+    setExporting(true);
+    try {
+      if (format === 'txt') exportTxt();
+      else if (format === 'pdf') await exportPdf();
+      else await exportDocx();
+    } finally {
+      setExporting(false);
+    }
+  }, [format, exportTxt, exportPdf, exportDocx]);
 
   if (!visible) return null;
 
   const selectedCount = selectedKeys.size;
+  const formats: { key: ExportFormat; icon: string; label: string }[] = [
+    { key: 'docx', icon: '📘', label: 'DOCX' },
+    { key: 'pdf', icon: '📄', label: 'PDF' },
+    { key: 'txt', icon: '📝', label: 'TXT' },
+  ];
 
   return (
     <ModalShell visible={visible} title="📤 Export / Combine" onClose={onClose}>
@@ -204,20 +257,20 @@ export default function ExportModal({ visible, onClose, fileStructure, getFolder
       <div style={{ marginBottom: '18px' }}>
         <div style={{ fontSize: '11px', opacity: 0.5, marginBottom: '10px', fontFamily: uiFont, fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Format</div>
         <div style={{ display: 'flex', gap: '8px' }}>
-          {(['pdf', 'txt'] as const).map(f => (
+          {formats.map(f => (
             <button
-              key={f}
-              onClick={() => setFormat(f)}
+              key={f.key}
+              onClick={() => setFormat(f.key)}
               style={{
                 padding: '8px 18px', borderRadius: '8px',
-                border: format === f ? '1.5px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
-                background: format === f ? 'var(--terminal-accent)' : 'var(--terminal-surface)',
-                color: format === f ? 'var(--terminal-bg)' : 'var(--terminal-text)',
+                border: format === f.key ? '1.5px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
+                background: format === f.key ? 'var(--terminal-accent)' : 'var(--terminal-surface)',
+                color: format === f.key ? 'var(--terminal-bg)' : 'var(--terminal-text)',
                 fontFamily: uiFont, fontSize: '13px', fontWeight: '600', cursor: 'pointer',
                 transition: 'all 0.12s',
               }}
             >
-              {f === 'pdf' ? '📄 PDF' : '📝 TXT'}
+              {f.icon} {f.label}
             </button>
           ))}
         </div>
@@ -230,7 +283,11 @@ export default function ExportModal({ visible, onClose, fileStructure, getFolder
       )}
 
       <div style={{ display: 'flex', gap: '10px' }}>
-        <ModalButton label={`Export ${format.toUpperCase()}`} focused={selectedCount > 0} onClick={handleExport} />
+        <ModalButton
+          label={exporting ? 'Exporting…' : `Export ${format.toUpperCase()}`}
+          focused={selectedCount > 0 && !exporting}
+          onClick={handleExport}
+        />
         <ModalButton label="Cancel" focused={false} onClick={onClose} />
       </div>
     </ModalShell>
