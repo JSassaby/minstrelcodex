@@ -397,12 +397,15 @@ export default function MinstrelCodex() {
     setEditorContent(content);
     docStorage.updateContent(content);
 
+    // Feed session tracker
+    trackActivity(content);
+
     if (liveStatsEnabled) {
       const diff = content.length - liveStatsRef.current.lastContent.length;
       if (diff > 0) liveStatsRef.current.chars += diff;
       liveStatsRef.current.lastContent = content;
     }
-  }, [docStorage, liveStatsEnabled]);
+  }, [docStorage, liveStatsEnabled, trackActivity]);
 
   // Close modal helper
   const closeModal = useCallback(() => {
