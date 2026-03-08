@@ -1401,16 +1401,12 @@ export default function MinstrelCodex() {
 
   // ==================== RENDER ====================
 
-  // Theme picker — shown before everything else on first launch
-  if (!theme.themeChosen) {
-    return (
-      <ThemePicker
-        onSelect={(mode) => {
-          theme.switchTheme(mode);
-        }}
-      />
-    );
-  }
+  // Auto-select modern theme on first launch (no theme picker screen)
+  useEffect(() => {
+    if (!theme.themeChosen) {
+      theme.switchTheme('modern');
+    }
+  }, [theme.themeChosen]);
 
   if (!booted) {
     return <BootScreen language={language} onComplete={() => setBooted(true)} />;
