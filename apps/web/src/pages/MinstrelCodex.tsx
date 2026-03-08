@@ -212,6 +212,30 @@ export default function MinstrelCodex() {
   const musicPlayer = useMusicPlayer();
   const a11y = useAccessibility();
 
+  // ── Gamification hooks ────────────────────────────────────────────
+  const { profile, loaded: profileLoaded, updateProfile, addXP } = useWriterProfile();
+  const { currentStreak, emberActive, checkStreak, recordStreak } = useStreakEngine(profile, updateProfile);
+  const { awardSessionXP, currentLevel, currentTitle, xpInLevel, xpNeeded, totalXp, streakMultiplier } = useXPEngine(profile, addXP);
+  const [songCompleteVisible, setSongCompleteVisible] = useState(false);
+  const [lastXPBreakdown, setLastXPBreakdown] = useState<SessionXPBreakdown | null>(null);
+  const [lastSessionWords, setLastSessionWords] = useState(0);
+  const [lastSessionDuration, setLastSessionDuration] = useState(0);
+
+  const { sessionActive, sessionWords, trackActivity, endSession } = useSessionTracker({
+    chronicleId: currentProjectId,
+    onSessionComplete: (session) => {
+      const breakdown = awardSessionXP(session.wordCount, session.durationSeconds);
+      recordStreak();
+      setLastXPBreakdown(breakdown);
+      setLastSessionWords(session.wordCount);
+      setLastSessionDuration(session.durationSeconds);
+      setSongCompleteVisible(true);
+    },
+  });
+
+  // Check streak on load
+  useEffect(() => { if (profileLoaded) checkStreak(); }, [profileLoaded]);
+
    // Storage menu removed
   const [_storageMenuOpen, _setStorageMenuOpen] = useState(false); // kept for compat
   // lastSyncTime is now owned by useSyncEngine (syncLastTime)
