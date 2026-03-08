@@ -1,0 +1,14 @@
+[Unit]
+Description=Minstrel Codex Network API
+After=network.target
+
+[Service]
+Type=simple
+User=pi_experiments
+WorkingDirectory=/home/pi_experiments
+ExecStart=/usr/bin/python3 /home/pi_experiments/network-api.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

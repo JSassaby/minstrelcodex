@@ -31,6 +31,8 @@ import { useSyncEngine, GoogleDriveAdapter, db } from '@minstrelcodex/core';
 import ChapterOverviewPanel from '@/components/minstrel-codex/ChapterOverviewPanel';
 import NotesPanel from '@/components/minstrel-codex/NotesPanel';
 import ManuscriptStatsModal from '@/components/minstrel-codex/ManuscriptStatsModal';
+import WifiSetupScreen from '@/components/minstrel-codex/WifiSetupScreen';
+import FirstBootWizard from '@/components/minstrel-codex/FirstBootWizard';
 import { useMusicPlayer } from '@/hooks/useMusicPlayer';
 import { useAccessibility } from '@/hooks/useAccessibility';
 import type { ModalType, Language, Difficulty, PinConfig } from '@minstrelcodex/core';
@@ -135,6 +137,10 @@ export default function MinstrelCodex() {
   // Toast notification
   const [toastMessage, setToastMessage] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
+
+  // First-boot Pi screens
+  const [wifiSetupOpen, setWifiSetupOpen] = useState(false);
+  const [firstBootWizardOpen, setFirstBootWizardOpen] = useState(false);
 
   // Focus / Typewriter mode
   const [focusMode, setFocusMode] = useState(() => localStorage.getItem('mc-focus-mode') === 'true');
@@ -273,6 +279,28 @@ export default function MinstrelCodex() {
       return () => clearTimeout(timeout);
     }
   }, [booted, locked]);
+
+  // ── First-boot Pi detection ──────────────────────────────────────
+  useEffect(() => {
+    if (!booted) return;
+    (async () => {
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 2000);
+        const res = await fetch('http://localhost:3001/status', { signal: ctrl.signal });
+        clearTimeout(t);
+        if (!res.ok) return;
+        const data = await res.json();
+        const wifiConfigured = !!localStorage.getItem('minstrel_wifi_configured');
+        const novelCreated = !!localStorage.getItem('minstrel_novel_created');
+        if (!data.wifi?.connected && !wifiConfigured) {
+          setWifiSetupOpen(true);
+        } else if (!novelCreated) {
+          setFirstBootWizardOpen(true);
+        }
+      } catch { /* not on Pi — silently skip */ }
+    })();
+  }, [booted]);
 
   // Keep editorContentRef in sync (for stable effects)
   useEffect(() => { editorContentRef.current = editorContent; }, [editorContent]);
@@ -427,6 +455,39 @@ export default function MinstrelCodex() {
     const current = rawText ? rawText.split(' ').filter((w: string) => w.length > 0).length : 0;
     return Math.max(0, current - sprintStartWordsRef.current);
   })();
+
+  // ── First-boot wizard completion ──────────────────────────────────
+  const handleFirstBootNovel = useCallback((title: string, chapterCount: number) => {
+    const words = title.trim().split(/\s+/).filter(w => !['the','a','an','of','and','in','to','for'].includes(w.toLowerCase()));
+    const abr = (words.length <= 1
+      ? (words[0] ?? title).substring(0, 3)
+      : words.map(w => w[0]).join('').substring(0, 4)
+    ).toUpperCase();
+
+    fileStructure.createNovelProject({
+      title: title.trim(),
+      abbreviation: abr,
+      chapterCount,
+      namingFormat: 'ch-abr',
+      includeBible: false,
+      includeNotes: true,
+      includeResearch: false,
+      includeWorldbuilding: false,
+      includeFrontMatter: false,
+    });
+
+    // Open the first chapter
+    const firstChapter = `${title.trim()}/Active/Chapters/Chapter 01 - ${abr}.txt`;
+    const content = docStorage.loadDocument(firstChapter);
+    if (content !== null) {
+      setEditorContent(content);
+      editorRef.current?.setContent(content);
+    }
+    setFileBrowserOpen(true);
+    localStorage.setItem('minstrel_novel_created', 'true');
+    setFirstBootWizardOpen(false);
+    showToast(`"${title.trim()}" is ready — start writing!`);
+  }, [fileStructure, docStorage, showToast]);
 
   // H1 blur rename handler
   const handleH1Blur = useCallback((text: string) => {
@@ -1337,6 +1398,34 @@ export default function MinstrelCodex() {
   const recentDocs = recentFiles.filter(f => allDocs[f]);
   const folders = fileStructure.getFolders();
 
+  // ── First-boot overlays (render over everything) ─────────────────
+  const advanceFromWifi = () => {
+    localStorage.setItem('minstrel_wifi_configured', 'true');
+    setWifiSetupOpen(false);
+    if (!localStorage.getItem('minstrel_novel_created')) setFirstBootWizardOpen(true);
+  };
+
+  if (wifiSetupOpen) {
+    return (
+      <WifiSetupScreen
+        onComplete={advanceFromWifi}
+        onSkip={advanceFromWifi}
+      />
+    );
+  }
+
+  if (firstBootWizardOpen) {
+    return (
+      <FirstBootWizard
+        onComplete={handleFirstBootNovel}
+        onSkip={() => {
+          localStorage.setItem('minstrel_novel_created', 'true');
+          setFirstBootWizardOpen(false);
+        }}
+      />
+    );
+  }
+
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
       {/* Reading guide overlay */}
@@ -1420,6 +1509,10 @@ export default function MinstrelCodex() {
             executeAction('apple-signin');
           }}
           onSwitchTheme={(mode) => theme.switchTheme(mode)}
+          onOpenFirstBootWizard={() => {
+            setSettingsPanelOpen(false);
+            setFirstBootWizardOpen(true);
+          }}
         />
 
         <ChapterOverviewPanel
@@ -1460,28 +1553,7 @@ export default function MinstrelCodex() {
           }}
           onNewFile={() => executeAction('new')}
           onCreateFile={(filename, folderPath) => {
-            // Count existing files in the target folder to determine chapter number
-            let current = fileStructure.structure.root;
-            for (const p of folderPath) {
-              if (!current.children?.[p]) break;
-              current = current.children[p];
-            }
-            const existingFileCount = Object.values(current.children || {})
-              .filter(n => n.type === 'file').length;
-
-            const isChapterFolder = folderPath.some(p => p.toLowerCase() === 'chapters');
-            const ordinals = [
-              'One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
-              'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen',
-              'Eighteen','Nineteen','Twenty','Twenty-One','Twenty-Two','Twenty-Three',
-              'Twenty-Four','Twenty-Five','Twenty-Six','Twenty-Seven','Twenty-Eight',
-              'Twenty-Nine','Thirty',
-            ];
-            const chapterNum = existingFileCount + 1;
-            const title = isChapterFolder
-              ? `Chapter ${ordinals[chapterNum - 1] ?? String(chapterNum)}`
-              : 'Untitled';
-            fileStructure.createFileInFolder(filename, folderPath, `<h1>${title}</h1>`);
+            fileStructure.createFileInFolder(filename, folderPath, '');
           }}
           onNewFolder={(name) => fileStructure.createFolder(name)}
           onDeleteFile={(filename) => fileStructure.deleteFile(filename)}
@@ -1519,6 +1591,13 @@ export default function MinstrelCodex() {
             readOnly={!!activeModal || menuOpen}
             sidebarOpen={fileBrowserOpen}
             focusMode={focusMode}
+            documentTitle={(() => {
+              const f = docStorage.currentDocument.filename;
+              if (!f) return '';
+              const base = f.split('/').pop() || f;
+              return base.includes('.') ? base.slice(0, base.lastIndexOf('.')) : base;
+            })()}
+            onTitleBlur={handleH1Blur}
             onChangeFontSize={(delta) => theme.changeFontSize(delta)}
             onChangeFontFamily={(font) => {
               setFontFamily(font);
@@ -1526,7 +1605,6 @@ export default function MinstrelCodex() {
             }}
             onToggleSidebar={() => executeAction('togglesidebar')}
             onToggleFocusMode={toggleFocusMode}
-            onH1Blur={handleH1Blur}
           />
         </div>
       </div>

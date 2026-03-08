@@ -7,7 +7,8 @@ set -e
 echo "📦 Installing packages..."
 sudo apt-get update -qq
 sudo apt-get install -y -qq --no-install-recommends \
-  chromium labwc unclutter curl
+  chromium labwc unclutter curl python3 python3-pip
+pip3 install --quiet flask flask-cors
 
 # ── Step 2: Node.js 20 + serve ────────────────────────────────────
 echo "⬢  Installing Node.js..."
@@ -66,7 +67,21 @@ if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
 fi
 PROF
 
-# ── Step 7: Verify serve ──────────────────────────────────────────
+# ── Step 7: Network API service ───────────────────────────────────
+echo "🌐 Installing network API service..."
+cp "$(dirname "$0")/network-api.py" ~/network-api.py 2>/dev/null || \
+  curl -fsSL https://raw.githubusercontent.com/JSassaby/minstrelcodex/main/apps/pi/network-api.py \
+    -o ~/network-api.py
+sudo cp "$(dirname "$0")/minstrel-network.service" \
+  /etc/systemd/system/minstrel-network.service 2>/dev/null || \
+  curl -fsSL https://raw.githubusercontent.com/JSassaby/minstrelcodex/main/apps/pi/minstrel-network.service \
+    -o /tmp/minstrel-network.service && \
+  sudo mv /tmp/minstrel-network.service /etc/systemd/system/minstrel-network.service
+sudo systemctl daemon-reload
+sudo systemctl enable minstrel-network
+sudo systemctl start minstrel-network
+
+# ── Step 8: Verify serve ──────────────────────────────────────────
 /usr/local/bin/serve -s /home/pi_experiments/minstrelapp -l 3001 &
 TEST_PID=$!
 sleep 2
@@ -77,7 +92,7 @@ else
 fi
 kill $TEST_PID 2>/dev/null
 
-# ── Step 8: Done ──────────────────────────────────────────────────
+# ── Step 9: Done ──────────────────────────────────────────────────
 echo "✅ All done!"
 echo ""
 echo "✓ Minstrel Codex is ready!"

@@ -63,6 +63,7 @@ interface SettingsPanelProps {
   onConnectGoogle: () => void;
   onConnectApple: () => void;
   onSwitchTheme: (mode: ThemeMode) => void;
+  onOpenFirstBootWizard?: () => void;
 }
 
 type StorageProvider = 'google' | 'apple';
@@ -91,7 +92,7 @@ export default function SettingsPanel({
   a11ySettings, onA11yUpdate, onA11yReset,
   onClose, onAction, onUpdateColors, onResetColors, onSetLanguage,
   onOpenPinSetup, onOpenTypingChallenge, onConnectGoogle, onConnectApple,
-  onSwitchTheme,
+  onSwitchTheme, onOpenFirstBootWizard,
 }: SettingsPanelProps) {
   const [activeTabIdx, setActiveTabIdx] = useState(0);
   const [focusedItemIdx, setFocusedItemIdx] = useState(0);
@@ -130,7 +131,7 @@ export default function SettingsPanel({
       case 'language': return 3;
       case 'security': return 1;
       case 'storage': return 5;
-      case 'system': return 3;
+      case 'system': return 4;
       default: return 0;
     }
   }, [activeTab]);
@@ -854,12 +855,18 @@ export default function SettingsPanel({
               <span>⌨ Typing Challenge</span>
               <span style={{ fontSize: '12px', opacity: 0.45 }}>Enter →</span>
             </div>
-            <div onClick={() => { onAction('update'); setFocusedItemIdx(1); }} style={rowCard(focusedItemIdx === 1)}>
+            {onOpenFirstBootWizard && (
+              <div onClick={() => { onOpenFirstBootWizard(); setFocusedItemIdx(1); }} style={rowCard(focusedItemIdx === 1)}>
+                <span>📖 Start a new novel project...</span>
+                <span style={{ fontSize: '12px', opacity: 0.45 }}>Enter →</span>
+              </div>
+            )}
+            <div onClick={() => { onAction('update'); setFocusedItemIdx(2); }} style={rowCard(focusedItemIdx === 2)}>
               <span>{t(language, 'power.update')}</span>
             </div>
             <div
-              onClick={() => { onAction('shutdown'); setFocusedItemIdx(2); }}
-              style={rowCard(focusedItemIdx === 2, false, true)}
+              onClick={() => { onAction('shutdown'); setFocusedItemIdx(3); }}
+              style={rowCard(focusedItemIdx === 3, false, true)}
             >
               <span>{t(language, 'power.shutdown')}</span>
             </div>
