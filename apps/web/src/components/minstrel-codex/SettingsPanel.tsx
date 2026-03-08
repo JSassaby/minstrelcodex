@@ -146,11 +146,9 @@ function DropdownSelect<T extends string>({
           zIndex: 100,
           borderRadius: '12px',
           overflow: 'hidden',
-          background: 'rgba(8, 14, 30, 0.92)',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
+          background: '#080e1e',
           border: '1px solid rgba(0, 212, 200, 0.12)',
-          boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+          boxShadow: '0 12px 40px rgba(0, 0, 0, 0.5)',
           padding: '4px',
           maxHeight: '240px',
           overflowY: 'auto',
@@ -380,7 +378,7 @@ export default function SettingsPanel({
         fontFamily: uiFont,
         fontSize: '13px',
         fontWeight: selected ? '600' : '400',
-        backdropFilter: 'blur(8px)',
+        // no backdrop-filter
         ...extraStyle,
       }}
     >
@@ -426,9 +424,7 @@ export default function SettingsPanel({
         width: '360px',
         minWidth: '360px',
         height: '100%',
-        background: 'rgba(6, 11, 24, 0.92)',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
+        background: '#060b18',
         borderRight: '1px solid rgba(0, 212, 200, 0.08)',
         color: 'var(--terminal-text)',
         fontFamily: uiFont,
