@@ -36,6 +36,8 @@ export interface WritingStatRecord {
   words: number;
 }
 
+import type { WritingSessionRecord, AchievementRecord, CraftSkillRecord } from './gamification/types';
+
 class MinstrelDB extends Dexie {
   documents!: Table<DocumentRecord, string>;
   fileStructure!: Table<FileStructureRecord, string>;
@@ -43,6 +45,9 @@ class MinstrelDB extends Dexie {
   preferences!: Table<PreferenceRecord, string>;
   notes!: Table<NoteRecord, string>;
   writingStats!: Table<WritingStatRecord, string>;
+  writingSessions!: Table<WritingSessionRecord, string>;
+  achievements!: Table<AchievementRecord, string>;
+  craftSkills!: Table<CraftSkillRecord, string>;
 
   constructor() {
     super('minstrel-codex');
@@ -55,6 +60,11 @@ class MinstrelDB extends Dexie {
     this.version(2).stores({
       notes: 'id, projectId, type',
       writingStats: 'date',
+    });
+    this.version(3).stores({
+      writingSessions: 'id, chronicleId, startedAt',
+      achievements: 'id, category',
+      craftSkills: 'skill',
     });
   }
 }
