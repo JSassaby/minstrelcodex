@@ -2,11 +2,14 @@ import type { ShareableCardData } from './ShareableCard';
 
 // ── Streak milestones ──────────────────────────────────────────────
 export const STREAK_MILESTONES = [
-  { days: 3,   badge: 'Kindling',       emoji: '🕯️' },
-  { days: 7,   badge: 'Steady Flame',   emoji: '🔥' },
-  { days: 14,  badge: 'Burning Bright', emoji: '🔥🔥' },
-  { days: 30,  badge: 'Eternal Flame',  emoji: '🔥🔥🔥' },
-  { days: 100, badge: 'Undying Ember',  emoji: '☀️' },
+  { days: 3,   badge: 'Kindling',        emoji: '🕯️' },
+  { days: 7,   badge: 'Steady Flame',    emoji: '🔥' },
+  { days: 14,  badge: 'Burning Bright',  emoji: '🔥🔥' },
+  { days: 30,  badge: 'Eternal Flame',   emoji: '🔥🔥🔥' },
+  { days: 60,  badge: 'The Long Watch',  emoji: '⚔️' },
+  { days: 90,  badge: 'The Devoted',     emoji: '📜' },
+  { days: 180, badge: 'Voice of Ages',   emoji: '✨' },
+  { days: 365, badge: 'Legend of the Page', emoji: '👑' },
 ] as const;
 
 // ── Level-up detection ─────────────────────────────────────────────

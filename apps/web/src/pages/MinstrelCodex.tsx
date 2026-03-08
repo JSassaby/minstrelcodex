@@ -226,7 +226,7 @@ export default function MinstrelCodex() {
 
   // ── Gamification hooks ────────────────────────────────────────────
   const { profile, loaded: profileLoaded, updateProfile, addXP } = useWriterProfile();
-  const { currentStreak, emberActive, checkStreak, recordStreak } = useStreakEngine(profile, updateProfile);
+  const { currentStreak, quillsRestActive, checkStreak, recordStreak } = useStreakEngine(profile, updateProfile);
   const { awardSessionXP, currentLevel, currentTitle, xpInLevel, xpNeeded, totalXp, streakMultiplier } = useXPEngine(profile, addXP);
   const [songCompleteVisible, setSongCompleteVisible] = useState(false);
   const [lastXPBreakdown, setLastXPBreakdown] = useState<SessionXPBreakdown | null>(null);
@@ -248,7 +248,7 @@ export default function MinstrelCodex() {
       // Detect milestones after state updates (use setTimeout to let React flush)
       setTimeout(() => {
         const newStreak = prevStreak + (profile.lastWritingDate !== new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()) ? 1 : 0);
-        const newTotalXp = profile.totalXp + breakdown.totalXp;
+        const newTotalXp = profile.renown + breakdown.totalXp;
 
         const milestones = [
           ...detectStreakMilestones(prevStreak, newStreak, newTotalXp),
@@ -1073,7 +1073,7 @@ export default function MinstrelCodex() {
         e.preventDefault();
         setLastSessionWords(247);
         setLastSessionDuration(12 * 60);
-        setLastXPBreakdown({ baseXp: 124, sessionBonus: 37, focusMultiplier: 1.0, streakMultiplier: 1.2, totalXp: 185 });
+        setLastXPBreakdown({ baseXp: 124, sessionBonus: 37, focusMultiplier: 1.0, streakMultiplier: 1.2, streakDayBonus: 0, totalXp: 185 });
         setSongCompleteVisible(true);
         return;
       }

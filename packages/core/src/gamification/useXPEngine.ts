@@ -16,8 +16,8 @@ export function useXPEngine(
     [profile.currentStreak, addXP],
   );
 
-  const { level, title, xpForCurrent, xpForNext } = getLevelForXP(profile.totalXp);
-  const xpInLevel = profile.totalXp - xpForCurrent;
+  const { level, title, xpForCurrent, xpForNext } = getLevelForXP(profile.renown);
+  const xpInLevel = profile.renown - xpForCurrent;
   const xpNeeded = xpForNext !== null ? xpForNext - xpForCurrent : null;
 
   return {
@@ -26,7 +26,7 @@ export function useXPEngine(
     currentTitle: title,
     xpInLevel,
     xpNeeded,
-    totalXp: profile.totalXp,
+    totalXp: profile.renown,
     streakMultiplier: getStreakMultiplier(profile.currentStreak),
   };
 }

@@ -34,9 +34,9 @@ export function useWriterProfile() {
 
   const addXP = useCallback(async (xp: number) => {
     setProfile(prev => {
-      const newTotal = prev.totalXp + xp;
+      const newTotal = prev.renown + xp;
       const { level, title } = getLevelForXP(newTotal);
-      const next: WriterProfile = { ...prev, totalXp: newTotal, level, title };
+      const next: WriterProfile = { ...prev, renown: newTotal, level, title };
       persist(next);
       return next;
     });

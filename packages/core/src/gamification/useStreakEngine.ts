@@ -12,6 +12,11 @@ function daysBetween(a: string, b: string): number {
   return Math.round((db.getTime() - da.getTime()) / (86400 * 1000));
 }
 
+/**
+ * Minimum words per session for streak qualification: 50 words.
+ * (See STREAK_MIN_WORDS in types.ts — lower than the XP session minimum of 100.)
+ * The caller is responsible for checking this threshold before calling recordStreak().
+ */
 export function useStreakEngine(
   profile: WriterProfile,
   updateProfile: (u: Partial<WriterProfile>) => Promise<void>,
@@ -23,22 +28,22 @@ export function useStreakEngine(
 
     if (gap <= 1) return; // still active (0 = same day, 1 = yesterday)
 
-    if (gap === 2 && !profile.emberActive) {
-      // One day missed — activate ember if allowed (once per 7 days)
-      const canEmber = !profile.lastEmberDate || daysBetween(profile.lastEmberDate, getToday()) >= 7;
-      if (canEmber) {
-        updateProfile({ emberActive: true, lastEmberDate: getToday() });
+    if (gap === 2 && !profile.quillsRestActive) {
+      // One day missed — activate Quill's Rest if allowed (once per 7 days)
+      const canUseQuillsRest = !profile.lastQuillsRestDate || daysBetween(profile.lastQuillsRestDate, getToday()) >= 7;
+      if (canUseQuillsRest) {
+        updateProfile({ quillsRestActive: true, lastQuillsRestDate: getToday() });
         return;
       }
     }
 
     // Streak broken
-    if (gap > 2 || (gap === 2 && profile.emberActive)) {
-      updateProfile({ currentStreak: 0, emberActive: false });
+    if (gap > 2 || (gap === 2 && profile.quillsRestActive)) {
+      updateProfile({ currentStreak: 0, quillsRestActive: false });
     }
   }, [profile, updateProfile]);
 
-  /** Call when a valid session completes (≥100 words) */
+  /** Call when a valid session completes (caller must verify ≥ STREAK_MIN_WORDS words) */
   const recordStreak = useCallback(() => {
     const today = getToday();
     if (profile.lastWritingDate === today) return; // already counted today
@@ -49,13 +54,13 @@ export function useStreakEngine(
       currentStreak: newStreak,
       longestStreak,
       lastWritingDate: today,
-      emberActive: false,
+      quillsRestActive: false,
     });
   }, [profile, updateProfile]);
 
   return {
     currentStreak: profile.currentStreak,
-    emberActive: profile.emberActive,
+    quillsRestActive: profile.quillsRestActive,
     checkStreak,
     recordStreak,
   };

@@ -1,7 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import type { SessionXPBreakdown } from '@minstrelcodex/core';
 import ShareMilestoneModal from './ShareMilestoneModal';
 import type { ShareableCardData } from './ShareableCard';
+
+const SESSION_TITLES = [
+  'A Song Well Sung',
+  'The Quill Rests',
+  'Another Page of Legend',
+  'Words for the Ages',
+] as const;
 
 interface SongCompleteProps {
   visible: boolean;
@@ -31,6 +38,7 @@ export default function SongComplete({
 }: SongCompleteProps) {
   const [phase, setPhase] = useState<'enter' | 'visible' | 'exit'>('enter');
   const [shareVisible, setShareVisible] = useState(false);
+  const sessionTitleRef = useRef<string>(SESSION_TITLES[Math.floor(Math.random() * SESSION_TITLES.length)]);
 
   const shareData: ShareableCardData = {
     type: 'session',
@@ -45,6 +53,8 @@ export default function SongComplete({
 
   useEffect(() => {
     if (visible) {
+      // Pick a new random title each time the modal opens
+      sessionTitleRef.current = SESSION_TITLES[Math.floor(Math.random() * SESSION_TITLES.length)];
       setPhase('enter');
       const t = setTimeout(() => setPhase('visible'), 50);
       return () => clearTimeout(t);
@@ -55,6 +65,10 @@ export default function SongComplete({
 
   const progress = xpNeeded ? Math.min(100, (xpInLevel / xpNeeded) * 100) : 100;
   const opacity = phase === 'enter' ? 0 : 1;
+
+  const streakDisplay = currentStreak > 0
+    ? `🔥 ${currentStreak} day${currentStreak !== 1 ? 's' : ''}`
+    : 'Begin your streak today';
 
   return (
     <div
@@ -93,25 +107,25 @@ export default function SongComplete({
           SONG COMPLETE
         </div>
         <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '24px', textShadow: '0 0 8px var(--terminal-glow)' }}>
-          ♪ Session Ended
+          ♪ {sessionTitleRef.current}
         </div>
 
         {/* Stats grid */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '24px' }}>
-          <StatBox label="WORDS WRITTEN" value={wordsWritten.toLocaleString()} />
-          <StatBox label="TIME SPENT" value={formatDuration(durationSeconds)} />
-          <StatBox label="XP EARNED" value={xpBreakdown ? `+${xpBreakdown.totalXp.toLocaleString()}` : '—'} highlight />
-          <StatBox label="STREAK" value={currentStreak > 0 ? `🔥 ${currentStreak} day${currentStreak !== 1 ? 's' : ''}` : 'Start today!'} />
+          <StatBox label="WORDS SUNG" value={wordsWritten.toLocaleString()} />
+          <StatBox label="TIME AT THE DESK" value={formatDuration(durationSeconds)} />
+          <StatBox label="RENOWN EARNED" value={xpBreakdown ? `+${xpBreakdown.totalXp.toLocaleString()}` : '—'} highlight />
+          <StatBox label="DAYS DEVOTED" value={streakDisplay} />
         </div>
 
         {/* Multiplier breakdown */}
-        {xpBreakdown && (xpBreakdown.focusMultiplier > 1 || xpBreakdown.streakMultiplier > 1) && (
+        {xpBreakdown && (xpBreakdown.streakMultiplier > 1 || (xpBreakdown.streakDayBonus ?? 0) > 0) && (
           <div style={{ fontSize: '11px', opacity: 0.6, marginBottom: '16px', lineHeight: 1.8 }}>
-            {xpBreakdown.focusMultiplier > 1 && (
-              <div>⚡ Focus bonus: {xpBreakdown.focusMultiplier}x (30+ min session)</div>
-            )}
             {xpBreakdown.streakMultiplier > 1 && (
-              <div>🔥 Streak bonus: {xpBreakdown.streakMultiplier}x ({currentStreak}-day streak)</div>
+              <div>🔥 Streak multiplier: {xpBreakdown.streakMultiplier}× ({currentStreak}-day streak)</div>
+            )}
+            {(xpBreakdown.streakDayBonus ?? 0) > 0 && (
+              <div>✦ Streak day bonus: +{xpBreakdown.streakDayBonus} Renown</div>
             )}
           </div>
         )}
@@ -121,7 +135,7 @@ export default function SongComplete({
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
             <span style={{ opacity: 0.6 }}>Lv.{currentLevel} {currentTitle}</span>
             <span style={{ opacity: 0.6 }}>
-              {xpNeeded ? `${xpInLevel.toLocaleString()} / ${xpNeeded.toLocaleString()} XP` : 'MAX'}
+              {xpNeeded ? `${xpInLevel.toLocaleString()} / ${xpNeeded.toLocaleString()} Renown` : 'MAX'}
             </span>
           </div>
           <div style={{
@@ -141,7 +155,7 @@ export default function SongComplete({
         </div>
 
         <div style={{ fontSize: '11px', opacity: 0.4, marginBottom: '20px' }}>
-          Total XP: {totalXp.toLocaleString()}
+          Total Renown: {totalXp.toLocaleString()}
         </div>
 
         {/* Action buttons */}
