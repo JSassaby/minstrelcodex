@@ -588,11 +588,45 @@ export function useFileStructure() {
     return result;
   }, []);
 
+  // ── Merge remote file paths into the tree (used by sync engine) ────
+  const mergeRemotePaths = useCallback((paths: string[]) => {
+    if (paths.length === 0) return;
+    setStructure(prev => {
+      const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
+      if (!next.root.children) next.root.children = {};
+
+      for (const fullPath of paths) {
+        const parts = fullPath.split('/');
+        const fileName = parts[parts.length - 1];
+
+        // Walk/create folder hierarchy
+        let current = next.root;
+        for (let i = 0; i < parts.length - 1; i++) {
+          if (!current.children) current.children = {};
+          if (!current.children[parts[i]]) {
+            current.children[parts[i]] = { type: 'folder', name: parts[i], children: {}, collapsed: false };
+          }
+          current = current.children[parts[i]];
+        }
+
+        // Add file node if it doesn't exist
+        if (!current.children) current.children = {};
+        if (!current.children[fileName]) {
+          current.children[fileName] = { type: 'file', name: fullPath };
+        }
+      }
+
+      saveFs(next);
+      return next;
+    });
+  }, []);
+
   return {
     structure, createFolder, addFileToTree, toggleFolder, moveFile, moveFolder,
     deleteFile, deleteFolder, renameFile, getFolders, createNovelProject, saveVersion,
     saveSnapshot, findFilesInFolder, getNovelProjects, createFileInFolder,
     restoreFromDeleted, emptyDeleted, reorderItem, permanentlyDeleteItem,
+    mergeRemotePaths,
   };
 }
 
