@@ -9,6 +9,8 @@ const PUSH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 interface SyncEngineOptions {
   onTokenExpired?: () => void;
+  /** Called after pull with an array of all remote file paths so the UI tree can be rebuilt */
+  onRemotePaths?: (paths: string[]) => void;
 }
 
 export function useSyncEngine(adapter: CloudAdapter | null, options: SyncEngineOptions = {}) {
