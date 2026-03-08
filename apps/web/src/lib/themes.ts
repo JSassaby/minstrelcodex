@@ -40,14 +40,14 @@ export const THEMES: Record<ThemeMode, ThemeDefinition> = {
     description: 'Focused. Dark. Precise.',
     icon: '▶',
     colors: {
-      text: '#33d9a8',
-      background: '#000000',
-      glow: 'rgba(0, 200, 150, 0.15)',
-      accent: '#33d9a8',
-      muted: 'rgba(51, 217, 168, 0.5)',
-      border: 'rgba(51, 217, 168, 0.25)',
-      surface: 'rgba(51, 217, 168, 0.08)',
-      menuBg: '#111111',
+      text: '#00dfa0',
+      background: '#0a0f14',
+      glow: 'rgba(0, 223, 160, 0.12)',
+      accent: '#00dfa0',
+      muted: 'rgba(0, 223, 160, 0.4)',
+      border: 'rgba(0, 223, 160, 0.18)',
+      surface: 'rgba(0, 223, 160, 0.06)',
+      menuBg: '#0d1219',
     },
     fonts: {
       body: "'JetBrains Mono', 'Courier Prime', 'Courier New', monospace",
@@ -55,7 +55,7 @@ export const THEMES: Record<ThemeMode, ThemeDefinition> = {
       ui: "'Space Grotesk', sans-serif",
     },
     effects: { scanlines: true, crtGlow: true, textGlow: true, paperTexture: false },
-    preview: { sampleText: 'The quick brown fox', bg: '#000000', fg: '#33d9a8' },
+    preview: { sampleText: 'The quick brown fox', bg: '#0a0f14', fg: '#00dfa0' },
   },
   modern: {
     mode: 'modern',
@@ -70,7 +70,7 @@ export const THEMES: Record<ThemeMode, ThemeDefinition> = {
       muted: 'rgba(224, 234, 240, 0.35)',
       border: 'rgba(0, 212, 200, 0.15)',
       surface: 'rgba(0, 212, 200, 0.06)',
-      menuBg: 'rgba(8, 14, 30, 0.92)',
+      menuBg: '#0a1228',
     },
     fonts: {
       body: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
@@ -86,14 +86,14 @@ export const THEMES: Record<ThemeMode, ThemeDefinition> = {
     description: 'Warm. Tactile. Timeless.',
     icon: '✦',
     colors: {
-      text: '#2c1f14',
-      background: '#f2ede3',
+      text: '#28201a',
+      background: '#f4efe5',
       glow: 'transparent',
-      accent: '#b8860b',
-      muted: 'rgba(44, 31, 20, 0.45)',
-      border: '#cec3ae',
+      accent: '#b87a1a',
+      muted: 'rgba(40, 32, 26, 0.4)',
+      border: '#d4c9b4',
       surface: '#faf6ee',
-      menuBg: '#faf6ee',
+      menuBg: '#f0ebe0',
     },
     fonts: {
       body: "'Lora', 'Georgia', 'Times New Roman', serif",
@@ -101,10 +101,9 @@ export const THEMES: Record<ThemeMode, ThemeDefinition> = {
       ui: "'Space Grotesk', sans-serif",
     },
     effects: { scanlines: false, crtGlow: false, textGlow: false, paperTexture: true },
-    preview: { sampleText: 'The quick brown fox', bg: '#f2ede3', fg: '#2c1f14' },
+    preview: { sampleText: 'The quick brown fox', bg: '#f4efe5', fg: '#28201a' },
   },
 };
-
 const THEME_KEY = 'pw-theme-mode';
 const THEME_CHOSEN_KEY = 'pw-theme-chosen';
 const DEFAULT_THEME: ThemeMode = 'terminal';
