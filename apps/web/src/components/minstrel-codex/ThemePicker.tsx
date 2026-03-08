@@ -9,14 +9,14 @@ interface ThemePickerProps {
 
 // ── Colour presets to offer on the picker ────────────────────────────────────
 const COLOR_COMBOS: { name: string; text: string; bg: string; accent: string; mode: ThemeMode }[] = [
-  { name: 'Terminal',      text: '#00c896', bg: '#0d1117', accent: '#00c896', mode: 'terminal' },
-  { name: 'Phosphor',      text: '#33ff33', bg: '#000000', accent: '#33ff33', mode: 'terminal' },
+  { name: 'Mint',          text: '#00dfa0', bg: '#0a0f14', accent: '#00dfa0', mode: 'terminal' },
+  { name: 'Phosphor',      text: '#33ff33', bg: '#080d08', accent: '#33ff33', mode: 'terminal' },
   { name: 'Warm Amber',    text: '#ffb000', bg: '#0d0c08', accent: '#ffb000', mode: 'terminal' },
-  { name: 'Cyberpunk',     text: '#00e5ff', bg: '#050010', accent: '#00e5ff', mode: 'terminal' },
-  { name: 'Modern',        text: '#1c2333', bg: '#f8f7f4', accent: '#4a6fa5', mode: 'modern' },
-  { name: 'Slate',         text: '#2d3748', bg: '#f0f2f5', accent: '#6b7fa3', mode: 'modern' },
-  { name: 'Typewriter',    text: '#2c1f14', bg: '#f2ede3', accent: '#b8860b', mode: 'typewriter' },
-  { name: 'Sepia Dark',    text: '#3d2b1a', bg: '#e8dcc8', accent: '#9a6b1a', mode: 'typewriter' },
+  { name: 'Cyberpunk',     text: '#00e5ff', bg: '#080814', accent: '#00e5ff', mode: 'terminal' },
+  { name: 'Bioluminescent', text: '#e0eaf0', bg: '#060b18', accent: '#00d4c8', mode: 'modern' },
+  { name: 'Arctic',        text: '#dce6f0', bg: '#0a1020', accent: '#5ea8d0', mode: 'modern' },
+  { name: 'Parchment',     text: '#28201a', bg: '#f4efe5', accent: '#b87a1a', mode: 'typewriter' },
+  { name: 'Sepia',         text: '#302418', bg: '#ece4d0', accent: '#9a6b1a', mode: 'typewriter' },
 ];
 
 // ── Mini editor mockup inside each card ──────────────────────────────────────

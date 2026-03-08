@@ -6,14 +6,14 @@
 @tailwind utilities;
 
 :root {
-  --terminal-text: #33d9a8;
-  --terminal-bg: #000000;
-  --terminal-glow: rgba(0, 200, 150, 0.15);
-  --terminal-accent: #33d9a8;
-  --terminal-muted: rgba(51, 217, 168, 0.5);
-  --terminal-border: rgba(51, 217, 168, 0.25);
-  --terminal-surface: rgba(51, 217, 168, 0.08);
-  --menu-bg: #111111;
+  --terminal-text: #00dfa0;
+  --terminal-bg: #0a0f14;
+  --terminal-glow: rgba(0, 223, 160, 0.12);
+  --terminal-accent: #00dfa0;
+  --terminal-muted: rgba(0, 223, 160, 0.4);
+  --terminal-border: rgba(0, 223, 160, 0.18);
+  --terminal-surface: rgba(0, 223, 160, 0.06);
+  --menu-bg: #0d1219;
   --font-body: 'JetBrains Mono', 'Courier Prime', 'Courier New', monospace;
   --font-display: 'Space Grotesk', sans-serif;
   --font-ui: 'Space Grotesk', sans-serif;
