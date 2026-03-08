@@ -49,10 +49,11 @@ export class GoogleDriveAdapter implements CloudAdapter {
   private async ensureAppRoot(): Promise<string> {
     if (this.appRootId) return this.appRootId;
 
+    // Always create/find "Minstrel" at the Drive root so every client
+    // (web, desktop, Pi) converges on the same folder regardless of config.
     const res = await this.edgeFetch({
       action: 'find-or-create-folder',
       folderName: APP_FOLDER_NAME,
-      parentId: this.requestedFolderId === 'root' ? undefined : this.requestedFolderId,
     });
 
     if (res.ok) {
