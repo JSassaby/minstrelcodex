@@ -4,7 +4,7 @@ import {
   FilePlus, BookOpen, FolderOpen, Clock, Save, FileOutput,
   Printer, PanelLeftOpen, Undo2, Redo2, Copy, ClipboardPaste,
   Wifi, Cloud, Settings, Camera, FileText, Music,
-  HelpCircle, ChevronDown, LayoutDashboard
+  HelpCircle, ChevronDown, LayoutDashboard, User
 } from 'lucide-react';
 import minstrelLogo from '@/assets/minstrel-logo.svg';
 import { t } from '@/lib/languages';
@@ -77,7 +77,7 @@ function getSubmenuItems(menu: string, language: string): MenuItem[] {
     case 'settings':
       return [
         { action: 'opensettings',   label: 'Open Settings Panel…', icon: <Settings size={14} color={ICON_ACCENT.muted} strokeWidth={1.6} /> },
-        { action: 'opendashboard',  label: 'Writer Dashboard',     shortcut: 'Ctrl+Shift+D', icon: <LayoutDashboard size={14} color={ICON_ACCENT.blue} strokeWidth={1.6} /> },
+        { action: 'opendashboard',  label: 'Writer Dashboard',     shortcut: 'Ctrl+Shift+U', icon: <LayoutDashboard size={14} color={ICON_ACCENT.blue} strokeWidth={1.6} /> },
       ];
     default:
       return [];
@@ -197,7 +197,6 @@ export default function MenuBar({
               }}
               onClick={(e) => {
                 e.stopPropagation();
-                if (menu === 'settings') { onAction('opensettings'); return; }
                 if (menu === 'music') { onAction('openmusic'); return; }
                 if (mouseActive && hoverMenuIdx === i) {
                   setHoverMenuIdx(null);
@@ -210,7 +209,7 @@ export default function MenuBar({
               }}
             >
               {t(language, `menu.${menu}`)}
-              {(menu !== 'settings' && menu !== 'music') && (
+              {menu !== 'music' && (
                 <ChevronDown
                   size={10}
                   strokeWidth={2}
@@ -252,8 +251,33 @@ export default function MenuBar({
         {shortName}
       </div>
 
-      {/* Right — help + logo + name */}
+      {/* Right — dashboard + help + logo + name */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+        <div
+          onClick={(e) => { e.stopPropagation(); onAction('opendashboard'); }}
+          aria-label="Writer Dashboard"
+          style={{
+            cursor: 'pointer',
+            opacity: 0.4,
+            padding: '5px',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            transition: 'all 0.2s',
+            background: 'transparent',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '0.9';
+            e.currentTarget.style.background = 'rgba(0, 212, 200, 0.08)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = '0.4';
+            e.currentTarget.style.background = 'transparent';
+          }}
+          title="Writer Dashboard"
+        >
+          <User size={15} strokeWidth={1.6} />
+        </div>
         <div
           onClick={(e) => { e.stopPropagation(); onAction('openhelp'); }}
           style={{
@@ -311,7 +335,7 @@ export default function MenuBar({
       {/* Portal dropdown */}
       {activeSubOpen && activeMenuIdx !== null && (() => {
         const menu = MENUS[activeMenuIdx];
-        if (menu === 'settings' || menu === 'music') return null;
+        if (menu === 'music') return null;
         const items = getSubmenuItems(menu, language);
         const dropStyle = getDropdownStyle();
         return createPortal(

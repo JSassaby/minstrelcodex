@@ -1096,7 +1096,7 @@ export default function MinstrelCodex() {
         return;
       }
 
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'U' || e.key === 'u')) {
         e.preventDefault();
         executeAction('opendashboard');
         return;

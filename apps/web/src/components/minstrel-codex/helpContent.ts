@@ -143,6 +143,7 @@ export const HELP_TREE: HelpFolder[] = [
 <table>
 <tr><td><kbd>ESC</kbd></td><td>Open or close the menu bar</td></tr>
 <tr><td><kbd>Ctrl + Shift + B</kbd></td><td>Toggle the file browser sidebar</td></tr>
+<tr><td><kbd>Ctrl + Shift + U</kbd></td><td>Open the Writer Dashboard</td></tr>
 <tr><td><kbd>F11</kbd></td><td>Toggle fullscreen / focus mode</td></tr>
 <tr><td><kbd>Ctrl + P</kbd></td><td>Print current document</td></tr>
 </table>
