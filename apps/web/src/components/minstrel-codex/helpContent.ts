@@ -441,25 +441,46 @@ export const HELP_TREE: HelpFolder[] = [
         title: 'Google Drive Sync',
         content: `
 <h2>Google Drive Sync</h2>
-<p>Minstrel Codex can sync your documents to Google Drive, giving you cloud backup and access from multiple devices.</p>
+<p>Minstrel Codex can sync your entire file structure to Google Drive, giving you cloud backup and seamless access from any device running Minstrel — whether it's the web app, desktop, or Pi edition.</p>
 
 <h3>Connecting Google Drive</h3>
 <ol>
-<li>Open Settings → Storage (or FILE → Google Drive from the menu)</li>
-<li>Follow the device pairing flow to authorise Minstrel Codex</li>
-<li>Once connected, your files will sync automatically</li>
+<li>Open <strong>Settings → Storage</strong>, or select <strong>FILE → Google Drive</strong> from the menu bar.</li>
+<li>Click <strong>Connect to Google Drive</strong>. A device pairing screen will appear with a code and a link.</li>
+<li>Open the link on any device, sign in to your Google account, and enter the code.</li>
+<li>Once authorised, the status will change to <strong>✓ Connected</strong>. Sync begins automatically.</li>
 </ol>
+
+<h3>The "Minstrel" Folder</h3>
+<p>All synced files live inside a single folder called <strong>Minstrel</strong> at the root of your Google Drive. This folder is created automatically when you first connect.</p>
+<ul>
+<li>Every version of Minstrel Codex (web, desktop, Pi) uses the <strong>same "Minstrel" folder</strong>, so your work follows you across devices.</li>
+<li>The complete folder hierarchy from your file browser is preserved — Novel Projects, chapters, notes, and subfolders all appear on Drive exactly as they do locally.</li>
+<li>If the folder already exists (e.g. from a previous device), Minstrel finds it instead of creating a duplicate.</li>
+</ul>
 
 <h3>How Sync Works</h3>
 <ul>
-<li>Minstrel Codex creates a dedicated folder in your Google Drive</li>
-<li>Documents are synced as individual files</li>
-<li>Changes are pushed to Drive after each save</li>
-<li>If there's a conflict (edited on two devices), you'll be prompted to choose which version to keep</li>
+<li><strong>Automatic bidirectional sync</strong> — Every 2 minutes, Minstrel pulls new/updated files from Drive and pushes any local changes. A full sync also runs when the app starts.</li>
+<li><strong>Conflict resolution</strong> — If the same file was edited on two devices, the newer version wins. The older version is not lost — it remains in your Drive's version history.</li>
+<li><strong>Offline resilience</strong> — If you go offline, changes queue locally and sync when connectivity returns.</li>
 </ul>
 
-<h3>Privacy</h3>
-<p>Minstrel Codex only accesses its own folder in your Drive — it never reads or modifies your other files. You can revoke access at any time from your Google account settings.</p>
+<h3>Deleting Files</h3>
+<p>When you permanently delete a file or folder locally (from the Deleted folder), it is also <strong>trashed on Google Drive</strong> during the next sync cycle. Trashed files can still be recovered from Google Drive's Trash for 30 days.</p>
+
+<h3>Manual Sync</h3>
+<p>You can trigger a sync at any time by clicking the sync status indicator in the status bar, or via <strong>FILE → Sync Now</strong>.</p>
+
+<h3>Disconnecting</h3>
+<p>To disconnect from Google Drive, go to <strong>Settings → Storage</strong> and click <strong>Disconnect</strong>. Your local files remain untouched — only the cloud sync stops. The "Minstrel" folder and its contents remain on your Drive.</p>
+
+<h3>Privacy & Security</h3>
+<ul>
+<li>Minstrel Codex only accesses the <strong>Minstrel</strong> folder in your Drive — it cannot read or modify any other files.</li>
+<li>The connection uses Google's secure OAuth flow with the <code>drive.file</code> scope, which limits access to files created by the app.</li>
+<li>You can revoke access at any time from your <a href="https://myaccount.google.com/permissions" target="_blank">Google Account permissions</a> page.</li>
+</ul>
 `,
       },
       {
