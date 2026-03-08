@@ -4,7 +4,7 @@ export interface DocumentRecord {
   id: string; // filename / path
   content: string;
   lastModified: string;
-  syncStatus: 'synced' | 'pending' | 'conflict';
+  syncStatus: 'synced' | 'pending' | 'conflict' | 'deleted';
 }
 
 export interface FileStructureRecord {

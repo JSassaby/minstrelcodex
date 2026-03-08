@@ -89,6 +89,18 @@ export function useSyncEngine(adapter: CloudAdapter | null, options: SyncEngineO
             await db.documents.update(doc.id, { syncStatus: 'synced' });
           }
         }
+
+        // ── Delete: remove remotely-deleted docs from Drive ─────────────
+        const deleted = await db.documents.where('syncStatus').equals('deleted').toArray();
+        for (const doc of deleted) {
+          try {
+            await a.delete(doc.id);
+          } catch {
+            // best-effort — file may already be gone
+          }
+          // Remove the tombstone from local DB
+          await db.documents.delete(doc.id);
+        }
       }
 
       setSyncStatus('synced');

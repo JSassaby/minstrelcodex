@@ -169,4 +169,39 @@ export class GoogleDriveAdapter implements CloudAdapter {
     if (newId) this.driveFileMap.set(localId, newId);
     return newId;
   }
+
+  async delete(localId: string): Promise<boolean> {
+    if (!this.token) return false;
+    if (!this.listed) await this.list();
+
+    // Try as file first
+    const fileRemoteId = this.driveFileMap.get(localId);
+    if (fileRemoteId) {
+      const res = await this.edgeFetch({ action: 'trash', fileId: fileRemoteId });
+      if (res.ok) {
+        this.driveFileMap.delete(localId);
+        return true;
+      }
+      return false;
+    }
+
+    // Try as folder
+    const folderId = this.folderIdCache.get(localId);
+    if (folderId) {
+      const res = await this.edgeFetch({ action: 'trash', fileId: folderId });
+      if (res.ok) {
+        this.folderIdCache.delete(localId);
+        // Remove all cached entries under this folder
+        for (const [key] of this.driveFileMap) {
+          if (key.startsWith(localId + '/')) this.driveFileMap.delete(key);
+        }
+        for (const [key] of this.folderIdCache) {
+          if (key.startsWith(localId + '/')) this.folderIdCache.delete(key);
+        }
+        return true;
+      }
+    }
+
+    return false;
+  }
 }

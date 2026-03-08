@@ -247,6 +247,31 @@ serve(async (req) => {
         });
       }
 
+      case 'trash': {
+        if (!fileId) {
+          return new Response(JSON.stringify({ error: 'fileId required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        // Move to trash (recoverable by user in Drive)
+        const res = await fetch(`${DRIVE_API}/files/${fileId}`, {
+          method: 'PATCH',
+          headers: { ...authHeaders, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trashed: true }),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          return new Response(JSON.stringify({ error: data.error?.message || 'Trash failed' }), {
+            status: res.status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       default:
         return new Response(JSON.stringify({ error: `Unknown action: ${action}` }), {
           status: 400,
