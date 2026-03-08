@@ -33,6 +33,8 @@ import ChapterOverviewPanel from '@/components/minstrel-codex/ChapterOverviewPan
 import NotesPanel from '@/components/minstrel-codex/NotesPanel';
 import ManuscriptStatsModal from '@/components/minstrel-codex/ManuscriptStatsModal';
 import SongComplete from '@/components/minstrel-codex/SongComplete';
+import MilestoneNotifier, { emitMilestones } from '@/components/minstrel-codex/MilestoneNotifier';
+import { detectStreakMilestones, detectLevelUp } from '@/components/minstrel-codex/milestoneDetection';
 import { useMusicPlayer } from '@/hooks/useMusicPlayer';
 import { useAccessibility } from '@/hooks/useAccessibility';
 import type { ModalType, Language, Difficulty, PinConfig } from '@minstrelcodex/core';
