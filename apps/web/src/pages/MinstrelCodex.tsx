@@ -2307,6 +2307,8 @@ export default function MinstrelCodex() {
         xpNeeded={xpNeeded}
         onClose={() => setSongCompleteVisible(false)}
       />
+      {/* Milestone celebration queue (streak/level-up cards) */}
+      <MilestoneNotifier />
     </div>
   );
 }
