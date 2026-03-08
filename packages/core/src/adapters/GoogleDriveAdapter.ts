@@ -170,38 +170,38 @@ export class GoogleDriveAdapter implements CloudAdapter {
     return newId;
   }
 
-  async delete(remoteId: string): Promise<boolean> {
+  async delete(localId: string): Promise<boolean> {
     if (!this.token) return false;
-    const res = await this.edgeFetch({ action: 'trash', fileId: remoteId });
-    return res.ok;
-  }
-
-  /** Delete a remote file by its local path key */
-  async deleteByPath(localId: string): Promise<boolean> {
     if (!this.listed) await this.list();
-    const remoteId = this.driveFileMap.get(localId);
-    if (!remoteId) return false;
-    const ok = await this.delete(remoteId);
-    if (ok) this.driveFileMap.delete(localId);
-    return ok;
-  }
 
-  /** Delete a remote folder by its local path key */
-  async deleteFolderByPath(folderPath: string): Promise<boolean> {
-    if (!this.listed) await this.list();
-    const folderId = this.folderIdCache.get(folderPath);
-    if (!folderId) return false;
-    const ok = await this.delete(folderId);
-    if (ok) {
-      this.folderIdCache.delete(folderPath);
-      // Remove all cached entries under this folder
-      for (const [key] of this.driveFileMap) {
-        if (key.startsWith(folderPath + '/')) this.driveFileMap.delete(key);
+    // Try as file first
+    const fileRemoteId = this.driveFileMap.get(localId);
+    if (fileRemoteId) {
+      const res = await this.edgeFetch({ action: 'trash', fileId: fileRemoteId });
+      if (res.ok) {
+        this.driveFileMap.delete(localId);
+        return true;
       }
-      for (const [key] of this.folderIdCache) {
-        if (key.startsWith(folderPath + '/')) this.folderIdCache.delete(key);
+      return false;
+    }
+
+    // Try as folder
+    const folderId = this.folderIdCache.get(localId);
+    if (folderId) {
+      const res = await this.edgeFetch({ action: 'trash', fileId: folderId });
+      if (res.ok) {
+        this.folderIdCache.delete(localId);
+        // Remove all cached entries under this folder
+        for (const [key] of this.driveFileMap) {
+          if (key.startsWith(localId + '/')) this.driveFileMap.delete(key);
+        }
+        for (const [key] of this.folderIdCache) {
+          if (key.startsWith(localId + '/')) this.folderIdCache.delete(key);
+        }
+        return true;
       }
     }
-    return ok;
+
+    return false;
   }
 }

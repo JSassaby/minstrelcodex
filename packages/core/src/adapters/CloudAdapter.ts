@@ -40,9 +40,9 @@ export interface CloudAdapter {
   push(localId: string, content: string, remoteId?: string): Promise<string | null>;
 
   /**
-   * Delete a remote file or folder (trash it).
-   * @param remoteId - the provider-specific ID
+   * Delete a remote file by its local path key (moves to trash on Drive).
+   * @param localId - the doc key (e.g. "folder/file.txt")
    * @returns true on success
    */
-  delete(remoteId: string): Promise<boolean>;
+  delete(localId: string): Promise<boolean>;
 }
