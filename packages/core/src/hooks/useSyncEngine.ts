@@ -110,10 +110,10 @@ export function useSyncEngine(adapter: CloudAdapter | null, options: SyncEngineO
     performSync('both');
   }, []); // run once on mount
 
-  // Every 5 minutes: push pending — restarts when adapter becomes available
+  // Every 2 minutes: full bidirectional sync
   useEffect(() => {
     if (!adapter) return;
-    const interval = setInterval(() => performSync('push'), PUSH_INTERVAL_MS);
+    const interval = setInterval(() => performSync('both'), SYNC_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [adapter]); // re-run when adapter changes so interval is set up when token loads
 
