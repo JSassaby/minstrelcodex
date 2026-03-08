@@ -131,8 +131,6 @@ export default function MinstrelCodex() {
   const [novelWizardOpen, setNovelWizardOpen] = useState(false);
 
   // Save version
-  const [versionName, setVersionName] = useState('');
-  const [selectedNovelIdx, setSelectedNovelIdx] = useState(0);
 
   // Toast notification
   const [toastMessage, setToastMessage] = useState('');
@@ -177,7 +175,7 @@ export default function MinstrelCodex() {
 
   // Font family
   const [fontFamily, setFontFamily] = useState(() => {
-    return localStorage.getItem('pw-font-family') || "'Courier Prime', 'Courier New', monospace";
+    return localStorage.getItem('minstrel_editor_font') || "Georgia, 'Times New Roman', serif";
   });
 
   // Typing challenge
@@ -772,6 +770,9 @@ export default function MinstrelCodex() {
       case 'bluetooth':
         setBluetoothOn(prev => !prev);
         break;
+      case 'networksettings':
+        setWifiSetupOpen(true);
+        break;
       case 'shutdown':
         location.reload();
         break;
@@ -803,10 +804,15 @@ export default function MinstrelCodex() {
           showToast('No novel projects found. Create one first via FILE → New Novel Project.');
           break;
         }
-        setSelectedNovelIdx(0);
-        setVersionName('v1.0 - ');
-        setActiveModal('save-version');
-        setModalButtonIndex(0);
+        const targetNovel = novels[0];
+        const existingVersions = fileStructure.structure.root.children?.[targetNovel]?.children?.['Versions']?.children;
+        const versionCount = existingVersions ? Object.keys(existingVersions).length + 1 : 1;
+        const now = new Date();
+        const dateLabel = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        const timeLabel = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        const autoVersionName = `v${versionCount} — ${dateLabel}, ${timeLabel}`;
+        fileStructure.saveVersion(targetNovel, autoVersionName);
+        showToast(`Version checkpoint saved: ${autoVersionName}`);
         break;
       }
       case 'savesnapshot': {
@@ -816,8 +822,10 @@ export default function MinstrelCodex() {
         }
         fileStructure.saveSnapshot(docStorage.currentDocument.filename);
         const shortName = docStorage.currentDocument.filename.split('/').pop() || docStorage.currentDocument.filename;
-        const dateStr = new Date().toISOString().split('T')[0];
-        showToast(`Snapshot saved: ${dateStr} - ${shortName}`);
+        const now = new Date();
+        const dateLabel = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        const timeLabel = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        showToast(`Quick snapshot saved — ${dateLabel}, ${timeLabel} · ${shortName}`);
         break;
       }
       case 'print': {
@@ -1019,6 +1027,12 @@ export default function MinstrelCodex() {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'M' || e.key === 'M')) {
         e.preventDefault();
         setStatsModalOpen(true);
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'W' || e.key === 'w')) {
+        e.preventDefault();
+        setWifiSetupOpen(true);
         return;
       }
 
@@ -1260,37 +1274,11 @@ export default function MinstrelCodex() {
 
       // new-novel is now handled by full-screen wizard, not modal
 
-      case 'save-version': {
-        const novels = fileStructure.getNovelProjects();
-        if (e.key === 'Tab') {
-          setModalButtonIndex(prev => (prev + 1) % 3);
-          e.preventDefault();
-        } else if (e.key === 'ArrowUp' && modalButtonIndex === 0) {
-          setSelectedNovelIdx(prev => Math.max(prev - 1, 0));
-          e.preventDefault();
-        } else if (e.key === 'ArrowDown' && modalButtonIndex === 0) {
-          setSelectedNovelIdx(prev => Math.min(prev + 1, novels.length - 1));
-          e.preventDefault();
-        } else if (e.key === 'Enter') {
-          if (modalButtonIndex === 1 || (modalButtonIndex === 2 && false)) {
-            // Save button
-            if (versionName.trim() && novels[selectedNovelIdx]) {
-              fileStructure.saveVersion(novels[selectedNovelIdx], versionName.trim());
-              showToast(`Version saved: ${versionName.trim()}`);
-              closeModal();
-            }
-          } else if (modalButtonIndex === 2) {
-            closeModal();
-          }
-          e.preventDefault();
-        }
-        break;
-      }
     }
   }, [
     activeModal, modalButtonIndex, saveFilename, folderName, selectedFolderIdx,
     typingPhase, typingBtnIdx, typingDifficulty,
-    moveFileName, moveFilePath, novelTitle, versionName, selectedNovelIdx,
+    moveFileName, moveFilePath, novelTitle,
     docStorage, fileStructure, theme, editorContent, closeModal, showToast,
   ]);
 
@@ -1601,7 +1589,7 @@ export default function MinstrelCodex() {
             onChangeFontSize={(delta) => theme.changeFontSize(delta)}
             onChangeFontFamily={(font) => {
               setFontFamily(font);
-              localStorage.setItem('pw-font-family', font);
+              localStorage.setItem('minstrel_editor_font', font);
             }}
             onToggleSidebar={() => executeAction('togglesidebar')}
             onToggleFocusMode={toggleFocusMode}
@@ -2142,67 +2130,6 @@ export default function MinstrelCodex() {
         }}
       />
 
-      {/* Save Version Modal */}
-      <ModalShell visible={activeModal === 'save-version'} title="📋 SAVE VERSION" onClose={closeModal}>
-        <div style={{ margin: '16px 0' }}>
-          {(() => {
-            const novels = fileStructure.getNovelProjects();
-            return (
-              <>
-                <p style={{ marginBottom: '16px', textAlign: 'center' }}>
-                  Copy all files from Active/Chapters/ to a new version folder.
-                </p>
-                {novels.length > 1 && (
-                  <div style={{ marginBottom: '16px' }}>
-                    <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '4px' }}>SELECT NOVEL:</div>
-                    {novels.map((name, i) => (
-                      <div
-                        key={name}
-                        onClick={() => setSelectedNovelIdx(i)}
-                        style={{
-                          padding: '8px 12px',
-                          margin: '4px 0',
-                          border: '1px solid var(--terminal-text)',
-                          background: i === selectedNovelIdx ? 'var(--terminal-text)' : 'transparent',
-                          color: i === selectedNovelIdx ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        📖 {name}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {novels.length === 1 && (
-                  <div style={{ marginBottom: '16px', textAlign: 'center', opacity: 0.8 }}>
-                    Novel: <strong>{novels[0]}</strong>
-                  </div>
-                )}
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '4px' }}>VERSION NAME:</div>
-                  <ModalInput
-                    value={versionName}
-                    onChange={setVersionName}
-                    placeholder="e.g. v1.0 - First Draft Complete"
-                    autoFocus
-                  />
-                </div>
-              </>
-            );
-          })()}
-        </div>
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-          <ModalButton label="SAVE VERSION" focused={modalButtonIndex === 1} onClick={() => {
-            const novels = fileStructure.getNovelProjects();
-            if (versionName.trim() && novels[selectedNovelIdx]) {
-              fileStructure.saveVersion(novels[selectedNovelIdx], versionName.trim());
-              showToast(`Version saved: ${versionName.trim()}`);
-              closeModal();
-            }
-          }} />
-          <ModalButton label="CANCEL" focused={modalButtonIndex === 2} onClick={closeModal} />
-        </div>
-      </ModalShell>
 
       {/* Manuscript Stats Modal */}
       <ManuscriptStatsModal

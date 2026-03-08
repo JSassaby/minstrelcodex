@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   FilePlus, BookOpen, FolderOpen, Clock, Save, FileOutput,
   Printer, PanelLeftOpen, Undo2, Redo2, Copy, ClipboardPaste,
-  Wifi, WifiOff, Bluetooth, Cloud, Settings, Camera, FileText, Music,
+  Wifi, Cloud, Settings, Camera, FileText, Music,
   HelpCircle
 } from 'lucide-react';
 import minstrelLogo from '@/assets/minstrel-logo.svg';
@@ -40,7 +40,7 @@ interface MenuItem {
   icon?: React.ReactNode;
 }
 
-function getSubmenuItems(menu: string, language: string, wifiOn: boolean, bluetoothOn: boolean): MenuItem[] {
+function getSubmenuItems(menu: string, language: string): MenuItem[] {
   switch (menu) {
     case 'file':
       return [
@@ -52,8 +52,8 @@ function getSubmenuItems(menu: string, language: string, wifiOn: boolean, blueto
         { action: 'separator',     label: '' },
         { action: 'save',          label: t(language, 'file.save'),             shortcut: 'Ctrl+S',       icon: <Save size={13} color={ICON_ACCENT.green} strokeWidth={1.8} /> },
         { action: 'saveas',        label: t(language, 'file.saveas'),           shortcut: '',             icon: <Save size={13} color={ICON_ACCENT.muted} strokeWidth={1.8} /> },
-        { action: 'saveversion',   label: 'Save Version…',                      shortcut: '',             icon: <FileText size={13} color={ICON_ACCENT.blue} strokeWidth={1.8} /> },
-        { action: 'savesnapshot',  label: 'Save Snapshot',                      shortcut: 'Ctrl+Shift+V', icon: <Camera size={13} color={ICON_ACCENT.blue} strokeWidth={1.8} /> },
+        { action: 'saveversion',   label: 'Save Version Checkpoint',            shortcut: '',             icon: <FileText size={13} color={ICON_ACCENT.blue} strokeWidth={1.8} /> },
+        { action: 'savesnapshot',  label: 'Quick Snapshot',                     shortcut: 'Ctrl+Shift+V', icon: <Camera size={13} color={ICON_ACCENT.blue} strokeWidth={1.8} /> },
         { action: 'separator',     label: '' },
         { action: 'print',         label: 'Print Current Page',                 shortcut: 'Ctrl+P',       icon: <Printer size={13} color={ICON_ACCENT.muted} strokeWidth={1.8} /> },
         { action: 'export',        label: 'Export / Combine…',                  shortcut: '',             icon: <FileOutput size={13} color={ICON_ACCENT.green} strokeWidth={1.8} /> },
@@ -69,8 +69,7 @@ function getSubmenuItems(menu: string, language: string, wifiOn: boolean, blueto
       ];
     case 'network':
       return [
-        { action: 'wifi',      label: `Wi-Fi — ${wifiOn ? 'On' : 'Off'}`,           icon: wifiOn ? <Wifi size={13} color={ICON_ACCENT.green} strokeWidth={1.8} /> : <WifiOff size={13} color={ICON_ACCENT.red} strokeWidth={1.8} /> },
-        { action: 'bluetooth', label: `Bluetooth — ${bluetoothOn ? 'On' : 'Off'}`,  icon: <Bluetooth size={13} color={bluetoothOn ? ICON_ACCENT.blue : ICON_ACCENT.red} strokeWidth={1.8} /> },
+        { action: 'networksettings', label: 'Network Settings', shortcut: 'Ctrl+Shift+W', icon: <Wifi size={13} color={ICON_ACCENT.blue} strokeWidth={1.8} /> },
       ];
     // storage menu removed — Drive access via File menu
     case 'music':
@@ -88,7 +87,7 @@ function getSubmenuItems(menu: string, language: string, wifiOn: boolean, blueto
 
 export default function MenuBar({
   language, visible, menuIndex, submenuOpen, submenuIndex,
-  wifiOn, bluetoothOn, filename, onAction, onMenuStateChange,
+  filename, onAction, onMenuStateChange,
 }: MenuBarProps) {
   const [hoverMenuIdx, setHoverMenuIdx] = useState<number | null>(null);
   const [hoverSubIdx, setHoverSubIdx] = useState<number | null>(null);
@@ -284,7 +283,7 @@ export default function MenuBar({
       {activeSubOpen && activeMenuIdx !== null && (() => {
         const menu = MENUS[activeMenuIdx];
         if (menu === 'settings' || menu === 'music') return null;
-        const items = getSubmenuItems(menu, language, wifiOn, bluetoothOn);
+        const items = getSubmenuItems(menu, language);
         const dropStyle = getDropdownStyle();
         return createPortal(
           <div ref={dropdownRef} style={{ ...dropStyle, fontFamily: uiFont }}>

@@ -19,11 +19,12 @@ interface EditorProps {
   readOnly?: boolean;
   sidebarOpen?: boolean;
   focusMode?: boolean;
+  documentTitle?: string;
+  onTitleBlur?: (text: string) => void;
   onChangeFontSize: (delta: number) => void;
   onChangeFontFamily: (font: string) => void;
   onToggleSidebar?: () => void;
   onToggleFocusMode?: () => void;
-  onH1Blur?: (text: string) => void;
 }
 
 // ── Exit hint shown on mouse move during focus mode ────────────────
@@ -56,8 +57,8 @@ function ExitHint({ onExit }: { onExit?: () => void }) {
         fontSize: '11px',
         fontFamily: "var(--font-ui, 'Space Grotesk', sans-serif)",
         letterSpacing: '0.12em',
-        color: 'var(--terminal-muted, var(--terminal-text))',
-        opacity: visible ? 0.5 : 0,
+        color: '#ccc',
+        opacity: visible ? 0.6 : 0,
         transition: 'opacity 0.4s ease',
         pointerEvents: visible ? 'auto' : 'none',
         cursor: 'pointer',
@@ -74,10 +75,24 @@ function ExitHint({ onExit }: { onExit?: () => void }) {
 
 const Editor = forwardRef<EditorHandle, EditorProps>(({
   content, onChange, fontSize, fontFamily, placeholder, readOnly,
-  sidebarOpen, focusMode, onChangeFontSize, onChangeFontFamily,
-  onToggleSidebar, onToggleFocusMode, onH1Blur,
+  sidebarOpen, focusMode, documentTitle, onTitleBlur,
+  onChangeFontSize, onChangeFontFamily, onToggleSidebar, onToggleFocusMode,
 }, ref) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
+  const [titleValue, setTitleValue] = useState(documentTitle || '');
+
+  // Sync title when document changes
+  useEffect(() => {
+    setTitleValue(documentTitle || '');
+  }, [documentTitle]);
+
+  // Apply font family via CSS custom property
+  useEffect(() => {
+    if (pageRef.current) {
+      pageRef.current.style.setProperty('--editor-font', fontFamily);
+    }
+  }, [fontFamily]);
 
   const editor = useEditor({
     extensions: [
@@ -91,18 +106,9 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
-    onBlur: ({ editor }) => {
-      if (!onH1Blur) return;
-      const firstNode = editor.getJSON().content?.[0];
-      if (firstNode?.type === 'heading' && firstNode?.attrs?.level === 1) {
-        const text = (firstNode.content as Array<{ text?: string }> | undefined)
-          ?.map(n => n.text || '').join('') || '';
-        if (text.trim()) onH1Blur(text.trim());
-      }
-    },
     editorProps: {
       attributes: {
-        class: 'terminal-editor',
+        class: 'page-editor',
         spellcheck: 'false',
       },
     },
@@ -157,139 +163,197 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({
       ref={scrollRef}
       style={{
         flex: 1,
-        padding: focusMode ? '10vh 0 40vh' : '20px',
         overflow: 'auto',
-        cursor: 'text',
+        background: '#1c1c1e',
+        padding: focusMode ? '8vh 24px 40vh' : '32px 24px 40px',
         display: 'flex',
-        flexDirection: 'column',
-        alignItems: focusMode ? 'center' : 'stretch',
-      }}
-      onClick={(e) => {
-        if ((e.target as HTMLElement).closest('.ProseMirror')) return;
-        editor?.commands.focus('end');
+        justifyContent: 'center',
+        alignItems: 'flex-start',
       }}
     >
-      <style>{`
-        .terminal-editor {
-          outline: none;
-          color: var(--terminal-text);
-          font-family: ${fontFamily};
-          font-size: ${fontSize}px;
-          line-height: 1.6;
-          text-shadow: 0 0 2px var(--terminal-glow);
-          caret-color: var(--terminal-text);
-          min-height: 100%;
-          ${focusMode ? 'max-width: 680px; width: 100%;' : ''}
-        }
-        .terminal-editor p {
-          margin: 0 0 0.5em 0;
-        }
-        .terminal-editor h1 {
-          font-size: 2em;
-          font-weight: bold;
-          margin: 0.5em 0 0.3em;
-          text-shadow: 0 0 4px var(--terminal-glow);
-          border-bottom: 1px solid var(--terminal-text);
-          padding-bottom: 0.2em;
-        }
-        .terminal-editor h2 {
-          font-size: 1.6em;
-          font-weight: bold;
-          margin: 0.4em 0 0.3em;
-          text-shadow: 0 0 3px var(--terminal-glow);
-        }
-        .terminal-editor h3 {
-          font-size: 1.3em;
-          font-weight: bold;
-          margin: 0.3em 0 0.2em;
-          text-shadow: 0 0 2px var(--terminal-glow);
-        }
-        .terminal-editor h4 {
-          font-size: 1.1em;
-          font-weight: bold;
-          margin: 0.3em 0 0.2em;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-        }
-        .terminal-editor p.is-editor-empty:first-child::before {
-          content: '${placeholder.replace(/'/g, "\\'")}';
-          color: var(--terminal-text);
-          opacity: 0.4;
-          pointer-events: none;
-          float: left;
-          height: 0;
-        }
-        .terminal-editor strong {
-          font-weight: bold;
-          text-shadow: 0 0 3px var(--terminal-glow);
-        }
-        .terminal-editor em {
-          font-style: italic;
-        }
-        .terminal-editor u {
-          text-decoration: underline;
-          text-underline-offset: 3px;
-        }
-        .terminal-editor ul {
-          list-style: disc;
-          padding-left: 1.5em;
-          margin: 0.5em 0;
-        }
-        .terminal-editor ol {
-          list-style: decimal;
-          padding-left: 1.5em;
-          margin: 0.5em 0;
-        }
-        .terminal-editor li {
-          margin: 0.25em 0;
-        }
-        .terminal-editor li p {
-          margin: 0;
-        }
-        .terminal-editor blockquote {
-          border-left: 3px solid var(--terminal-text);
-          padding-left: 1em;
-          margin: 0.5em 0;
-          opacity: 0.8;
-        }
-        .terminal-editor code {
-          background: rgba(255,255,255,0.1);
-          padding: 2px 4px;
-          border: 1px solid var(--terminal-text);
-          font-size: 0.9em;
-        }
-        .terminal-editor pre {
-          background: rgba(0,0,0,0.3);
-          border: 1px solid var(--terminal-text);
-          padding: 12px;
-          margin: 0.5em 0;
-          overflow-x: auto;
-        }
-        .terminal-editor pre code {
-          background: none;
-          border: none;
-          padding: 0;
-        }
-        .terminal-editor hr {
-          border: none;
-          text-align: center;
-          margin: 1.5em 0;
-          overflow: visible;
-          height: 1em;
-          line-height: 1em;
-          color: var(--terminal-text);
-          opacity: 0.7;
-        }
-        .terminal-editor hr::after {
-          content: '* \\00a0 * \\00a0 *';
-          display: inline-block;
-          font-family: ${fontFamily};
-          font-size: 1em;
-          letter-spacing: 0.3em;
-          text-shadow: 0 0 4px var(--terminal-glow);
-        }
-      `}</style>
-      <EditorContent editor={editor} />
+      {/* The page */}
+      <div
+        ref={pageRef}
+        style={{
+          width: '100%',
+          maxWidth: '740px',
+          background: '#faf9f6',
+          padding: '64px 56px 80px',
+          boxShadow: '0 4px 40px rgba(0,0,0,0.55), 0 1px 6px rgba(0,0,0,0.35)',
+          borderRadius: '2px',
+          position: 'relative',
+          boxSizing: 'border-box',
+        }}
+        onClick={(e) => {
+          const target = e.target as HTMLElement;
+          if (target.closest('.page-editor') || target.closest('.page-title-input')) return;
+          editor?.commands.focus('end');
+        }}
+      >
+        <style>{`
+          .page-title-input::placeholder {
+            color: #c0bdb8;
+          }
+          .page-editor {
+            outline: none;
+            color: #2a2a2a;
+            font-family: var(--editor-font, Georgia, 'Times New Roman', serif);
+            font-size: 17px;
+            line-height: 1.8;
+            caret-color: #1a1a1a;
+            min-height: 240px;
+          }
+          .page-editor p {
+            margin: 0 0 1em 0;
+          }
+          .page-editor h1 {
+            font-family: var(--editor-font, Georgia, 'Times New Roman', serif);
+            font-size: 1.7em;
+            font-weight: 600;
+            margin: 0.8em 0 0.4em;
+            color: #1a1a1a;
+          }
+          .page-editor h2 {
+            font-family: var(--editor-font, Georgia, 'Times New Roman', serif);
+            font-size: 1.35em;
+            font-weight: 600;
+            margin: 0.7em 0 0.35em;
+            color: #1a1a1a;
+          }
+          .page-editor h3 {
+            font-size: 1.15em;
+            font-weight: 600;
+            margin: 0.6em 0 0.3em;
+            color: #1a1a1a;
+          }
+          .page-editor h4 {
+            font-size: 1em;
+            font-weight: 600;
+            margin: 0.5em 0 0.25em;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #1a1a1a;
+          }
+          .page-editor p.is-editor-empty:first-child::before {
+            content: '${placeholder.replace(/'/g, "\\'")}';
+            color: #c0bdb8;
+            pointer-events: none;
+            float: left;
+            height: 0;
+          }
+          .page-editor strong {
+            font-weight: 700;
+            color: #1a1a1a;
+          }
+          .page-editor em {
+            font-style: italic;
+          }
+          .page-editor u {
+            text-decoration: underline;
+            text-underline-offset: 3px;
+          }
+          .page-editor ul {
+            list-style: disc;
+            padding-left: 1.6em;
+            margin: 0.5em 0 1em;
+          }
+          .page-editor ol {
+            list-style: decimal;
+            padding-left: 1.6em;
+            margin: 0.5em 0 1em;
+          }
+          .page-editor li {
+            margin: 0.2em 0;
+          }
+          .page-editor li p {
+            margin: 0;
+          }
+          .page-editor blockquote {
+            border-left: 3px solid #d0cdc8;
+            padding-left: 1.2em;
+            margin: 1em 0;
+            color: #555;
+            font-style: italic;
+          }
+          .page-editor code {
+            background: rgba(0,0,0,0.06);
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 0.88em;
+            font-family: 'Courier Prime', 'Courier New', monospace;
+            color: #333;
+          }
+          .page-editor pre {
+            background: #f0ede8;
+            border: 1px solid #ddd;
+            padding: 14px 16px;
+            margin: 1em 0;
+            overflow-x: auto;
+            border-radius: 3px;
+          }
+          .page-editor pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            border-radius: 0;
+          }
+          .page-editor hr {
+            border: none;
+            text-align: center;
+            margin: 2em 0;
+            overflow: visible;
+            height: 1em;
+            line-height: 1em;
+            color: #999;
+          }
+          .page-editor hr::after {
+            content: '* \\00a0 * \\00a0 *';
+            display: inline-block;
+            font-family: Georgia, serif;
+            font-size: 1em;
+            letter-spacing: 0.4em;
+          }
+        `}</style>
+
+        {/* Document title */}
+        <input
+          className="page-title-input"
+          value={titleValue}
+          onChange={e => setTitleValue(e.target.value)}
+          onBlur={() => {
+            const text = titleValue.trim();
+            if (text && onTitleBlur) onTitleBlur(text);
+            else if (!text) setTitleValue(documentTitle || '');
+          }}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.currentTarget.blur();
+              setTimeout(() => editor?.commands.focus(), 50);
+            }
+          }}
+          placeholder="Untitled"
+          style={{
+            display: 'block',
+            width: '100%',
+            border: 'none',
+            background: 'transparent',
+            outline: 'none',
+            fontFamily: 'var(--editor-font, Georgia, \'Times New Roman\', serif)',
+            fontSize: '28px',
+            fontWeight: '400',
+            color: '#1a1a1a',
+            marginBottom: '20px',
+            padding: 0,
+            boxSizing: 'border-box',
+          }}
+        />
+
+        {/* Divider */}
+        <div style={{ height: '1px', background: '#d4d0ca', marginBottom: '28px', width: '100%' }} />
+
+        {/* TipTap body */}
+        <EditorContent editor={editor} />
+      </div>
     </div>
   );
 
@@ -301,7 +365,6 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({
         flexDirection: 'column',
         overflow: 'hidden',
         position: 'relative',
-        background: focusMode ? 'var(--terminal-bg)' : undefined,
       }}
     >
       {focusMode && <ExitHint onExit={onToggleFocusMode} />}

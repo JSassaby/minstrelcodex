@@ -787,14 +787,14 @@ export default function FileBrowser({
       {/* Action bar */}
       <div
         style={{
-          borderTop: '1px solid var(--terminal-border)',
-          padding: '8px 10px',
+          borderTop: '1px solid rgba(0,0,0,0.07)',
+          padding: '10px 12px 12px',
           flexShrink: 0,
-          display: 'flex',
-          flexWrap: 'wrap',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
           gap: '4px',
           fontFamily: uiFont,
-          background: 'var(--terminal-surface)',
+          background: 'rgba(0,0,0,0.02)',
         }}
       >
         {[
@@ -840,7 +840,7 @@ export default function FileBrowser({
               fontSize: '9px',
               fontFamily: "'Courier Prime', monospace",
               lineHeight: 1.4,
-              opacity: 0.7,
+              opacity: 0.4,
             }}>{key === 'Enter' ? '↵' : shift ? `⇧${key}` : key}</span>
             {label}
           </button>
@@ -864,27 +864,6 @@ export default function FileBrowser({
             }}
           >
             ☁ Sync
-          </button>
-        )}
-        {onSyncICloud && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onSyncICloud!(); }}
-            style={{
-              background: 'var(--terminal-bg)',
-              border: '1px solid var(--terminal-border)',
-              borderRadius: '7px',
-              color: 'var(--terminal-text)',
-              cursor: 'pointer',
-              padding: '3px 8px',
-              fontFamily: uiFont,
-              fontSize: '10px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '5px',
-              opacity: 0.75,
-            }}
-          >
-            🍎 Sync
           </button>
         )}
       </div>

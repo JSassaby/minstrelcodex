@@ -49,7 +49,18 @@ export type ModalType =
   | 'export'
   | null;
 
-export type Language = 'en-GB' | 'en-US' | 'af';
+export type Language =
+  | 'en-GB' | 'en-US' | 'af'
+  | 'fr' | 'fr-CA'
+  | 'es' | 'es-LA'
+  | 'de' | 'de-AT' | 'de-CH'
+  | 'it' | 'pt' | 'pt-BR'
+  | 'nl' | 'sv' | 'no' | 'da' | 'fi'
+  | 'pl' | 'cs' | 'sk' | 'hu' | 'ro' | 'hr' | 'sl' | 'bg'
+  | 'ru' | 'uk' | 'tr' | 'el'
+  | 'id' | 'ms' | 'vi' | 'th'
+  | 'ja' | 'ko' | 'zh-CN' | 'zh-TW'
+  | 'ar' | 'he' | 'sw' | 'zu' | 'xh';
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 

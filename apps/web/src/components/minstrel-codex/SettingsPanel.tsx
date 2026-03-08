@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { t } from '@/lib/languages';
+import { t, LANGUAGES_LIST } from '@/lib/languages';
 // supabase import removed — connection state uses localStorage
 import { ThemeMode, THEMES } from '@/lib/themes';
 import type { AppColors, Language, PinConfig } from '@minstrelcodex/core';
@@ -786,20 +786,19 @@ export default function SettingsPanel({
             <div style={{ fontSize: '15px', marginBottom: '20px', fontWeight: '600', fontFamily: uiFont, opacity: 0.8 }}>
               {t(language, 'modals.languageTitle')}
             </div>
-            {([
-              { code: 'en-GB' as Language, label: t(language, 'language.englishGB') },
-              { code: 'en-US' as Language, label: t(language, 'language.englishUS') },
-              { code: 'af' as Language, label: t(language, 'language.afrikaans') },
-            ]).map((lang, i) => (
+            {LANGUAGES_LIST.map((lang, i) => (
               <div
                 key={lang.code}
-                onClick={() => { onSetLanguage(lang.code); setFocusedItemIdx(i); }}
+                onClick={() => { onSetLanguage(lang.code as Language); setFocusedItemIdx(i); }}
                 style={rowCard(focusedItemIdx === i, language === lang.code)}
               >
-                <span>{lang.label}</span>
+                <span>{lang.name}</span>
                 {language === lang.code && <span style={{ fontSize: '12px', opacity: 0.7 }}>✓ Active</span>}
               </div>
             ))}
+            <div style={{ marginTop: '20px', padding: '14px 16px', border: '1px solid var(--terminal-border)', borderRadius: '10px', fontSize: '12px', opacity: 0.6, lineHeight: 1.65, fontFamily: uiFont, background: 'var(--terminal-surface)' }}>
+              Note: only English (UK), English (US), and Afrikaans have full translations. All other languages display the interface in English while setting the spellcheck locale for your system browser.
+            </div>
           </div>
         )}
 
@@ -823,17 +822,14 @@ export default function SettingsPanel({
               <span>{t(language, 'storage.local')}</span>
               <span style={{ fontSize: '11px', opacity: 0.5, fontWeight: '600' }}>✓ Always Available</span>
             </div>
-            <div onClick={() => { onAction('usb'); setFocusedItemIdx(1); }} style={rowCard(focusedItemIdx === 1)}>
-              <span>{t(language, 'storage.usb')}</span>
-            </div>
 
             <div style={{ fontSize: '12px', opacity: 0.45, marginTop: '24px', marginBottom: '12px', fontFamily: uiFont, fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Cloud Providers
             </div>
 
             <div
-              onClick={() => { onAction('gdrive'); setFocusedItemIdx(2); }}
-              style={rowCard(focusedItemIdx === 2)}
+              onClick={() => { onAction('gdrive'); setFocusedItemIdx(1); }}
+              style={rowCard(focusedItemIdx === 1)}
             >
               <span>☁ Google Drive</span>
               <span style={{ fontSize: '11px', fontWeight: '700', color: connectedProviders.google ? 'var(--terminal-accent)' : '#e05c5c' }}>
@@ -876,15 +872,15 @@ export default function SettingsPanel({
 
       {/* ── Footer ─────────────────────────────────────────────────────── */}
       <div style={{
-        padding: '8px 24px',
-        borderTop: '1px solid var(--terminal-border)',
-        fontSize: '11px',
-        opacity: 0.35,
+        padding: '8px 14px',
+        borderTop: '1px solid rgba(0,0,0,0.07)',
+        fontSize: '10px',
+        opacity: 0.55,
         textAlign: 'center',
         flexShrink: 0,
         fontFamily: uiFont,
-        letterSpacing: '0.03em',
-        background: 'var(--terminal-surface)',
+        letterSpacing: '0.04em',
+        background: 'rgba(0,0,0,0.02)',
       }}>
         Tab — switch section · ↑↓ navigate · Enter select · Esc close
       </div>

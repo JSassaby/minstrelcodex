@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Editor } from '@tiptap/react';
 import { getAllFonts, addCustomFont, removeCustomFont, preloadBuiltInFonts, type FontOption } from '@/lib/fonts';
 
@@ -54,16 +54,20 @@ export default function FormattingToolbar({
   onChangeFontSize, onChangeFontFamily, onToggleSidebar, onToggleFocusMode,
 }: FormattingToolbarProps) {
   const [fontMenuOpen, setFontMenuOpen] = useState(false);
+  const [formatMenuOpen, setFormatMenuOpen] = useState(false);
+  const [formatMenuIdx, setFormatMenuIdx] = useState(0);
   const [addingFont, setAddingFont] = useState(false);
   const [newFontName, setNewFontName] = useState('');
   const [fonts, setFonts] = useState<FontOption[]>(() => getAllFonts());
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const formatMenuRef = useRef<HTMLDivElement>(null);
+  const formatTriggerRef = useRef<HTMLButtonElement>(null);
 
   // Preload built-in fonts on mount
   useEffect(() => { preloadBuiltInFonts(); }, []);
 
-  // Close menu on outside click
+  // Close font menu on outside click
   useEffect(() => {
     if (!fontMenuOpen) return;
     const handler = (e: MouseEvent) => {
@@ -76,6 +80,19 @@ export default function FormattingToolbar({
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [fontMenuOpen]);
+
+  // Close format menu on outside click
+  useEffect(() => {
+    if (!formatMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (formatMenuRef.current && !formatMenuRef.current.contains(e.target as Node) &&
+          formatTriggerRef.current && !formatTriggerRef.current.contains(e.target as Node)) {
+        setFormatMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [formatMenuOpen]);
 
   if (readOnly) return null;
 
@@ -104,23 +121,28 @@ export default function FormattingToolbar({
     setFonts(getAllFonts());
   };
 
-  const buttons: ToolbarButton[] = [
-    { label: 'H1', shortcut: 'Ctrl+Alt+1', action: () => editor.chain().focus().toggleHeading({ level: 1 }).run(), isActive: editor.isActive('heading', { level: 1 }) },
-    { label: 'H2', shortcut: 'Ctrl+Alt+2', action: () => editor.chain().focus().toggleHeading({ level: 2 }).run(), isActive: editor.isActive('heading', { level: 2 }) },
-    ...(!sidebarOpen ? [
-      { label: 'H3', shortcut: 'Ctrl+Alt+3', action: () => editor.chain().focus().toggleHeading({ level: 3 }).run(), isActive: editor.isActive('heading', { level: 3 }) },
-      { label: 'H4', shortcut: 'Ctrl+Alt+4', action: () => editor.chain().focus().toggleHeading({ level: 4 }).run(), isActive: editor.isActive('heading', { level: 4 }) },
-    ] : []),
-    { label: '|', shortcut: '', action: () => {}, isActive: false },
+  const inlineButtons: ToolbarButton[] = [
     { label: 'B', shortcut: 'Ctrl+B', action: () => editor.chain().focus().toggleBold().run(), isActive: editor.isActive('bold') },
     { label: 'I', shortcut: 'Ctrl+I', action: () => editor.chain().focus().toggleItalic().run(), isActive: editor.isActive('italic') },
     { label: 'U', shortcut: 'Ctrl+U', action: () => editor.chain().focus().toggleUnderline().run(), isActive: editor.isActive('underline') },
-    { label: '|', shortcut: '', action: () => {}, isActive: false },
-    { label: '• List', shortcut: 'Ctrl+Shift+8', action: () => editor.chain().focus().toggleBulletList().run(), isActive: editor.isActive('bulletList') },
-    ...(!sidebarOpen ? [{ label: '1. List', shortcut: 'Ctrl+Shift+7', action: () => editor.chain().focus().toggleOrderedList().run(), isActive: editor.isActive('orderedList') }] : []),
-    { label: '|', shortcut: '', action: () => {}, isActive: false },
-    { label: '* * *', shortcut: 'Ctrl+Shift+Enter', action: () => editor.chain().focus().setHorizontalRule().run(), isActive: false },
   ];
+
+  const formatItems = [
+    { section: 'HEADINGS' },
+    { label: 'Heading 1', shortcut: 'Ctrl+Alt+1', action: () => editor.chain().focus().toggleHeading({ level: 1 }).run(), isActive: editor.isActive('heading', { level: 1 }) },
+    { label: 'Heading 2', shortcut: 'Ctrl+Alt+2', action: () => editor.chain().focus().toggleHeading({ level: 2 }).run(), isActive: editor.isActive('heading', { level: 2 }) },
+    { label: 'Heading 3', shortcut: 'Ctrl+Alt+3', action: () => editor.chain().focus().toggleHeading({ level: 3 }).run(), isActive: editor.isActive('heading', { level: 3 }) },
+    { label: 'Heading 4', shortcut: 'Ctrl+Alt+4', action: () => editor.chain().focus().toggleHeading({ level: 4 }).run(), isActive: editor.isActive('heading', { level: 4 }) },
+    { section: 'LISTS' },
+    { label: '• Bullet List', shortcut: 'Ctrl+Shift+8', action: () => editor.chain().focus().toggleBulletList().run(), isActive: editor.isActive('bulletList') },
+    { label: '1. Ordered List', shortcut: 'Ctrl+Shift+7', action: () => editor.chain().focus().toggleOrderedList().run(), isActive: editor.isActive('orderedList') },
+    { section: 'BLOCKS' },
+    { label: '* * *  Scene Break', shortcut: 'Ctrl+Shift+Enter', action: () => editor.chain().focus().setHorizontalRule().run(), isActive: false },
+  ] as const;
+
+  // Indices of selectable items (non-section)
+  const selectableFormatItems = formatItems.filter(item => !('section' in item));
+  const isFormatActive = selectableFormatItems.some(item => 'isActive' in item && item.isActive);
 
   const divider = (key: string) => (
     <span key={key} style={{ width: '1px', height: '18px', background: 'var(--terminal-border)', margin: '0 5px', flexShrink: 0 }} />
@@ -350,29 +372,96 @@ export default function FormattingToolbar({
 
       {divider('sep-size')}
 
-      {/* Formatting buttons */}
-      {buttons.map((btn, idx) => {
-        if (btn.label === '|') return divider(`sep-${idx}`);
-        const isHeading = btn.label.startsWith('H');
-        return (
-          <button
-            key={btn.label}
-            onClick={btn.action}
-            title={btn.shortcut ? `${btn.label} (${btn.shortcut})` : btn.label}
+      {/* Format dropdown */}
+      <div style={{ position: 'relative' }}>
+        <button
+          ref={formatTriggerRef}
+          onClick={() => setFormatMenuOpen(!formatMenuOpen)}
+          title="Formatting options"
+          style={{ ...pillBtn(isFormatActive || formatMenuOpen), display: 'flex', alignItems: 'center', gap: '4px' }}
+          onMouseEnter={e => { if (!isFormatActive && !formatMenuOpen) { (e.currentTarget as HTMLElement).style.opacity = '1'; (e.currentTarget as HTMLElement).style.background = 'var(--terminal-border)'; } }}
+          onMouseLeave={e => { if (!isFormatActive && !formatMenuOpen) { (e.currentTarget as HTMLElement).style.opacity = '0.75'; (e.currentTarget as HTMLElement).style.background = 'var(--terminal-surface)'; } }}
+        >
+          Format <span style={{ fontSize: '8px', opacity: 0.6 }}>▼</span>
+        </button>
+        {formatMenuOpen && (
+          <div
+            ref={formatMenuRef}
             style={{
-              ...pillBtn(btn.isActive),
-              fontSize: isHeading ? '11px' : '12px',
-              fontWeight: (btn.label === 'B' || isHeading) ? '700' : btn.label === 'I' ? '400' : '500',
-              fontStyle: btn.label === 'I' ? 'italic' : 'normal',
-              textDecoration: btn.label === 'U' ? 'underline' : 'none',
+              position: 'fixed',
+              zIndex: 9999,
+              top: (formatTriggerRef.current?.getBoundingClientRect().bottom ?? 0) + 4,
+              left: formatTriggerRef.current?.getBoundingClientRect().left ?? 0,
+              width: '220px',
+              background: 'var(--terminal-bg)',
+              border: '1px solid var(--terminal-border)',
+              borderRadius: '12px',
+              padding: '6px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+              fontFamily: uiFont,
             }}
-            onMouseEnter={e => { if (!btn.isActive) { (e.currentTarget as HTMLElement).style.opacity = '1'; (e.currentTarget as HTMLElement).style.background = 'var(--terminal-border)'; } }}
-            onMouseLeave={e => { if (!btn.isActive) { (e.currentTarget as HTMLElement).style.opacity = '0.75'; (e.currentTarget as HTMLElement).style.background = 'var(--terminal-surface)'; } }}
           >
-            {btn.label}
-          </button>
-        );
-      })}
+            {formatItems.map((item, idx) => {
+              if ('section' in item) {
+                return (
+                  <div key={`sec-${idx}`} style={{ fontSize: '10px', fontWeight: '600', color: 'var(--terminal-muted)', padding: '6px 8px 3px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                    {item.section}
+                  </div>
+                );
+              }
+              return (
+                <button
+                  key={item.label}
+                  onClick={() => { item.action(); setFormatMenuOpen(false); }}
+                  title={item.shortcut}
+                  style={{
+                    display: 'flex',
+                    width: '100%',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    textAlign: 'left',
+                    padding: '6px 10px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: item.isActive ? 'var(--terminal-accent)' : 'transparent',
+                    color: item.isActive ? 'var(--terminal-bg)' : 'var(--terminal-text)',
+                    fontSize: '12px',
+                    fontFamily: uiFont,
+                    cursor: 'pointer',
+                    transition: 'background 0.1s',
+                  }}
+                  onMouseEnter={e => { if (!item.isActive) (e.currentTarget.style.background = 'var(--terminal-surface)'); }}
+                  onMouseLeave={e => { if (!item.isActive) (e.currentTarget.style.background = 'transparent'); }}
+                >
+                  <span>{item.label}</span>
+                  <span style={{ opacity: 0.35, fontSize: '10px', letterSpacing: '0.02em' }}>{item.shortcut}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {divider('sep-fmt')}
+
+      {/* Inline formatting: B / I / U */}
+      {inlineButtons.map((btn) => (
+        <button
+          key={btn.label}
+          onClick={btn.action}
+          title={btn.shortcut ? `${btn.label} (${btn.shortcut})` : btn.label}
+          style={{
+            ...pillBtn(btn.isActive),
+            fontWeight: btn.label === 'B' ? '700' : '500',
+            fontStyle: btn.label === 'I' ? 'italic' : 'normal',
+            textDecoration: btn.label === 'U' ? 'underline' : 'none',
+          }}
+          onMouseEnter={e => { if (!btn.isActive) { (e.currentTarget as HTMLElement).style.opacity = '1'; (e.currentTarget as HTMLElement).style.background = 'var(--terminal-border)'; } }}
+          onMouseLeave={e => { if (!btn.isActive) { (e.currentTarget as HTMLElement).style.opacity = '0.75'; (e.currentTarget as HTMLElement).style.background = 'var(--terminal-surface)'; } }}
+        >
+          {btn.label}
+        </button>
+      ))}
     </div>
   );
 }

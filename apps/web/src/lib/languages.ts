@@ -194,8 +194,61 @@ export function t(lang: string, path: string): string {
   let value: any = languages[lang as keyof typeof languages];
   if (!value) value = languages['en-GB'];
   for (const key of keys) {
-    value = value?.[key];
-    if (value === undefined) return path;
+    const next = value?.[key];
+    if (next === undefined) {
+      // Fall back to en-GB for this path
+      let fallback: any = languages['en-GB'];
+      for (const k of keys) { fallback = fallback?.[k]; }
+      return (typeof fallback === 'string' ? fallback : path);
+    }
+    value = next;
   }
-  return value as string;
+  return typeof value === 'string' ? value : path;
 }
+
+// Full list of supported language codes and display names
+export const LANGUAGES_LIST: { code: string; name: string }[] = [
+  { code: 'en-GB', name: 'English (UK)' },
+  { code: 'en-US', name: 'English (US)' },
+  { code: 'af',    name: 'Afrikaans' },
+  { code: 'fr',    name: 'French — Français' },
+  { code: 'fr-CA', name: 'French (Canada) — Français (Canada)' },
+  { code: 'es',    name: 'Spanish — Español' },
+  { code: 'es-LA', name: 'Spanish (Latin America) — Español (Latinoamérica)' },
+  { code: 'de',    name: 'German — Deutsch' },
+  { code: 'de-AT', name: 'German (Austria) — Deutsch (Österreich)' },
+  { code: 'de-CH', name: 'German (Switzerland) — Deutsch (Schweiz)' },
+  { code: 'it',    name: 'Italian — Italiano' },
+  { code: 'pt',    name: 'Portuguese — Português' },
+  { code: 'pt-BR', name: 'Portuguese (Brazil) — Português (Brasil)' },
+  { code: 'nl',    name: 'Dutch — Nederlands' },
+  { code: 'sv',    name: 'Swedish — Svenska' },
+  { code: 'no',    name: 'Norwegian — Norsk' },
+  { code: 'da',    name: 'Danish — Dansk' },
+  { code: 'fi',    name: 'Finnish — Suomi' },
+  { code: 'pl',    name: 'Polish — Polski' },
+  { code: 'cs',    name: 'Czech — Čeština' },
+  { code: 'sk',    name: 'Slovak — Slovenčina' },
+  { code: 'hu',    name: 'Hungarian — Magyar' },
+  { code: 'ro',    name: 'Romanian — Română' },
+  { code: 'hr',    name: 'Croatian — Hrvatski' },
+  { code: 'sl',    name: 'Slovenian — Slovenščina' },
+  { code: 'bg',    name: 'Bulgarian — Български' },
+  { code: 'ru',    name: 'Russian — Русский' },
+  { code: 'uk',    name: 'Ukrainian — Українська' },
+  { code: 'tr',    name: 'Turkish — Türkçe' },
+  { code: 'el',    name: 'Greek — Ελληνικά' },
+  { code: 'id',    name: 'Indonesian — Bahasa Indonesia' },
+  { code: 'ms',    name: 'Malay — Bahasa Melayu' },
+  { code: 'vi',    name: 'Vietnamese — Tiếng Việt' },
+  { code: 'th',    name: 'Thai — ภาษาไทย' },
+  { code: 'ja',    name: 'Japanese — 日本語' },
+  { code: 'ko',    name: 'Korean — 한국어' },
+  { code: 'zh-CN', name: 'Chinese (Simplified) — 简体中文' },
+  { code: 'zh-TW', name: 'Chinese (Traditional) — 繁體中文' },
+  { code: 'ar',    name: 'Arabic — العربية' },
+  { code: 'he',    name: 'Hebrew — עברית' },
+  { code: 'sw',    name: 'Swahili — Kiswahili' },
+  { code: 'zu',    name: 'Zulu — IsiZulu' },
+  { code: 'xh',    name: 'Xhosa — IsiXhosa' },
+];

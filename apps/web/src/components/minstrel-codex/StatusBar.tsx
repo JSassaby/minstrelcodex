@@ -120,49 +120,45 @@ export default function StatusBar({
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        fontSize: '10px',
+        fontSize: '11px',
         fontFamily: uiFont,
-        letterSpacing: '0.03em',
+        letterSpacing: '0.05em',
         color: 'var(--terminal-text)',
         opacity: 0.6,
         flexShrink: 0,
       }}
     >
       {/* Left — file info */}
-      <div style={{ display: 'flex', gap: '18px', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
         <span style={{ fontWeight: '500', opacity: 0.9 }}>
           {displayName}{!saved ? ' ·' : ''}
         </span>
+        <span style={{ opacity: 0.35 }}>·</span>
         <span>{words.toLocaleString()} {t(language, 'status.words')}</span>
+        <span style={{ opacity: 0.35 }}>·</span>
         <span>{chars.toLocaleString()} {t(language, 'status.chars')}</span>
 
         {/* Sprint display */}
         {sprintActive ? (
-          <>
-            <span style={{ width: '1px', height: '10px', background: 'var(--terminal-border)', opacity: 0.5 }} />
-            <span
-              onClick={onSprintTogglePause}
-              title={sprintPaused ? 'Resume sprint' : 'Pause sprint'}
-              style={{ color: 'var(--terminal-accent)', fontWeight: '600', cursor: 'pointer', opacity: sprintPaused ? 0.6 : 0.95 }}
-            >
-              {sprintPaused ? '⏸' : '⏱'}{' '}
-              {String(Math.floor(sprintTimeLeft / 60)).padStart(2, '0')}:{String(sprintTimeLeft % 60).padStart(2, '0')}
-              {' '}+{sprintWordsWritten}w
-            </span>
-          </>
+          <span
+            onClick={onSprintTogglePause}
+            title={sprintPaused ? 'Resume sprint' : 'Pause sprint'}
+            style={{ color: 'var(--terminal-accent)', fontWeight: '600', cursor: 'pointer', opacity: sprintPaused ? 0.6 : 0.95, marginLeft: '24px' }}
+          >
+            {sprintPaused ? '⏸' : '⏱'}{' '}
+            {String(Math.floor(sprintTimeLeft / 60)).padStart(2, '0')}:{String(sprintTimeLeft % 60).padStart(2, '0')}
+            {' '}+{sprintWordsWritten}w
+          </span>
         ) : (
-          <>
-            <span style={{ width: '1px', height: '10px', background: 'var(--terminal-border)', opacity: 0.5 }} />
-            <span
-              onClick={onSprintStart}
-              title="Start a writing sprint"
-              style={{ cursor: 'pointer', opacity: 0.35 }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '0.75'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.35'; }}
-            >
-              SPRINT
-            </span>
-          </>
+          <span
+            onClick={onSprintStart}
+            title="Start a writing sprint"
+            style={{ cursor: 'pointer', opacity: 0.35, marginLeft: '24px' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '0.75'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.35'; }}
+          >
+            SPRINT
+          </span>
         )}
       </div>
 
