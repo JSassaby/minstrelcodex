@@ -149,7 +149,10 @@ export default function ExportModal({ visible, onClose, fileStructure, getFolder
     const sections = collectSections();
     if (sections.length === 0) { showToast('No content to export.'); return; }
     try {
-      const HtmlToDocx = (await import('@turbodocx/html-to-docx')).default;
+      const moduleName = '@turbodocx/html-to-docx';
+      const docxModule = await import(/* @vite-ignore */ moduleName);
+      const HtmlToDocx = (docxModule as { default?: unknown }).default as ((html: string, styles?: unknown, options?: unknown) => Promise<Blob>);
+      if (typeof HtmlToDocx !== 'function') throw new Error('DOCX exporter unavailable');
 
       // Build a combined HTML document with section titles
       const combinedHtml = sections.map(s =>
