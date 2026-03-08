@@ -145,9 +145,7 @@ export default function MenuBar({
     <div
       ref={barRef}
       style={{
-        background: 'rgba(8, 14, 30, 0.7)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
+        background: '#080e1e',
         borderBottom: '1px solid rgba(0, 212, 200, 0.08)',
         padding: '0 16px',
         height: '42px',

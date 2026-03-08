@@ -378,7 +378,7 @@ export default function SettingsPanel({
         fontFamily: uiFont,
         fontSize: '13px',
         fontWeight: selected ? '600' : '400',
-        backdropFilter: 'blur(8px)',
+        // no backdrop-filter
         ...extraStyle,
       }}
     >
