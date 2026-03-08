@@ -4,7 +4,7 @@ import {
   FilePlus, BookOpen, FolderOpen, Clock, Save, FileOutput,
   Printer, PanelLeftOpen, Undo2, Redo2, Copy, ClipboardPaste,
   Wifi, Cloud, Settings, Camera, FileText, Music,
-  HelpCircle, ChevronDown
+  HelpCircle, ChevronDown, LayoutDashboard
 } from 'lucide-react';
 import minstrelLogo from '@/assets/minstrel-logo.svg';
 import { t } from '@/lib/languages';
@@ -76,7 +76,8 @@ function getSubmenuItems(menu: string, language: string): MenuItem[] {
       ];
     case 'settings':
       return [
-        { action: 'opensettings', label: 'Open Settings Panel…', icon: <Settings size={14} color={ICON_ACCENT.muted} strokeWidth={1.6} /> },
+        { action: 'opensettings',   label: 'Open Settings Panel…', icon: <Settings size={14} color={ICON_ACCENT.muted} strokeWidth={1.6} /> },
+        { action: 'opendashboard',  label: 'Writer Dashboard',     shortcut: 'Ctrl+Shift+D', icon: <LayoutDashboard size={14} color={ICON_ACCENT.blue} strokeWidth={1.6} /> },
       ];
     default:
       return [];

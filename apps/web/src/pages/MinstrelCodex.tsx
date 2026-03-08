@@ -36,6 +36,7 @@ import ManuscriptStatsModal from '@/components/minstrel-codex/ManuscriptStatsMod
 import WifiSetupScreen from '@/components/minstrel-codex/WifiSetupScreen';
 import FirstBootWizard from '@/components/minstrel-codex/FirstBootWizard';
 import SongComplete from '@/components/minstrel-codex/SongComplete';
+import WriterDashboard from '@/components/minstrel-codex/WriterDashboard';
 import MilestoneNotifier, { emitMilestones } from '@/components/minstrel-codex/MilestoneNotifier';
 import { detectStreakMilestones, detectLevelUp } from '@/components/minstrel-codex/milestoneDetection';
 import { useMusicPlayer } from '@/hooks/useMusicPlayer';
@@ -102,6 +103,7 @@ export default function MinstrelCodex() {
   const [musicPlayerOpen, setMusicPlayerOpen] = useState(false);
   const [helpPanelOpen, setHelpPanelOpen] = useState(false);
   const [activeHelpPageId, setActiveHelpPageId] = useState<string | null>(null);
+  const [dashboardOpen, setDashboardOpen] = useState(false);
 
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -803,6 +805,11 @@ export default function MinstrelCodex() {
         setHelpPanelOpen(false);
         setSettingsPanelOpen(true);
         break;
+      case 'opendashboard':
+        setSettingsPanelOpen(false);
+        setHelpPanelOpen(false);
+        setDashboardOpen(prev => !prev);
+        break;
       case 'openmusic':
         setSettingsPanelOpen(false);
         setHelpPanelOpen(false);
@@ -1086,6 +1093,12 @@ export default function MinstrelCodex() {
           if (!next) setTimeout(() => editorRef.current?.focus(), 50);
           return next;
         });
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+        e.preventDefault();
+        executeAction('opendashboard');
         return;
       }
 
@@ -1654,6 +1667,15 @@ export default function MinstrelCodex() {
           }}
           onOpenPage={(pageId) => setActiveHelpPageId(pageId)}
           activePageId={activeHelpPageId}
+        />
+
+        <WriterDashboard
+          visible={dashboardOpen}
+          profile={profile}
+          onClose={() => {
+            setDashboardOpen(false);
+            setTimeout(() => editorRef.current?.focus(), 50);
+          }}
         />
 
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={() => setFileBrowserFocused(false)}>

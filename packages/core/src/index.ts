@@ -28,10 +28,12 @@ export type { SyncStatus } from './hooks/useSyncEngine';
 // Gamification
 export {
   WRITER_RANKS,
+  STREAK_TIERS,
   DEFAULT_PROFILE,
   SESSION_MIN_WORDS,
   SESSION_MIN_MINUTES,
   SESSION_IDLE_MS,
+  STREAK_MIN_WORDS,
   calculateSessionXP,
   getStreakMultiplier,
   getFocusMultiplier,
@@ -48,5 +50,6 @@ export type {
   CraftSkillRecord,
   WriterProfile,
   WriterRank,
+  StreakTier,
   SessionXPBreakdown,
 } from './gamification';
