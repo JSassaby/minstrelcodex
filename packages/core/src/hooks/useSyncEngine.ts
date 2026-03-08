@@ -5,7 +5,7 @@ import { TokenExpiredError } from '../adapters/CloudAdapter';
 
 export type SyncStatus = 'synced' | 'syncing' | 'error' | 'offline' | 'disconnected';
 
-const PUSH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const SYNC_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes — full bidirectional sync
 
 interface SyncEngineOptions {
   onTokenExpired?: () => void;
