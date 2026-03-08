@@ -2,6 +2,7 @@ import type { CloudAdapter, RemoteFile } from './CloudAdapter';
 import { TokenExpiredError } from './CloudAdapter';
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-drive`;
+const APP_FOLDER_NAME = 'Minstrel Codex';
 
 interface DriveFile {
   id: string;
@@ -16,7 +17,10 @@ export class GoogleDriveAdapter implements CloudAdapter {
   readonly name = 'Google Drive';
 
   private token: string | null;
-  private folderId: string;
+  private requestedFolderId: string;
+
+  /** Resolved app root folder ID on Drive (lazily initialised) */
+  private appRootId: string | null = null;
 
   private driveFileMap: Map<string, string> = new Map();
   private folderIdCache: Map<string, string> = new Map();
@@ -24,7 +28,7 @@ export class GoogleDriveAdapter implements CloudAdapter {
 
   constructor(token: string | null, folderId = 'root') {
     this.token = token;
-    this.folderId = folderId;
+    this.requestedFolderId = folderId;
   }
 
   isConnected(): boolean {
@@ -39,6 +43,29 @@ export class GoogleDriveAdapter implements CloudAdapter {
     });
     if (res.status === 401) throw new TokenExpiredError();
     return res;
+  }
+
+  /** Ensure the "Minstrel Codex" app folder exists on Drive and cache its ID */
+  private async ensureAppRoot(): Promise<string> {
+    if (this.appRootId) return this.appRootId;
+
+    const res = await this.edgeFetch({
+      action: 'find-or-create-folder',
+      folderName: APP_FOLDER_NAME,
+      parentId: this.requestedFolderId === 'root' ? undefined : this.requestedFolderId,
+    });
+
+    if (res.ok) {
+      const data = await res.json() as { folder?: { id?: string } };
+      if (data.folder?.id) {
+        this.appRootId = data.folder.id;
+        return this.appRootId;
+      }
+    }
+
+    // Fallback: use the requested folder directly
+    this.appRootId = this.requestedFolderId;
+    return this.appRootId;
   }
 
   private async listFolder(
@@ -68,10 +95,11 @@ export class GoogleDriveAdapter implements CloudAdapter {
 
   async list(): Promise<Map<string, RemoteFile>> {
     if (!this.token) return new Map();
+    const rootId = await this.ensureAppRoot();
     this.driveFileMap.clear();
     this.folderIdCache.clear();
     const result = new Map<string, RemoteFile>();
-    await this.listFolder(this.folderId, '', result);
+    await this.listFolder(rootId, '', result);
     this.listed = true;
     return result;
   }
@@ -85,7 +113,8 @@ export class GoogleDriveAdapter implements CloudAdapter {
   }
 
   private async ensureFolderPath(parts: string[]): Promise<string> {
-    let currentParentId = this.folderId;
+    const rootId = await this.ensureAppRoot();
+    let currentParentId = rootId;
     let currentPath = '';
     for (const part of parts) {
       currentPath = currentPath ? currentPath + '/' + part : part;
@@ -93,7 +122,12 @@ export class GoogleDriveAdapter implements CloudAdapter {
         currentParentId = this.folderIdCache.get(currentPath)!;
         continue;
       }
-      const res = await this.edgeFetch({ action: 'create-folder', folderName: part, parentId: currentParentId });
+      // Use find-or-create to avoid duplicate folders
+      const res = await this.edgeFetch({
+        action: 'find-or-create-folder',
+        folderName: part,
+        parentId: currentParentId,
+      });
       if (res.ok) {
         const data = await res.json() as { folder?: { id?: string } };
         const fid = data.folder?.id;
@@ -112,9 +146,10 @@ export class GoogleDriveAdapter implements CloudAdapter {
 
     const parts = localId.split('/');
     const fileName = parts.pop()!;
+    const rootId = await this.ensureAppRoot();
     const parentId = parts.length > 0
       ? await this.ensureFolderPath(parts)
-      : this.folderId;
+      : rootId;
 
     const existingId = this.driveFileMap.get(localId);
     const body: Record<string, unknown> = {

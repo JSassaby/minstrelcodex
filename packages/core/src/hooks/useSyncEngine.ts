@@ -9,6 +9,8 @@ const PUSH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 interface SyncEngineOptions {
   onTokenExpired?: () => void;
+  /** Called after pull with an array of all remote file paths so the UI tree can be rebuilt */
+  onRemotePaths?: (paths: string[]) => void;
 }
 
 export function useSyncEngine(adapter: CloudAdapter | null, options: SyncEngineOptions = {}) {
@@ -20,6 +22,9 @@ export function useSyncEngine(adapter: CloudAdapter | null, options: SyncEngineO
 
   const onTokenExpiredRef = useRef(options.onTokenExpired);
   useEffect(() => { onTokenExpiredRef.current = options.onTokenExpired; }, [options.onTokenExpired]);
+
+  const onRemotePathsRef = useRef(options.onRemotePaths);
+  useEffect(() => { onRemotePathsRef.current = options.onRemotePaths; }, [options.onRemotePaths]);
 
   const performSync = useCallback(async (direction: 'pull' | 'push' | 'both') => {
     const a = adapterRef.current;
@@ -65,6 +70,12 @@ export function useSyncEngine(adapter: CloudAdapter | null, options: SyncEngineO
           window.dispatchEvent(
             new CustomEvent('minstrel:remote-pull', { detail: { updatedIds } })
           );
+        }
+
+        // Notify about ALL remote file paths so the file tree can be synced
+        const allRemotePaths = Array.from(remoteFiles.keys());
+        if (allRemotePaths.length > 0) {
+          onRemotePathsRef.current?.(allRemotePaths);
         }
       }
 

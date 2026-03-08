@@ -85,6 +85,53 @@ serve(async (req) => {
         });
       }
 
+      case 'find-or-create-folder': {
+        // Find existing folder by name under parentId, or create it
+        if (!folderName) {
+          return new Response(JSON.stringify({ error: 'folderName required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        const parent = parentId || 'root';
+        // Search for existing folder with this name under parent
+        const searchQ = encodeURIComponent(
+          `'${parent}' in parents and name = '${folderName.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`
+        );
+        const searchRes = await fetch(
+          `${DRIVE_API}/files?q=${searchQ}&fields=${encodeURIComponent('files(id,name)')}&pageSize=1`,
+          { headers: authHeaders }
+        );
+        const searchData = await searchRes.json();
+        if (searchRes.ok && searchData.files?.length > 0) {
+          // Found existing folder
+          return new Response(JSON.stringify({ folder: searchData.files[0] }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        // Create new folder
+        const metadata: Record<string, unknown> = {
+          name: folderName,
+          mimeType: 'application/vnd.google-apps.folder',
+          parents: [parent],
+        };
+        const res = await fetch(`${DRIVE_API}/files`, {
+          method: 'POST',
+          headers: { ...authHeaders, 'Content-Type': 'application/json' },
+          body: JSON.stringify(metadata),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          return new Response(JSON.stringify({ error: data.error?.message || 'Failed to create folder' }), {
+            status: res.status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        return new Response(JSON.stringify({ folder: data }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       case 'create-folder': {
         if (!folderName) {
           return new Response(JSON.stringify({ error: 'folderName required' }), {
