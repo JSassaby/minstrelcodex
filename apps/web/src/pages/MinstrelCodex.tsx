@@ -440,8 +440,7 @@ export default function MinstrelCodex() {
     localStorage.setItem('mc-word-count-target', String(n));
   }, []);
 
-  // Current project ID (first path segment of open file)
-  const currentProjectId = docStorage.currentDocument.filename?.split('/')[0] || '';
+  // currentProjectId is declared above (before gamification hooks)
 
   // Focus mode toggle
   const toggleFocusMode = useCallback(() => {
