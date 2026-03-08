@@ -197,6 +197,7 @@ export default function MenuBar({
               onClick={(e) => {
                 e.stopPropagation();
                 if (menu === 'music') { onAction('openmusic'); return; }
+                if (menu === 'settings') { onAction('opensettings'); return; }
                 if (mouseActive && hoverMenuIdx === i) {
                   setHoverMenuIdx(null);
                   setMouseActive(false);
@@ -208,7 +209,7 @@ export default function MenuBar({
               }}
             >
               {t(language, `menu.${menu}`)}
-              {menu !== 'music' && (
+              {menu !== 'music' && menu !== 'settings' && (
                 <ChevronDown
                   size={10}
                   strokeWidth={2}
@@ -334,7 +335,7 @@ export default function MenuBar({
       {/* Portal dropdown */}
       {activeSubOpen && activeMenuIdx !== null && (() => {
         const menu = MENUS[activeMenuIdx];
-        if (menu === 'music') return null;
+        if (menu === 'music' || menu === 'settings') return null;
         const items = getSubmenuItems(menu, language);
         const dropStyle = getDropdownStyle();
         return createPortal(
