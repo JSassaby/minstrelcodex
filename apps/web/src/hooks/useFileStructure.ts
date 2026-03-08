@@ -497,7 +497,18 @@ export function useFileStructure() {
     collectFileIds(deleted);
 
     docIds.forEach(id => { delete docsCache[id]; });
-    db.documents.bulkDelete(docIds).catch(console.error);
+    // Mark as 'deleted' so sync engine can trash them from Drive
+    Promise.all(
+      docIds.map(id =>
+        db.documents.get(id).then(doc => {
+          if (doc) {
+            return db.documents.put({ ...doc, syncStatus: 'deleted' });
+          } else {
+            return db.documents.put({ id, content: '', lastModified: new Date().toISOString(), syncStatus: 'deleted' });
+          }
+        })
+      )
+    ).catch(console.error);
 
     setStructure(prev => {
       const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
