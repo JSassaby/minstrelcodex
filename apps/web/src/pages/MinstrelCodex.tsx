@@ -1648,36 +1648,74 @@ export default function MinstrelCodex() {
           visible={helpPanelOpen}
           onClose={() => {
             setHelpPanelOpen(false);
+            setActiveHelpPageId(null);
             setTimeout(() => editorRef.current?.focus(), 50);
           }}
+          onOpenPage={(pageId) => setActiveHelpPageId(pageId)}
+          activePageId={activeHelpPageId}
         />
 
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={() => setFileBrowserFocused(false)}>
-          <Editor
-            content={editorContent}
-            onChange={handleEditorChange}
-            fontSize={theme.fontSize}
-            fontFamily={fontFamily}
-            placeholder={t(language, 'placeholder')}
-            ref={editorRef}
-            readOnly={!!activeModal || menuOpen}
-            sidebarOpen={fileBrowserOpen}
-            focusMode={focusMode}
-            documentTitle={(() => {
-              const f = docStorage.currentDocument.filename;
-              if (!f) return '';
-              const base = f.split('/').pop() || f;
-              return base.includes('.') ? base.slice(0, base.lastIndexOf('.')) : base;
-            })()}
-            onTitleBlur={handleH1Blur}
-            onChangeFontSize={(delta) => theme.changeFontSize(delta)}
-            onChangeFontFamily={(font) => {
-              setFontFamily(font);
-              localStorage.setItem('minstrel_editor_font', font);
-            }}
-            onToggleSidebar={() => executeAction('togglesidebar')}
-            onToggleFocusMode={toggleFocusMode}
-          />
+          {activeHelpPageId && helpPanelOpen ? (
+            <div
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: '40px 60px',
+                fontFamily: fontFamily || "'EB Garamond', serif",
+                fontSize: `${theme.fontSize}px`,
+                color: 'var(--terminal-text)',
+                lineHeight: 1.8,
+                maxWidth: '800px',
+                margin: '0 auto',
+                width: '100%',
+                userSelect: 'text',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: '10px',
+                  fontFamily: "var(--font-ui, 'Space Grotesk', sans-serif)",
+                  letterSpacing: '0.1em',
+                  opacity: 0.35,
+                  marginBottom: '24px',
+                  textTransform: 'uppercase',
+                }}
+              >
+                HELP & REFERENCE · READ-ONLY
+              </div>
+              <div
+                className="help-page-content"
+                dangerouslySetInnerHTML={{ __html: getHelpPage(activeHelpPageId)?.content || '' }}
+              />
+            </div>
+          ) : (
+            <Editor
+              content={editorContent}
+              onChange={handleEditorChange}
+              fontSize={theme.fontSize}
+              fontFamily={fontFamily}
+              placeholder={t(language, 'placeholder')}
+              ref={editorRef}
+              readOnly={!!activeModal || menuOpen}
+              sidebarOpen={fileBrowserOpen}
+              focusMode={focusMode}
+              documentTitle={(() => {
+                const f = docStorage.currentDocument.filename;
+                if (!f) return '';
+                const base = f.split('/').pop() || f;
+                return base.includes('.') ? base.slice(0, base.lastIndexOf('.')) : base;
+              })()}
+              onTitleBlur={handleH1Blur}
+              onChangeFontSize={(delta) => theme.changeFontSize(delta)}
+              onChangeFontFamily={(font) => {
+                setFontFamily(font);
+                localStorage.setItem('minstrel_editor_font', font);
+              }}
+              onToggleSidebar={() => executeAction('togglesidebar')}
+              onToggleFocusMode={toggleFocusMode}
+            />
+          )}
         </div>
       </div>
 
