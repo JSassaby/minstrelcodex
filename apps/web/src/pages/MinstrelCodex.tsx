@@ -215,6 +215,7 @@ export default function MinstrelCodex() {
   );
   const { syncStatus, lastSyncTime: syncLastTime, triggerSync } = useSyncEngine(driveAdapter, {
     onTokenExpired: () => { refreshToken(); },
+    onRemotePaths: (paths) => { fileStructure.mergeRemotePaths(paths); },
   });
   const editorRef = useRef<EditorHandle>(null);
   const musicPlayer = useMusicPlayer();
