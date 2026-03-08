@@ -611,34 +611,59 @@ export const HELP_TREE: HelpFolder[] = [
         title: 'The Renown System',
         content: `
 <h2>The Renown System</h2>
-<p>Renown is Minstrel Codex's writer progression system. It rewards consistent writing with experience points (XP), levels, titles, and achievements — turning your daily practice into a visible journey of growth.</p>
+<p>Renown is Minstrel Codex's writer progression system — a record of your craft, built word by word. It rewards showing up consistently rather than writing perfectly. Renown never resets.</p>
 
-<h3>How XP Works</h3>
-<p>You earn XP by writing. Every writing session that meets the minimum threshold (${100} words in at least ${5} minutes) awards XP based on:</p>
+<h3>Song Complete</h3>
+<p>After each writing session a Song Complete screen appears showing your words written, time spent, Renown earned, and current streak. This is your session reward — every session counts, even short ones.</p>
+
+<h3>How Renown Is Earned</h3>
 <ul>
-<li><strong>Base XP</strong> — Earned per word written</li>
-<li><strong>Session bonus</strong> — Longer focused sessions earn bonus XP</li>
-<li><strong>Focus multiplier</strong> — Sustained writing without long breaks multiplies your XP</li>
-<li><strong>Streak multiplier</strong> — Consecutive daily writing days increase your multiplier</li>
+<li>Words written: +0.5 Renown per word (base rate, counted on session end)</li>
+<li>Session ≥ 250 words: +25 bonus Renown</li>
+<li>Session ≥ 500 words: +75 bonus Renown</li>
+<li>Session ≥ 1,000 words: +200 bonus Renown</li>
+<li>Chapter completed (sprint ended): +50 Renown</li>
+<li>Daily streak maintained: +10 Renown × streak day (Day 3 = +30, Day 7 = +70)</li>
+<li>First session of the day: +15 Renown</li>
+<li>Personal best (most words in a session): +100 Renown (once per new record)</li>
+<li>Novel completed: +1,000 Renown</li>
+<li>Chronicle unlocked: +50 bonus Renown</li>
 </ul>
-<p>Your total XP determines your writer level and title.</p>
 
-<h3>Writer Ranks</h3>
-<p>As you accumulate XP, you advance through these ranks:</p>
+<h3>Streak Multiplier</h3>
+<p>An active streak multiplies all word Renown earned in a session:</p>
+<ul>
+<li>0 days — 1.0× (no multiplier)</li>
+<li>3–6 days — 1.2× — On a Roll</li>
+<li>7–13 days — 1.5× — Finding the Rhythm</li>
+<li>14–29 days — 1.75× — The Dedicated Scribe</li>
+<li>30+ days — 2.0× — Legend of the Page</li>
+</ul>
+`,
+      },
+      {
+        id: 'levels',
+        title: 'Levels & Titles',
+        content: `
+<h2>Levels &amp; Titles</h2>
+<p>You begin as an Apprentice Scribe and rise through 12 levels as you accumulate Renown. Levels never go backwards. Each level unlocks new features and is displayed on your Song Complete screen. From Level 3 onward your level title appears as a subtle badge in the status bar.</p>
+
+<h3>The 12 Levels</h3>
 <table>
-<tr><th>Level</th><th>Title</th><th>XP Required</th></tr>
-<tr><td>1</td><td>Apprentice Scribe</td><td>0</td></tr>
-<tr><td>2</td><td>Journeyman Scribe</td><td>1,000</td></tr>
-<tr><td>3</td><td>Wordsmith</td><td>5,000</td></tr>
-<tr><td>4</td><td>Storyteller</td><td>15,000</td></tr>
-<tr><td>5</td><td>Chronicle Keeper</td><td>40,000</td></tr>
-<tr><td>6</td><td>Loremaster</td><td>100,000</td></tr>
-<tr><td>7</td><td>Master Bard</td><td>250,000</td></tr>
-<tr><td>8</td><td>Grand Minstrel</td><td>500,000</td></tr>
-<tr><td>9</td><td>Saga Weaver</td><td>1,000,000</td></tr>
-<tr><td>10</td><td>Mythwright</td><td>2,500,000</td></tr>
+<tr><td><strong>Lv 1 — Apprentice Scribe</strong> — 0 Renown</td><td>Unlocks: Song Complete screen, basic stats</td></tr>
+<tr><td><strong>Lv 2 — Wandering Scribe</strong> — 1,000 Renown</td><td>Unlocks: Streak tracking, daily Renown display</td></tr>
+<tr><td><strong>Lv 3 — Keeper of Tales</strong> — 3,000 Renown</td><td>Unlocks: First Chronicles visible</td></tr>
+<tr><td><strong>Lv 4 — Journeyman Bard</strong> — 6,000 Renown</td><td>Unlocks: Session history chart</td></tr>
+<tr><td><strong>Lv 5 — Wordsmith</strong> — 10,000 Renown</td><td>Unlocks: Pace predictions in stats panel, Quill's Rest tokens</td></tr>
+<tr><td><strong>Lv 6 — Chronicler</strong> — 16,000 Renown</td><td>Unlocks: Full Chronicle Ledger (Ctrl+Shift+C)</td></tr>
+<tr><td><strong>Lv 7 — Storyteller</strong> — 24,000 Renown</td><td>Unlocks: Shareable milestone cards</td></tr>
+<tr><td><strong>Lv 8 — Master of Words</strong> — 34,000 Renown</td><td>Unlocks: Custom streak badge</td></tr>
+<tr><td><strong>Lv 9 — Voice of Ages</strong> — 46,000 Renown</td><td>Unlocks: Legacy stats (all-time totals)</td></tr>
+<tr><td><strong>Lv 10 — The Devoted</strong> — 60,000 Renown</td><td>Unlocks: Dedicated Scribe theme</td></tr>
+<tr><td><strong>Lv 11 — Grand Bard</strong> — 80,000 Renown</td><td>Unlocks: Hall of Works (completed novels list)</td></tr>
+<tr><td><strong>Lv 12 — Legend of the Page</strong> — 100,000 Renown</td><td>Unlocks: All features. Permanent gold streak badge.</td></tr>
 </table>
-<p>Each rank represents a genuine milestone of dedicated writing. Reaching Mythwright means you've written extensively and consistently over a long period.</p>
+<p>Level titles display on the Song Complete screen below the XP progress bar. The badge appears in the status bar from Level 3 (Keeper of Tales) onward. Before that it is hidden — the writer discovers it organically.</p>
 `,
       },
       {
@@ -646,63 +671,120 @@ export const HELP_TREE: HelpFolder[] = [
         title: 'Writing Streaks',
         content: `
 <h2>Writing Streaks</h2>
-<p>A streak counts how many consecutive days you've written. Writing at least ${100} words in a day keeps your streak alive.</p>
+<p>Streaks track how many consecutive days you have written. They are designed to reward consistency without creating anxiety.</p>
 
-<h3>How Streaks Work</h3>
+<h3>Streak Rules</h3>
 <ul>
-<li>Write at least 100 words on any given day to mark it as a writing day</li>
-<li>Your streak increments each consecutive day you write</li>
-<li>Missing a day resets your streak to zero</li>
-<li>Your longest streak is recorded permanently</li>
+<li>A streak day is earned by completing any session with ≥ 50 words</li>
+<li>A streak breaks if no qualifying session is recorded within 48 hours of the previous session (midnight-to-midnight with a one-day grace — late-night writers won't lose their streak at midnight)</li>
+<li>Your streak multiplier applies to all word Renown for the entire session</li>
+<li>Your streak appears as 🔥 [days] in the status bar from 3 days onward</li>
 </ul>
 
-<h3>Ember System</h3>
-<p>The "Ember" is a grace period that protects your streak. If you miss a single day, the ember activates — giving you one extra day to write before your streak resets. Think of it as a safety net for those days life gets in the way.</p>
-<ul>
-<li>The ember only activates once per streak break</li>
-<li>If you miss two consecutive days, the streak resets regardless</li>
-<li>The ember status is shown in your writer profile</li>
-</ul>
+<h3>Quill's Rest (Streak Freeze)</h3>
+<p>At Level 5 (Wordsmith) you earn one Quill's Rest token per month — a streak freeze that protects against a single missed day. Maximum 2 tokens held at once.</p>
 
 <h3>Streak Milestones</h3>
-<p>Reaching certain streak lengths triggers celebrations and shareable cards:</p>
+<p>Reaching these streak lengths triggers a milestone overlay and unlocks a Chronicle:</p>
+<p>3 days · 7 days · 14 days · 30 days · 60 days · 90 days · 180 days · 365 days</p>
+
+<h3>Streak Multiplier Table</h3>
 <ul>
-<li>3 days — Getting started</li>
-<li>7 days — One week strong</li>
-<li>14 days — Two weeks of dedication</li>
-<li>30 days — A full month of daily writing</li>
-<li>100 days — Century of words</li>
-<li>365 days — A full year!</li>
+<li>0 days — 1.0× (no multiplier)</li>
+<li>3–6 days — 1.2× — On a Roll</li>
+<li>7–13 days — 1.5× — Finding the Rhythm</li>
+<li>14–29 days — 1.75× — The Dedicated Scribe</li>
+<li>30+ days — 2.0× — Legend of the Page</li>
 </ul>
 `,
       },
       {
-        id: 'sessions-xp',
-        title: 'Sessions & XP Breakdown',
+        id: 'chronicles',
+        title: 'Chronicles',
         content: `
-<h2>Writing Sessions & XP Breakdown</h2>
-<p>Understanding how sessions and XP work helps you maximise your progression.</p>
+<h2>Chronicles</h2>
+<p>Chronicles are achievements earned by reaching milestones in your writing. Each Chronicle uses the language of an ancient record-keeper cataloguing a bard's deeds. Unlocking any Chronicle awards +50 bonus Renown on top of the Chronicle's own reward.</p>
 
-<h3>What Counts as a Session</h3>
-<p>A writing session automatically begins when you start typing and ends after 2 minutes of inactivity. For a session to count toward your Renown progression, it must meet both thresholds:</p>
+<p>From Level 3 (Keeper of Tales) Chronicles appear in your Chronicle Ledger — earned ones show their name, description, and date earned; locked ones show their name and a hint. Some Chronicles are hidden and only reveal themselves when earned.</p>
+
+<h3>Chronicle Ledger</h3>
+<p>Unlocks at Level 6 (Chronicler). Access via Ctrl+Shift+C.<br/>
+Contains: The Bard's Legend (lifetime stats) · Chronicles grid · This Week chart · Hall of Works (unlocks at Level 11)</p>
+
+<h3>Writing Consistency Chronicles</h3>
 <ul>
-<li><strong>Minimum words:</strong> 100 words</li>
-<li><strong>Minimum duration:</strong> 5 minutes</li>
+<li><strong>The First Inkmark</strong> — Complete your first writing session — +50 Renown</li>
+<li><strong>Three Days Hence</strong> — Maintain a 3-day streak — +100 Renown</li>
+<li><strong>The Week Unbroken</strong> — Maintain a 7-day streak — +250 Renown</li>
+<li><strong>A Fortnight's Devotion</strong> — Maintain a 14-day streak — +500 Renown</li>
+<li><strong>The Month of Making</strong> — Maintain a 30-day streak — +1,000 Renown</li>
+<li><strong>Creature of Habit</strong> — Write on the same day of the week 10 weeks running — +400 Renown</li>
 </ul>
-<p>Sessions that don't meet these thresholds are still tracked but don't award XP.</p>
 
-<h3>XP Breakdown</h3>
-<p>At the end of a qualifying session, your XP is calculated:</p>
-<ol>
-<li><strong>Base XP</strong> — A flat amount per word written during the session</li>
-<li><strong>Session Bonus</strong> — Extra XP for longer sessions (scaling with duration)</li>
-<li><strong>Focus Multiplier</strong> — If you wrote without long pauses, this multiplier increases your total</li>
-<li><strong>Streak Multiplier</strong> — Your current streak days add a percentage bonus to all XP earned</li>
-</ol>
-<p>The total is the product of all these factors. Consistent, focused writing sessions earn significantly more XP than sporadic bursts.</p>
+<h3>Word Count Chronicles</h3>
+<ul>
+<li><strong>First Words Spoken</strong> — Write 100 words total (lifetime) — +50 Renown</li>
+<li><strong>The Opening Chapter</strong> — Write 1,000 words total — +100 Renown</li>
+<li><strong>Into the Story</strong> — Write 10,000 words total — +200 Renown</li>
+<li><strong>The First Act</strong> — Write 25,000 words total — +400 Renown</li>
+<li><strong>The Middle Distance</strong> — Write 50,000 words total — +600 Renown</li>
+<li><strong>NaNoWriMo Spirit</strong> — Write 50,000 words in a single month — +800 Renown</li>
+<li><strong>The Full Manuscript</strong> — Write 80,000 words total — +1,000 Renown</li>
+<li><strong>Prolific Voice</strong> — Write 200,000 words total (lifetime) — +2,000 Renown</li>
+</ul>
 
-<h3>Shareable Cards</h3>
-<p>After significant sessions, level-ups, and streak milestones, you can generate a shareable card — a visual summary of your achievement that you can save or share on social media.</p>
+<h3>Session Performance Chronicles</h3>
+<ul>
+<li><strong>A Good Morning's Work</strong> — Write 500 words in a single session — +75 Renown</li>
+<li><strong>The Long Watch</strong> — Write 1,000 words in a single session — +150 Renown</li>
+<li><strong>The Unbroken Flow</strong> — Write 2,000 words in a single session — +300 Renown</li>
+<li><strong>The Epic Session</strong> — Write 5,000 words in a single session — +750 Renown</li>
+<li><strong>Swift of Quill</strong> — Complete a sprint with 100+ words in 15 minutes — +100 Renown</li>
+<li><strong>The Marathon Scribe</strong> — Write for 3+ hours in a single day — +200 Renown</li>
+</ul>
+
+<h3>Project Milestone Chronicles</h3>
+<ul>
+<li><strong>A Chapter Sung</strong> — Complete your first chapter (sprint ended) — +100 Renown</li>
+<li><strong>Ten Songs Recorded</strong> — Complete 10 chapters across any projects — +300 Renown</li>
+<li><strong>The First Novel</strong> — Reach 80,000 words in a single project — +2,000 Renown</li>
+<li><strong>The Prolific Bard</strong> — Complete 3 novels — +3,000 Renown</li>
+<li><strong>A World of Stories</strong> — Have 5 active projects — +200 Renown</li>
+<li><strong>Keeper of Many Tales</strong> — Complete 100 chapters total — +1,000 Renown</li>
+</ul>
+
+<h3>Hidden Chronicles</h3>
+<p>There are at least 6 hidden Chronicles that reward unusual habits, odd hours, and quiet dedication. They will not appear in your Chronicle Ledger until earned. Hints: some involve the clock, some involve offline writing, some involve the Typing Challenge.</p>
+
+<h3>Typing Challenge &amp; Chronicles</h3>
+<p>The Typing Challenge in Settings &gt; System tracks your WPM. Two Chronicles are tied to it:</p>
+<ul>
+<li>Swift of Quill — reach 60 WPM in a sprint</li>
+<li>One hidden Chronicle for reaching 80 WPM</li>
+</ul>
+`,
+      },
+      {
+        id: 'glossary',
+        title: 'Minstrel Codex Glossary',
+        content: `
+<h2>Minstrel Codex Glossary</h2>
+<p>The app uses consistent lore language throughout. Here is what each term means:</p>
+<ul>
+<li><strong>Bard</strong> — You, the writer</li>
+<li><strong>Song</strong> — A writing session</li>
+<li><strong>Canto</strong> — A chapter</li>
+<li><strong>The Work / The Chronicle</strong> — A novel or project</li>
+<li><strong>Renown</strong> — XP / Experience Points</li>
+<li><strong>Chronicle</strong> — An achievement</li>
+<li><strong>Ascension</strong> — Levelling up</li>
+<li><strong>Quill's Rest</strong> — A streak freeze token (unlocks at Level 5)</li>
+<li><strong>Chronicle Ledger</strong> — The achievement and stats dashboard</li>
+<li><strong>Finest Hour</strong> — A personal best (most words in a single session)</li>
+<li><strong>Song Complete</strong> — The end-of-session reward screen</li>
+<li><strong>Days Devoted</strong> — Your current streak count</li>
+<li><strong>Bard's Legend</strong> — Your lifetime stats summary</li>
+</ul>
 `,
       },
     ],
