@@ -18,11 +18,17 @@ export default function AuthCallback() {
   useEffect(() => {
     const run = async () => {
       const code = new URLSearchParams(window.location.search).get('code');
+      const hasHash = window.location.hash.includes('access_token');
+
       if (code) {
         await supabase.auth.exchangeCodeForSession(code);
+      } else if (!hasHash) {
+        // No code or hash tokens — nothing to process, redirect immediately
+        navigate('/', { replace: true });
+        return;
       }
-      // Implicit-flow tokens in the hash are handled automatically by the
-      // Supabase client on initialization — no extra call needed here.
+
+      // Wait briefly for session to settle, then redirect
       navigate('/', { replace: true });
     };
     run();
