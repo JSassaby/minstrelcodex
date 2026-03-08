@@ -23,6 +23,9 @@ export function useSyncEngine(adapter: CloudAdapter | null, options: SyncEngineO
   const onTokenExpiredRef = useRef(options.onTokenExpired);
   useEffect(() => { onTokenExpiredRef.current = options.onTokenExpired; }, [options.onTokenExpired]);
 
+  const onRemotePathsRef = useRef(options.onRemotePaths);
+  useEffect(() => { onRemotePathsRef.current = options.onRemotePaths; }, [options.onRemotePaths]);
+
   const performSync = useCallback(async (direction: 'pull' | 'push' | 'both') => {
     const a = adapterRef.current;
     if (!a || !a.isConnected()) {
