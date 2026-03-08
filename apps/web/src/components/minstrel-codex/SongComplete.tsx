@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { SessionXPBreakdown } from '@minstrelcodex/core';
+import ShareMilestoneModal from './ShareMilestoneModal';
+import type { ShareableCardData } from './ShareableCard';
 
 interface SongCompleteProps {
   visible: boolean;
