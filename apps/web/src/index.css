@@ -96,8 +96,71 @@ body.theme-typewriter::after {
   z-index: 999;
 }
 
-/* ===== MODERN THEME ===== */
-/* No ::before or ::after effects — clean and minimal */
+/* ===== MODERN / BIOLUMINESCENT THEME ===== */
+
+/* Animated deep-ocean drift background */
+body.theme-modern::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 80%, rgba(0, 212, 200, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(0, 150, 200, 0.06) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 70% at 50% 50%, rgba(0, 180, 160, 0.04) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+  animation: bio-drift 20s ease-in-out infinite alternate;
+}
+
+/* Subtle vignette overlay */
+body.theme-modern::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.35) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes bio-drift {
+  0% {
+    background-position: 0% 0%, 100% 100%, 50% 50%;
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    background-position: 100% 100%, 0% 0%, 50% 50%;
+    opacity: 0.7;
+  }
+}
+
+/* Glassmorphism utility */
+body.theme-modern .glass-panel {
+  background: rgba(10, 18, 40, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 212, 200, 0.1);
+}
+
+/* Bio-glow hover effect */
+body.theme-modern .bio-glow {
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+body.theme-modern .bio-glow:hover {
+  box-shadow: 0 0 20px rgba(0, 212, 200, 0.15), 0 0 40px rgba(0, 212, 200, 0.05);
+  border-color: rgba(0, 212, 200, 0.25);
+}
+
+/* Bio-pulse organic rhythm */
+@keyframes bio-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+body.theme-modern .bio-pulse {
+  animation: bio-pulse 4s ease-in-out infinite;
+}
 
 /* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar {
@@ -110,10 +173,13 @@ body.theme-typewriter::after {
   background: var(--terminal-border);
 }
 
-/* Modern theme scrollbar override */
+/* Modern/Bioluminescent theme scrollbar */
 body.theme-modern::-webkit-scrollbar-thumb {
-  background: #ccc;
+  background: rgba(0, 212, 200, 0.2);
   border-radius: 4px;
+}
+body.theme-modern::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 212, 200, 0.35);
 }
 
 /* ===== ANIMATIONS ===== */
