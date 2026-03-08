@@ -337,24 +337,39 @@ export default function MinstrelCodex() {
   }, [booted, locked]);
 
   // ── First-boot Pi detection ──────────────────────────────────────
+  // Only runs if localhost:3001 is reachable (i.e. we are on the Pi kiosk).
+  // On Mac/web the fetch will time out or be refused — both are caught and
+  // silently ignored so the wizard never appears on non-Pi devices.
   useEffect(() => {
     if (!booted) return;
     (async () => {
+      let isPi = false;
+      let data: any = null;
       try {
         const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), 2000);
+        const t = setTimeout(() => ctrl.abort(), 1000); // 1 s — fast fail on non-Pi
         const res = await fetch('http://localhost:3001/status', { signal: ctrl.signal });
         clearTimeout(t);
-        if (!res.ok) return;
-        const data = await res.json();
-        const wifiConfigured = !!localStorage.getItem('minstrel_wifi_configured');
-        const novelCreated = !!localStorage.getItem('minstrel_novel_created');
-        if (!data.wifi?.connected && !wifiConfigured) {
-          setWifiSetupOpen(true);
-        } else if (!novelCreated) {
-          setFirstBootWizardOpen(true);
+        if (res.ok) {
+          isPi = true;
+          data = await res.json();
         }
-      } catch { /* not on Pi — silently skip */ }
+      } catch { /* connection refused or timed out — not on Pi */ }
+
+      if (!isPi) {
+        // Clear any stale wizard flags that might have been set incorrectly
+        localStorage.removeItem('minstrel_wifi_configured');
+        localStorage.removeItem('minstrel_novel_created');
+        return;
+      }
+
+      const wifiConfigured = !!localStorage.getItem('minstrel_wifi_configured');
+      const novelCreated   = !!localStorage.getItem('minstrel_novel_created');
+      if (!data?.wifi?.connected && !wifiConfigured) {
+        setWifiSetupOpen(true);
+      } else if (!novelCreated) {
+        setFirstBootWizardOpen(true);
+      }
     })();
   }, [booted]);
 
@@ -1046,6 +1061,17 @@ export default function MinstrelCodex() {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'S') {
         e.preventDefault();
         executeAction('togglelivestats');
+        return;
+      }
+
+      // DEV ONLY — preview gamification UI without completing a session
+      // Remove this block before shipping to production
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'G' || e.key === 'g')) {
+        e.preventDefault();
+        setLastSessionWords(247);
+        setLastSessionDuration(12 * 60);
+        setLastXPBreakdown({ baseXp: 124, sessionBonus: 37, focusMultiplier: 1.0, streakMultiplier: 1.2, totalXp: 185 });
+        setSongCompleteVisible(true);
         return;
       }
 
