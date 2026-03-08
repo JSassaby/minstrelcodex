@@ -4,7 +4,7 @@ import {
   FilePlus, BookOpen, FolderOpen, Clock, Save, FileOutput,
   Printer, PanelLeftOpen, Undo2, Redo2, Copy, ClipboardPaste,
   Wifi, Cloud, Settings, Camera, FileText, Music,
-  HelpCircle
+  HelpCircle, ChevronDown
 } from 'lucide-react';
 import minstrelLogo from '@/assets/minstrel-logo.svg';
 import { t } from '@/lib/languages';
@@ -24,7 +24,6 @@ interface MenuBarProps {
 
 const MENUS = ['file', 'edit', 'network', 'music', 'settings'] as const;
 
-// Accent colours per icon category — use CSS vars so they adapt per theme
 const ICON_ACCENT = {
   green:  'var(--terminal-accent)',
   amber:  '#f5c542',
@@ -44,41 +43,40 @@ function getSubmenuItems(menu: string, language: string): MenuItem[] {
   switch (menu) {
     case 'file':
       return [
-        { action: 'new',           label: t(language, 'file.new'),             shortcut: 'Ctrl+N',       icon: <FilePlus size={13} color={ICON_ACCENT.green} strokeWidth={1.8} /> },
-        { action: 'newnovel',      label: 'New Novel Project',                  shortcut: '',             icon: <BookOpen size={13} color={ICON_ACCENT.amber} strokeWidth={1.8} /> },
+        { action: 'new',           label: t(language, 'file.new'),             shortcut: 'Ctrl+N',       icon: <FilePlus size={14} color={ICON_ACCENT.green} strokeWidth={1.6} /> },
+        { action: 'newnovel',      label: 'New Novel Project',                  shortcut: '',             icon: <BookOpen size={14} color={ICON_ACCENT.amber} strokeWidth={1.6} /> },
         { action: 'separator',     label: '' },
-        { action: 'open',          label: t(language, 'file.open'),             shortcut: 'Ctrl+O',       icon: <FolderOpen size={13} color={ICON_ACCENT.amber} strokeWidth={1.8} /> },
-        { action: 'recent',        label: t(language, 'file.recent'),           shortcut: '',             icon: <Clock size={13} color={ICON_ACCENT.muted} strokeWidth={1.8} /> },
+        { action: 'open',          label: t(language, 'file.open'),             shortcut: 'Ctrl+O',       icon: <FolderOpen size={14} color={ICON_ACCENT.amber} strokeWidth={1.6} /> },
+        { action: 'recent',        label: t(language, 'file.recent'),           shortcut: '',             icon: <Clock size={14} color={ICON_ACCENT.muted} strokeWidth={1.6} /> },
         { action: 'separator',     label: '' },
-        { action: 'save',          label: t(language, 'file.save'),             shortcut: 'Ctrl+S',       icon: <Save size={13} color={ICON_ACCENT.green} strokeWidth={1.8} /> },
-        { action: 'saveas',        label: t(language, 'file.saveas'),           shortcut: '',             icon: <Save size={13} color={ICON_ACCENT.muted} strokeWidth={1.8} /> },
-        { action: 'saveversion',   label: 'Save Version Checkpoint',            shortcut: '',             icon: <FileText size={13} color={ICON_ACCENT.blue} strokeWidth={1.8} /> },
-        { action: 'savesnapshot',  label: 'Quick Snapshot',                     shortcut: 'Ctrl+Shift+V', icon: <Camera size={13} color={ICON_ACCENT.blue} strokeWidth={1.8} /> },
+        { action: 'save',          label: t(language, 'file.save'),             shortcut: 'Ctrl+S',       icon: <Save size={14} color={ICON_ACCENT.green} strokeWidth={1.6} /> },
+        { action: 'saveas',        label: t(language, 'file.saveas'),           shortcut: '',             icon: <Save size={14} color={ICON_ACCENT.muted} strokeWidth={1.6} /> },
+        { action: 'saveversion',   label: 'Save Version Checkpoint',            shortcut: '',             icon: <FileText size={14} color={ICON_ACCENT.blue} strokeWidth={1.6} /> },
+        { action: 'savesnapshot',  label: 'Quick Snapshot',                     shortcut: 'Ctrl+Shift+V', icon: <Camera size={14} color={ICON_ACCENT.blue} strokeWidth={1.6} /> },
         { action: 'separator',     label: '' },
-        { action: 'print',         label: 'Print Current Page',                 shortcut: 'Ctrl+P',       icon: <Printer size={13} color={ICON_ACCENT.muted} strokeWidth={1.8} /> },
-        { action: 'export',        label: 'Export / Combine…',                  shortcut: '',             icon: <FileOutput size={13} color={ICON_ACCENT.green} strokeWidth={1.8} /> },
-        { action: 'togglesidebar', label: 'File Browser',                       shortcut: 'Ctrl+Shift+B', icon: <PanelLeftOpen size={13} color={ICON_ACCENT.muted} strokeWidth={1.8} /> },
+        { action: 'print',         label: 'Print Current Page',                 shortcut: 'Ctrl+P',       icon: <Printer size={14} color={ICON_ACCENT.muted} strokeWidth={1.6} /> },
+        { action: 'export',        label: 'Export / Combine…',                  shortcut: '',             icon: <FileOutput size={14} color={ICON_ACCENT.green} strokeWidth={1.6} /> },
+        { action: 'togglesidebar', label: 'File Browser',                       shortcut: 'Ctrl+Shift+B', icon: <PanelLeftOpen size={14} color={ICON_ACCENT.muted} strokeWidth={1.6} /> },
       ];
     case 'edit':
       return [
-        { action: 'undo',  label: t(language, 'edit.undo'),  shortcut: 'Ctrl+Z', icon: <Undo2 size={13} color={ICON_ACCENT.muted} strokeWidth={1.8} /> },
-        { action: 'redo',  label: t(language, 'edit.redo'),  shortcut: 'Ctrl+R', icon: <Redo2 size={13} color={ICON_ACCENT.muted} strokeWidth={1.8} /> },
+        { action: 'undo',  label: t(language, 'edit.undo'),  shortcut: 'Ctrl+Z', icon: <Undo2 size={14} color={ICON_ACCENT.muted} strokeWidth={1.6} /> },
+        { action: 'redo',  label: t(language, 'edit.redo'),  shortcut: 'Ctrl+R', icon: <Redo2 size={14} color={ICON_ACCENT.muted} strokeWidth={1.6} /> },
         { action: 'separator', label: '' },
-        { action: 'copy',  label: t(language, 'edit.copy'),  shortcut: 'Ctrl+C', icon: <Copy size={13} color={ICON_ACCENT.blue} strokeWidth={1.8} /> },
-        { action: 'paste', label: t(language, 'edit.paste'), shortcut: 'Ctrl+V', icon: <ClipboardPaste size={13} color={ICON_ACCENT.blue} strokeWidth={1.8} /> },
+        { action: 'copy',  label: t(language, 'edit.copy'),  shortcut: 'Ctrl+C', icon: <Copy size={14} color={ICON_ACCENT.blue} strokeWidth={1.6} /> },
+        { action: 'paste', label: t(language, 'edit.paste'), shortcut: 'Ctrl+V', icon: <ClipboardPaste size={14} color={ICON_ACCENT.blue} strokeWidth={1.6} /> },
       ];
     case 'network':
       return [
-        { action: 'networksettings', label: 'Network Settings', shortcut: 'Ctrl+Shift+W', icon: <Wifi size={13} color={ICON_ACCENT.blue} strokeWidth={1.8} /> },
+        { action: 'networksettings', label: 'Network Settings', shortcut: 'Ctrl+Shift+W', icon: <Wifi size={14} color={ICON_ACCENT.blue} strokeWidth={1.6} /> },
       ];
-    // storage menu removed — Drive access via File menu
     case 'music':
       return [
-        { action: 'openmusic', label: 'Open Music Player…', icon: <Music size={13} color={ICON_ACCENT.blue} strokeWidth={1.8} /> },
+        { action: 'openmusic', label: 'Open Music Player…', icon: <Music size={14} color={ICON_ACCENT.blue} strokeWidth={1.6} /> },
       ];
     case 'settings':
       return [
-        { action: 'opensettings', label: 'Open Settings Panel…', icon: <Settings size={13} color={ICON_ACCENT.muted} strokeWidth={1.8} /> },
+        { action: 'opensettings', label: 'Open Settings Panel…', icon: <Settings size={14} color={ICON_ACCENT.muted} strokeWidth={1.6} /> },
       ];
     default:
       return [];
@@ -96,7 +94,6 @@ export default function MenuBar({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const menuItemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     if (!mouseActive) return;
     const handler = (e: MouseEvent) => {
@@ -122,7 +119,6 @@ export default function MenuBar({
 
   const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
 
-  // Compute anchor rect for the active menu item to position the dropdown via portal
   const getDropdownStyle = useCallback((): React.CSSProperties => {
     const idx = mouseActive ? hoverMenuIdx : (visible ? menuIndex : null);
     if (idx === null) return {};
@@ -131,16 +127,19 @@ export default function MenuBar({
     const rect = el.getBoundingClientRect();
     return {
       position: 'fixed',
-      top: `${rect.bottom + 6}px`,
-      left: `${rect.left}px`,
-      background: 'var(--menu-bg, var(--terminal-bg))',
-      border: '1px solid var(--terminal-border)',
-      minWidth: '270px',
+      top: `${rect.bottom + 8}px`,
+      left: `${Math.max(8, rect.left - 4)}px`,
+      minWidth: '280px',
       zIndex: 9999,
-      borderRadius: '12px',
+      borderRadius: '14px',
       overflow: 'hidden',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08)',
       padding: '6px',
+      // Glassmorphism
+      background: 'rgba(8, 14, 30, 0.85)',
+      backdropFilter: 'blur(24px)',
+      WebkitBackdropFilter: 'blur(24px)',
+      border: '1px solid rgba(0, 212, 200, 0.12)',
+      boxShadow: '0 12px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 212, 200, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.04)',
     };
   }, [mouseActive, hoverMenuIdx, visible, menuIndex]);
 
@@ -148,9 +147,12 @@ export default function MenuBar({
     <div
       ref={barRef}
       style={{
-        backgroundColor: 'var(--terminal-bg)',
-        borderBottom: '1px solid var(--terminal-border)',
-        padding: '4px 14px',
+        background: 'rgba(8, 14, 30, 0.7)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(0, 212, 200, 0.08)',
+        padding: '0 16px',
+        height: '42px',
         fontSize: '12px',
         fontFamily: uiFont,
         color: 'var(--terminal-text)',
@@ -161,11 +163,11 @@ export default function MenuBar({
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        letterSpacing: '0.01em',
+        letterSpacing: '0.02em',
       }}
     >
       {/* Left — menu items */}
-      <div style={{ display: 'flex', gap: '2px' }}>
+      <div style={{ display: 'flex', gap: '1px', alignItems: 'center' }}>
         {MENUS.map((menu, i) => {
           const isFocused = i === activeMenuIdx;
 
@@ -174,16 +176,20 @@ export default function MenuBar({
               key={menu}
               ref={el => { menuItemRefs.current[i] = el; }}
               style={{
-                padding: '4px 9px',
+                padding: '6px 12px',
                 position: 'relative',
                 cursor: 'pointer',
-                borderRadius: '4px',
-                background: isFocused ? 'var(--terminal-surface)' : 'transparent',
+                borderRadius: '8px',
+                background: isFocused ? 'rgba(0, 212, 200, 0.12)' : 'transparent',
                 color: isFocused ? 'var(--terminal-accent)' : 'var(--terminal-text)',
-                fontWeight: isFocused ? '500' : '400',
-                opacity: isFocused ? 1 : 0.7,
-                transition: 'background 0.12s, color 0.12s, opacity 0.12s',
-                borderLeft: isFocused ? '2px solid var(--terminal-accent)' : '2px solid transparent',
+                fontWeight: '500',
+                opacity: isFocused ? 1 : 0.6,
+                transition: 'all 0.2s ease',
+                fontSize: '12px',
+                letterSpacing: '0.03em',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
               }}
               onMouseEnter={() => {
                 if (mouseActive || hoverMenuIdx !== null) {
@@ -194,7 +200,6 @@ export default function MenuBar({
               }}
               onClick={(e) => {
                 e.stopPropagation();
-                // Settings fires directly — no submenu needed
                 if (menu === 'settings') { onAction('opensettings'); return; }
                 if (menu === 'music') { onAction('openmusic'); return; }
                 if (mouseActive && hoverMenuIdx === i) {
@@ -208,6 +213,17 @@ export default function MenuBar({
               }}
             >
               {t(language, `menu.${menu}`)}
+              {(menu !== 'settings' && menu !== 'music') && (
+                <ChevronDown
+                  size={10}
+                  strokeWidth={2}
+                  style={{
+                    opacity: isFocused ? 0.8 : 0.4,
+                    transition: 'transform 0.2s, opacity 0.2s',
+                    transform: isFocused ? 'rotate(180deg)' : 'rotate(0deg)',
+                  }}
+                />
+              )}
             </div>
           );
         })}
@@ -219,67 +235,83 @@ export default function MenuBar({
           position: 'absolute',
           left: '50%',
           transform: 'translateX(-50%)',
-          fontSize: '12px',
+          fontSize: '11px',
           fontFamily: uiFont,
           fontWeight: '500',
-          opacity: 0.55,
+          opacity: 0.4,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
-          maxWidth: '320px',
+          maxWidth: '280px',
           pointerEvents: 'none',
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
-          letterSpacing: '0.02em',
+          letterSpacing: '0.04em',
         }}
         title={shortName}
       >
-        <FileText size={11} strokeWidth={1.8} style={{ flexShrink: 0, opacity: 0.7 }} />
+        <FileText size={10} strokeWidth={1.6} style={{ flexShrink: 0, opacity: 0.6 }} />
         {shortName}
       </div>
 
       {/* Right — help + logo + name */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
         <div
           onClick={(e) => { e.stopPropagation(); onAction('openhelp'); }}
           style={{
             cursor: 'pointer',
-            opacity: 0.55,
-            padding: '3px',
-            borderRadius: '4px',
+            opacity: 0.4,
+            padding: '5px',
+            borderRadius: '8px',
             display: 'flex',
             alignItems: 'center',
-            transition: 'opacity 0.15s',
+            transition: 'all 0.2s',
+            background: 'transparent',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
-          onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.55')}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '0.9';
+            e.currentTarget.style.background = 'rgba(0, 212, 200, 0.08)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = '0.4';
+            e.currentTarget.style.background = 'transparent';
+          }}
           title="Help & Reference"
         >
-          <HelpCircle size={15} strokeWidth={1.8} />
+          <HelpCircle size={15} strokeWidth={1.6} />
         </div>
-        <img
-          src={minstrelLogo}
-          alt="Minstrel Codex"
-          style={{
-            width: '24px',
-            height: '24px',
-            objectFit: 'contain',
-            opacity: 0.8,
-          }}
-        />
-        <span style={{
-          fontSize: '11px',
-          fontFamily: uiFont,
-          fontWeight: '500',
-          opacity: 0.55,
-          letterSpacing: '0.04em',
-        }}>
-          Minstrel Codex
-        </span>
+        <div style={{
+          width: '1px',
+          height: '16px',
+          background: 'rgba(0, 212, 200, 0.1)',
+        }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <img
+            src={minstrelLogo}
+            alt="Minstrel Codex"
+            style={{
+              width: '20px',
+              height: '20px',
+              objectFit: 'contain',
+              opacity: 0.7,
+              filter: 'drop-shadow(0 0 6px rgba(0, 212, 200, 0.2))',
+            }}
+          />
+          <span style={{
+            fontSize: '10px',
+            fontFamily: uiFont,
+            fontWeight: '600',
+            opacity: 0.35,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+          }}>
+            Minstrel
+          </span>
+        </div>
       </div>
 
-      {/* Portal dropdown — rendered at body level to avoid clipping by toolbar */}
+      {/* Portal dropdown */}
       {activeSubOpen && activeMenuIdx !== null && (() => {
         const menu = MENUS[activeMenuIdx];
         if (menu === 'settings' || menu === 'music') return null;
@@ -292,7 +324,11 @@ export default function MenuBar({
                   return (
                     <div
                       key={`sep-${j}`}
-                      style={{ height: '1px', background: 'var(--terminal-border)', opacity: 0.5, margin: '4px 6px' }}
+                      style={{
+                        height: '1px',
+                        background: 'linear-gradient(90deg, transparent, rgba(0, 212, 200, 0.12), transparent)',
+                        margin: '4px 12px',
+                      }}
                     />
                   );
                 }
@@ -303,41 +339,55 @@ export default function MenuBar({
                     onMouseEnter={() => setHoverSubIdx(j)}
                     onClick={(e) => {
                       e.stopPropagation();
-                      
                       onAction(item.action);
                       setHoverMenuIdx(null);
                       setMouseActive(false);
                     }}
                     style={{
-                      padding: '7px 10px',
+                      padding: '8px 12px',
                       cursor: 'pointer',
-                      borderRadius: '8px',
-                      background: isActive ? 'var(--terminal-accent)' : 'transparent',
-                      color: isActive ? 'var(--terminal-bg)' : 'var(--terminal-text)',
+                      borderRadius: '10px',
+                      background: isActive
+                        ? 'linear-gradient(135deg, rgba(0, 212, 200, 0.18), rgba(0, 212, 200, 0.08))'
+                        : 'transparent',
+                      color: isActive ? 'var(--terminal-accent)' : 'var(--terminal-text)',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '10px',
                       justifyContent: 'space-between',
-                      transition: 'background 0.1s, color 0.1s',
+                      transition: 'all 0.15s ease',
+                      borderLeft: isActive ? '2px solid var(--terminal-accent)' : '2px solid transparent',
                     }}
                   >
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '9px', flex: 1 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
                       {item.icon && (
-                        <span style={{ display: 'flex', alignItems: 'center', width: '16px', justifyContent: 'center', flexShrink: 0, opacity: isActive ? 0.85 : 1 }}>
+                        <span style={{
+                          display: 'flex', alignItems: 'center', width: '18px', justifyContent: 'center',
+                          flexShrink: 0, opacity: isActive ? 1 : 0.7,
+                        }}>
                           {item.icon}
                         </span>
                       )}
-                      <span style={{ opacity: isActive ? 1 : 0.8, fontSize: '12px', fontFamily: uiFont, fontWeight: isActive ? '500' : '400' }}>
+                      <span style={{
+                        opacity: isActive ? 1 : 0.75,
+                        fontSize: '13px',
+                        fontFamily: uiFont,
+                        fontWeight: isActive ? '500' : '400',
+                        letterSpacing: '0.01em',
+                      }}>
                         {item.label}
                       </span>
                     </span>
                     {item.shortcut && (
                       <span style={{
-                        opacity: isActive ? 0.6 : 0.3,
+                        opacity: isActive ? 0.5 : 0.25,
                         fontSize: '10px',
-                        fontFamily: uiFont,
-                        letterSpacing: '0.03em',
+                        fontFamily: "'JetBrains Mono', monospace",
+                        letterSpacing: '0.02em',
                         flexShrink: 0,
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        background: isActive ? 'rgba(0, 212, 200, 0.08)' : 'transparent',
                       }}>
                         {item.shortcut}
                       </span>
@@ -354,4 +404,3 @@ export default function MenuBar({
 }
 
 export { MENUS, getSubmenuItems };
-
