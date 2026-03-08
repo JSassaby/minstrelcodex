@@ -2261,6 +2261,21 @@ export default function MinstrelCodex() {
           {toastMessage}
         </div>
       )}
+
+      {/* Song Complete (post-session reward screen) */}
+      <SongComplete
+        visible={songCompleteVisible}
+        wordsWritten={lastSessionWords}
+        durationSeconds={lastSessionDuration}
+        xpBreakdown={lastXPBreakdown}
+        currentStreak={currentStreak}
+        currentLevel={currentLevel}
+        currentTitle={currentTitle}
+        totalXp={totalXp}
+        xpInLevel={xpInLevel}
+        xpNeeded={xpNeeded}
+        onClose={() => setSongCompleteVisible(false)}
+      />
     </div>
   );
 }
