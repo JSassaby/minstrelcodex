@@ -27,12 +27,14 @@ import { useGoogleToken } from '@/hooks/useGoogleToken';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import AuthModal from '@/components/minstrel-codex/AuthModal';
-import { useSyncEngine, GoogleDriveAdapter, db, useWriterProfile, useStreakEngine, useSessionTracker, useXPEngine } from '@minstrelcodex/core';
+import { useSyncEngine, GoogleDriveAdapter, db, useWriterProfile, useStreakEngine, useSessionTracker, useXPEngine, getLevelForXP } from '@minstrelcodex/core';
 import type { SessionXPBreakdown } from '@minstrelcodex/core';
 import ChapterOverviewPanel from '@/components/minstrel-codex/ChapterOverviewPanel';
 import NotesPanel from '@/components/minstrel-codex/NotesPanel';
 import ManuscriptStatsModal from '@/components/minstrel-codex/ManuscriptStatsModal';
 import SongComplete from '@/components/minstrel-codex/SongComplete';
+import MilestoneNotifier, { emitMilestones } from '@/components/minstrel-codex/MilestoneNotifier';
+import { detectStreakMilestones, detectLevelUp } from '@/components/minstrel-codex/milestoneDetection';
 import { useMusicPlayer } from '@/hooks/useMusicPlayer';
 import { useAccessibility } from '@/hooks/useAccessibility';
 import type { ModalType, Language, Difficulty, PinConfig } from '@minstrelcodex/core';
@@ -224,11 +226,38 @@ export default function MinstrelCodex() {
   const [lastSessionWords, setLastSessionWords] = useState(0);
   const [lastSessionDuration, setLastSessionDuration] = useState(0);
 
+  const prevStreakRef = useRef(profile.currentStreak);
+  const prevLevelRef = useRef(profile.level);
+
   const { sessionActive, sessionWords, trackActivity, endSession } = useSessionTracker({
     chronicleId: currentProjectId,
     onSessionComplete: (session) => {
+      const prevStreak = prevStreakRef.current;
+      const prevLevel = prevLevelRef.current;
+
       const breakdown = awardSessionXP(session.wordCount, session.durationSeconds);
       recordStreak();
+
+      // Detect milestones after state updates (use setTimeout to let React flush)
+      setTimeout(() => {
+        const newStreak = prevStreak + (profile.lastWritingDate !== new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()) ? 1 : 0);
+        const newTotalXp = profile.totalXp + breakdown.totalXp;
+
+        const milestones = [
+          ...detectStreakMilestones(prevStreak, newStreak, newTotalXp),
+        ];
+
+        // Level-up detection from XP gain
+        const { level: newLevel, title: newTitle } = getLevelForXP(newTotalXp);
+        const levelUp = detectLevelUp(prevLevel, newLevel, newTitle, newTotalXp);
+        if (levelUp) milestones.push(levelUp);
+
+        prevStreakRef.current = newStreak;
+        prevLevelRef.current = newLevel;
+
+        emitMilestones(milestones);
+      }, 300);
+
       setLastXPBreakdown(breakdown);
       setLastSessionWords(session.wordCount);
       setLastSessionDuration(session.durationSeconds);
@@ -2278,6 +2307,8 @@ export default function MinstrelCodex() {
         xpNeeded={xpNeeded}
         onClose={() => setSongCompleteVisible(false)}
       />
+      {/* Milestone celebration queue (streak/level-up cards) */}
+      <MilestoneNotifier />
     </div>
   );
 }
