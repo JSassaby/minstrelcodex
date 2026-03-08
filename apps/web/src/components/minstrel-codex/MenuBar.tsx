@@ -76,8 +76,7 @@ function getSubmenuItems(menu: string, language: string): MenuItem[] {
       ];
     case 'settings':
       return [
-        { action: 'opensettings',   label: 'Open Settings Panel…', icon: <Settings size={14} color={ICON_ACCENT.muted} strokeWidth={1.6} /> },
-        { action: 'opendashboard',  label: 'Writer Dashboard',     shortcut: 'Ctrl+Shift+U', icon: <LayoutDashboard size={14} color={ICON_ACCENT.blue} strokeWidth={1.6} /> },
+        { action: 'opensettings', label: 'Open Settings Panel…', icon: <Settings size={14} color={ICON_ACCENT.muted} strokeWidth={1.6} /> },
       ];
     default:
       return [];
