@@ -15,8 +15,8 @@ const COLOR_COMBOS: { name: string; text: string; bg: string; accent: string; mo
   { name: 'Cyberpunk',     text: '#00e5ff', bg: '#080814', accent: '#00e5ff', mode: 'terminal' },
   { name: 'Bioluminescent', text: '#e0eaf0', bg: '#060b18', accent: '#00d4c8', mode: 'modern' },
   { name: 'Arctic',        text: '#dce6f0', bg: '#0a1020', accent: '#5ea8d0', mode: 'modern' },
-  { name: 'Parchment',     text: '#28201a', bg: '#f4efe5', accent: '#b87a1a', mode: 'typewriter' },
-  { name: 'Sepia',         text: '#302418', bg: '#ece4d0', accent: '#9a6b1a', mode: 'typewriter' },
+  { name: 'Parchment',     text: '#d4c4a8', bg: '#12100c', accent: '#c8943a', mode: 'typewriter' },
+  { name: 'Sepia',         text: '#c8b898', bg: '#140e08', accent: '#b0782a', mode: 'typewriter' },
 ];
 
 // ── Mini editor mockup inside each card ──────────────────────────────────────

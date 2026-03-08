@@ -86,14 +86,14 @@ export const THEMES: Record<ThemeMode, ThemeDefinition> = {
     description: 'Warm. Tactile. Timeless.',
     icon: '✦',
     colors: {
-      text: '#28201a',
-      background: '#f4efe5',
-      glow: 'transparent',
-      accent: '#b87a1a',
-      muted: 'rgba(40, 32, 26, 0.4)',
-      border: '#d4c9b4',
-      surface: '#faf6ee',
-      menuBg: '#f0ebe0',
+      text: '#d4c4a8',
+      background: '#12100c',
+      glow: 'rgba(184, 140, 60, 0.08)',
+      accent: '#c8943a',
+      muted: 'rgba(212, 196, 168, 0.35)',
+      border: 'rgba(200, 148, 58, 0.18)',
+      surface: 'rgba(200, 148, 58, 0.06)',
+      menuBg: '#16130e',
     },
     fonts: {
       body: "'Lora', 'Georgia', 'Times New Roman', serif",
@@ -101,7 +101,7 @@ export const THEMES: Record<ThemeMode, ThemeDefinition> = {
       ui: "'Space Grotesk', sans-serif",
     },
     effects: { scanlines: false, crtGlow: false, textGlow: false, paperTexture: true },
-    preview: { sampleText: 'The quick brown fox', bg: '#f4efe5', fg: '#28201a' },
+    preview: { sampleText: 'The quick brown fox', bg: '#12100c', fg: '#d4c4a8' },
   },
 };
 const THEME_KEY = 'pw-theme-mode';
