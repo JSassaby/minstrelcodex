@@ -71,6 +71,12 @@ export function useSyncEngine(adapter: CloudAdapter | null, options: SyncEngineO
             new CustomEvent('minstrel:remote-pull', { detail: { updatedIds } })
           );
         }
+
+        // Notify about ALL remote file paths so the file tree can be synced
+        const allRemotePaths = Array.from(remoteFiles.keys());
+        if (allRemotePaths.length > 0) {
+          onRemotePathsRef.current?.(allRemotePaths);
+        }
       }
 
       // ── Push: upload all pending docs ────────────────────────────────
