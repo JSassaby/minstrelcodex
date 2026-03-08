@@ -388,7 +388,7 @@ export default function WriterDashboard({ visible, profile, onClose }: WriterDas
         letterSpacing: '0.04em',
         flexShrink: 0,
       }}>
-        Ctrl+Shift+D to close
+        Ctrl+Shift+U to close
       </div>
     </div>
   );
