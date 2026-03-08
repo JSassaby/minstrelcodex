@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { SessionXPBreakdown } from '@minstrelcodex/core';
+import ShareMilestoneModal from './ShareMilestoneModal';
+import type { ShareableCardData } from './ShareableCard';
 
 interface SongCompleteProps {
   visible: boolean;
@@ -28,6 +30,18 @@ export default function SongComplete({
   totalXp, xpInLevel, xpNeeded, onClose,
 }: SongCompleteProps) {
   const [phase, setPhase] = useState<'enter' | 'visible' | 'exit'>('enter');
+  const [shareVisible, setShareVisible] = useState(false);
+
+  const shareData: ShareableCardData = {
+    type: 'session',
+    wordsWritten,
+    durationSeconds,
+    xpBreakdown,
+    currentStreak,
+    currentLevel,
+    currentTitle,
+    totalXp,
+  };
 
   useEffect(() => {
     if (visible) {
@@ -130,25 +144,52 @@ export default function SongComplete({
           Total XP: {totalXp.toLocaleString()}
         </div>
 
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          style={{
-            padding: '10px 32px',
-            border: '1px solid var(--terminal-text)',
-            background: 'transparent',
-            color: 'var(--terminal-text)',
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-            fontSize: '13px',
-            letterSpacing: '0.1em',
-            transition: 'background 0.2s, color 0.2s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--terminal-accent)'; e.currentTarget.style.color = 'var(--terminal-bg)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--terminal-text)'; }}
-        >
-          CONTINUE WRITING
-        </button>
+        {/* Action buttons */}
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+          <button
+            onClick={() => setShareVisible(true)}
+            style={{
+              padding: '10px 24px',
+              border: '1px solid var(--terminal-text)',
+              background: 'transparent',
+              color: 'var(--terminal-text)',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              fontSize: '13px',
+              letterSpacing: '0.1em',
+              transition: 'background 0.2s, color 0.2s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--terminal-surface)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            ⇗ SHARE
+          </button>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '10px 32px',
+              border: '1px solid var(--terminal-text)',
+              background: 'transparent',
+              color: 'var(--terminal-text)',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              fontSize: '13px',
+              letterSpacing: '0.1em',
+              transition: 'background 0.2s, color 0.2s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--terminal-accent)'; e.currentTarget.style.color = 'var(--terminal-bg)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--terminal-text)'; }}
+          >
+            CONTINUE WRITING
+          </button>
+        </div>
+
+        {/* Share modal */}
+        <ShareMilestoneModal
+          visible={shareVisible}
+          data={shareData}
+          onClose={() => setShareVisible(false)}
+        />
       </div>
     </div>
   );
