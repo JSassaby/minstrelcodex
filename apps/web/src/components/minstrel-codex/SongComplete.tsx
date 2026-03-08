@@ -30,6 +30,18 @@ export default function SongComplete({
   totalXp, xpInLevel, xpNeeded, onClose,
 }: SongCompleteProps) {
   const [phase, setPhase] = useState<'enter' | 'visible' | 'exit'>('enter');
+  const [shareVisible, setShareVisible] = useState(false);
+
+  const shareData: ShareableCardData = {
+    type: 'session',
+    wordsWritten,
+    durationSeconds,
+    xpBreakdown,
+    currentStreak,
+    currentLevel,
+    currentTitle,
+    totalXp,
+  };
 
   useEffect(() => {
     if (visible) {
