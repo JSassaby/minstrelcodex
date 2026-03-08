@@ -38,4 +38,11 @@ export interface CloudAdapter {
    * @returns the remote file ID on success, null on failure
    */
   push(localId: string, content: string, remoteId?: string): Promise<string | null>;
+
+  /**
+   * Delete a remote file or folder (trash it).
+   * @param remoteId - the provider-specific ID
+   * @returns true on success
+   */
+  delete(remoteId: string): Promise<boolean>;
 }
