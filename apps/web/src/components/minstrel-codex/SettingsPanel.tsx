@@ -222,17 +222,29 @@ export default function SettingsPanel({
   const activeTab = TABS[activeTabIdx].id;
 
   const [connectedProviders, setConnectedProviders] = useState(() => ({
-    google: !!localStorage.getItem('pw-google-token'),
+    google: !!localStorage.getItem('mc-drive-access-token'),
     apple: false,
   }));
 
   useEffect(() => {
     if (!visible) return;
     setConnectedProviders({
-      google: !!localStorage.getItem('pw-google-token'),
+      google: !!localStorage.getItem('mc-drive-access-token'),
       apple: false,
     });
   }, [visible]);
+
+  // Listen for Google token changes from useGoogleToken hook
+  useEffect(() => {
+    const handler = () => {
+      setConnectedProviders(prev => ({
+        ...prev,
+        google: !!localStorage.getItem('mc-drive-access-token'),
+      }));
+    };
+    window.addEventListener('mc-google-token-changed', handler);
+    return () => window.removeEventListener('mc-google-token-changed', handler);
+  }, []);
 
   useEffect(() => { setFocusedItemIdx(0); }, [activeTabIdx]);
 
