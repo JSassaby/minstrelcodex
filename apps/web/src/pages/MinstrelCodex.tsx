@@ -168,7 +168,6 @@ export default function MinstrelCodex() {
   // Writing stats tracking
   const sessionStartWordsRef = useRef<number | null>(null);
   const lastTrackedWordsRef = useRef(0);
-  const editorContentRef = useRef(editorContent);
 
   // Font family
   const [fontFamily, setFontFamily] = useState(() => {
@@ -217,6 +216,7 @@ export default function MinstrelCodex() {
 
   // Content state managed locally for editor
   const [editorContent, setEditorContent] = useState('');
+  const editorContentRef = useRef(editorContent);
 
   // Load saved state on mount
   useEffect(() => {
