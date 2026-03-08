@@ -7,6 +7,7 @@ import StatusBar from '@/components/minstrel-codex/StatusBar';
 import FileBrowser from '@/components/minstrel-codex/FileBrowser';
 import HelpText from '@/components/minstrel-codex/HelpText';
 import HelpPanel from '@/components/minstrel-codex/HelpPanel';
+import { getHelpPage } from '@/components/minstrel-codex/helpContent';
 import LiveStats from '@/components/minstrel-codex/LiveStats';
 import GoogleDriveModal from '@/components/minstrel-codex/GoogleDriveModal';
 import AppleSignInModal from '@/components/minstrel-codex/AppleSignInModal';
