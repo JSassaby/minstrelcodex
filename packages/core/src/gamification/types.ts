@@ -92,6 +92,37 @@ export const SESSION_IDLE_MS = 2 * 60 * 1000; // 2 minutes idle = session end
 /** Minimum words for a session to count toward streak (lower threshold) */
 export const STREAK_MIN_WORDS = 50;
 
+export interface ChronicleCheckContext {
+  totalWords: number;
+  todayWords: number;
+  monthWords: number;
+  sessionWords: number;
+  sessionMinutes: number;
+  streakDays: number;
+  totalSessions: number;
+  totalChapters: number;
+  totalProjects: number;
+  totalNovels: number;
+  sprintWords: number;
+  sprintMinutes: number;
+  versionCheckpoints: number;
+  characterNotes: number;
+  wpmRecord: number;
+  sessionHour: number;
+  offlineSessions: number;
+  unlockedChronicleIds: string[];
+}
+
+export interface ChronicleDefinition {
+  id: string;
+  name: string;
+  category: 'consistency' | 'wordcount' | 'session' | 'project' | 'hidden';
+  description: string;
+  renownReward: number;
+  hidden: boolean;
+  check: (stats: ChronicleCheckContext) => boolean;
+}
+
 export interface SessionXPBreakdown {
   baseXp: number;
   sessionBonus: number;

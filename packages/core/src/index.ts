@@ -42,6 +42,8 @@ export {
   useStreakEngine,
   useSessionTracker,
   useXPEngine,
+  CHRONICLES,
+  useChronicleEngine,
 } from './gamification';
 export type {
   CraftSkillType,
@@ -52,4 +54,6 @@ export type {
   WriterRank,
   StreakTier,
   SessionXPBreakdown,
+  ChronicleCheckContext,
+  ChronicleDefinition,
 } from './gamification';

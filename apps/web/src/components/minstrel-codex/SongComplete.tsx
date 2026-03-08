@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import type { SessionXPBreakdown } from '@minstrelcodex/core';
+import type { SessionXPBreakdown, ChronicleDefinition } from '@minstrelcodex/core';
 import ShareMilestoneModal from './ShareMilestoneModal';
 import type { ShareableCardData } from './ShareableCard';
 
@@ -21,6 +21,7 @@ interface SongCompleteProps {
   totalXp: number;
   xpInLevel: number;
   xpNeeded: number | null;
+  newChronicles?: ChronicleDefinition[];
   onClose: () => void;
 }
 
@@ -34,7 +35,7 @@ function formatDuration(seconds: number): string {
 export default function SongComplete({
   visible, wordsWritten, durationSeconds, xpBreakdown,
   currentStreak, currentLevel, currentTitle,
-  totalXp, xpInLevel, xpNeeded, onClose,
+  totalXp, xpInLevel, xpNeeded, newChronicles = [], onClose,
 }: SongCompleteProps) {
   const [phase, setPhase] = useState<'enter' | 'visible' | 'exit'>('enter');
   const [shareVisible, setShareVisible] = useState(false);
@@ -154,9 +155,43 @@ export default function SongComplete({
           </div>
         </div>
 
-        <div style={{ fontSize: '11px', opacity: 0.4, marginBottom: '20px' }}>
+        <div style={{ fontSize: '11px', opacity: 0.4, marginBottom: newChronicles.length > 0 ? '12px' : '20px' }}>
           Total Renown: {totalXp.toLocaleString()}
         </div>
+
+        {/* New Chronicles */}
+        {newChronicles.length > 0 && (
+          <div style={{
+            background: 'rgba(200, 168, 75, 0.08)',
+            border: '1px solid rgba(200, 168, 75, 0.35)',
+            padding: '10px 14px',
+            marginBottom: '20px',
+            textAlign: 'left',
+          }}>
+            <div style={{
+              fontSize: '10px',
+              letterSpacing: '0.12em',
+              color: '#c8a84b',
+              fontWeight: 600,
+              marginBottom: '8px',
+            }}>
+              {newChronicles.length === 1 ? 'NEW CHRONICLE UNLOCKED' : 'NEW CHRONICLES UNLOCKED'}
+            </div>
+            {newChronicles.map(c => (
+              <div key={c.id} style={{
+                fontSize: '12px',
+                color: '#c8a84b',
+                marginBottom: '4px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'baseline',
+              }}>
+                <span>✦ {c.name}</span>
+                <span style={{ fontSize: '11px', opacity: 0.8 }}>+{c.renownReward.toLocaleString()} Renown</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Action buttons */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>

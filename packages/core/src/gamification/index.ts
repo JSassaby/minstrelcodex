@@ -7,6 +7,8 @@ export type {
   WriterRank,
   StreakTier,
   SessionXPBreakdown,
+  ChronicleCheckContext,
+  ChronicleDefinition,
 } from './types';
 
 export {
@@ -24,3 +26,5 @@ export { useWriterProfile } from './useWriterProfile';
 export { useStreakEngine } from './useStreakEngine';
 export { useSessionTracker } from './useSessionTracker';
 export { useXPEngine } from './useXPEngine';
+export { CHRONICLES } from './chronicles';
+export { useChronicleEngine } from './useChronicleEngine';

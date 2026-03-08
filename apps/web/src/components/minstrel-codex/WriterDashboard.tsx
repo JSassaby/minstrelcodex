@@ -7,7 +7,7 @@ import {
   getStreakMultiplier,
   db,
 } from '@minstrelcodex/core';
-import type { WriterProfile, WritingStatRecord } from '@minstrelcodex/core';
+import type { WriterProfile, WritingStatRecord, ChronicleDefinition, AchievementRecord } from '@minstrelcodex/core';
 
 const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
 const GOLD = '#c8a84b';
@@ -78,13 +78,16 @@ function StatBox({ label, value, sub }: { label: string; value: string; sub?: st
 interface WriterDashboardProps {
   visible: boolean;
   profile: WriterProfile;
+  unlockedChronicles?: ChronicleDefinition[];
+  allChronicles?: ChronicleDefinition[];
   onClose: () => void;
 }
 
-export default function WriterDashboard({ visible, profile, onClose }: WriterDashboardProps) {
+export default function WriterDashboard({ visible, profile, unlockedChronicles = [], allChronicles = [], onClose }: WriterDashboardProps) {
   const [totalWords, setTotalWords] = useState(0);
   const [sessionCount, setSessionCount] = useState(0);
   const [weekStats, setWeekStats] = useState<Record<string, number>>({});
+  const [achievementRecords, setAchievementRecords] = useState<AchievementRecord[]>([]);
 
   // Load data from IndexedDB whenever panel opens
   useEffect(() => {
@@ -99,6 +102,8 @@ export default function WriterDashboard({ visible, profile, onClose }: WriterDas
     });
 
     db.writingSessions.count().then(setSessionCount);
+
+    db.achievements.toArray().then(setAchievementRecords);
   }, [visible]);
 
   if (!visible) return null;
@@ -375,6 +380,99 @@ export default function WriterDashboard({ visible, profile, onClose }: WriterDas
             );
           })}
         </div>
+
+        <div style={{ marginBottom: '20px' }} />
+
+        {/* ── Section 5: Chronicles ──────────────────────────────────── */}
+        <SectionHeader title="Chronicles" />
+
+        {/* Earned */}
+        {unlockedChronicles.length > 0 && (
+          <>
+            <div style={{ fontSize: '9px', letterSpacing: '0.1em', opacity: 0.5, marginBottom: '6px' }}>EARNED</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
+              {unlockedChronicles.map(c => {
+                const record = achievementRecords.find(r => r.id === c.id);
+                const dateStr = record
+                  ? new Date(record.unlockedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                  : '';
+                return (
+                  <div
+                    key={c.id}
+                    style={{
+                      border: `1px solid ${GOLD}`,
+                      padding: '8px 10px',
+                      background: 'rgba(200, 168, 75, 0.05)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: GOLD }}>{c.name}</span>
+                      <span style={{
+                        fontSize: '9px',
+                        background: TEAL,
+                        color: 'var(--terminal-bg)',
+                        padding: '1px 5px',
+                        fontWeight: 600,
+                        letterSpacing: '0.05em',
+                      }}>
+                        {c.category}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '9px', opacity: 0.6, marginBottom: '2px' }}>{c.description}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px' }}>
+                      <span style={{ color: GOLD, opacity: 0.8 }}>+{fmtNum(c.renownReward)} Renown</span>
+                      <span style={{ opacity: 0.4 }}>{dateStr}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* Locked */}
+        {(() => {
+          const unlockedIds = new Set(unlockedChronicles.map(c => c.id));
+          const locked = allChronicles.filter(c => !unlockedIds.has(c.id));
+          if (locked.length === 0) return null;
+          return (
+            <>
+              <div style={{ fontSize: '9px', letterSpacing: '0.1em', opacity: 0.5, marginBottom: '6px' }}>LOCKED</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {locked.map(c => {
+                  const isHidden = c.hidden;
+                  return (
+                    <div
+                      key={c.id}
+                      style={{
+                        border: '1px solid var(--terminal-border)',
+                        padding: '7px 10px',
+                        opacity: 0.5,
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 500 }}>
+                          {isHidden ? '🔒 ???' : `🔒 ${c.name}`}
+                        </span>
+                        <span style={{
+                          fontSize: '9px',
+                          border: '1px solid var(--terminal-border)',
+                          padding: '1px 5px',
+                          letterSpacing: '0.05em',
+                        }}>
+                          {isHidden ? 'hidden' : c.category}
+                        </span>
+                      </div>
+                      {!isHidden && (
+                        <div style={{ fontSize: '9px', opacity: 0.6 }}>{c.description}</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          );
+        })()}
 
       </div>
 

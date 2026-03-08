@@ -28,8 +28,8 @@ import { useGoogleToken } from '@/hooks/useGoogleToken';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import AuthModal from '@/components/minstrel-codex/AuthModal';
-import { useSyncEngine, GoogleDriveAdapter, db, useWriterProfile, useStreakEngine, useSessionTracker, useXPEngine, getLevelForXP } from '@minstrelcodex/core';
-import type { SessionXPBreakdown } from '@minstrelcodex/core';
+import { useSyncEngine, GoogleDriveAdapter, db, useWriterProfile, useStreakEngine, useSessionTracker, useXPEngine, getLevelForXP, useChronicleEngine } from '@minstrelcodex/core';
+import type { SessionXPBreakdown, ChronicleDefinition } from '@minstrelcodex/core';
 import ChapterOverviewPanel from '@/components/minstrel-codex/ChapterOverviewPanel';
 import NotesPanel from '@/components/minstrel-codex/NotesPanel';
 import ManuscriptStatsModal from '@/components/minstrel-codex/ManuscriptStatsModal';
@@ -230,10 +230,12 @@ export default function MinstrelCodex() {
   const { profile, loaded: profileLoaded, updateProfile, addXP } = useWriterProfile();
   const { currentStreak, quillsRestActive, checkStreak, recordStreak } = useStreakEngine(profile, updateProfile);
   const { awardSessionXP, currentLevel, currentTitle, xpInLevel, xpNeeded, totalXp, streakMultiplier } = useXPEngine(profile, addXP);
+  const { checkChronicles, unlockedChronicleIds, unlockedChronicles, allChronicles } = useChronicleEngine(addXP);
   const [songCompleteVisible, setSongCompleteVisible] = useState(false);
   const [lastXPBreakdown, setLastXPBreakdown] = useState<SessionXPBreakdown | null>(null);
   const [lastSessionWords, setLastSessionWords] = useState(0);
   const [lastSessionDuration, setLastSessionDuration] = useState(0);
+  const [lastNewChronicles, setLastNewChronicles] = useState<ChronicleDefinition[]>([]);
 
   const prevStreakRef = useRef(profile.currentStreak);
   const prevLevelRef = useRef(profile.level);
@@ -248,8 +250,9 @@ export default function MinstrelCodex() {
       recordStreak();
 
       // Detect milestones after state updates (use setTimeout to let React flush)
-      setTimeout(() => {
-        const newStreak = prevStreak + (profile.lastWritingDate !== new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()) ? 1 : 0);
+      setTimeout(async () => {
+        const today = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+        const newStreak = prevStreak + (profile.lastWritingDate !== today ? 1 : 0);
         const newTotalXp = profile.renown + breakdown.totalXp;
 
         const milestones = [
@@ -265,11 +268,57 @@ export default function MinstrelCodex() {
         prevLevelRef.current = newLevel;
 
         emitMilestones(milestones);
+
+        // ── Chronicle checks ─────────────────────────────────────────
+        try {
+          const [allStats, sessionCount, charNotes] = await Promise.all([
+            db.writingStats.toArray(),
+            db.writingSessions.count(),
+            db.notes.where('type').equals('character').count(),
+          ]);
+
+          const currentMonth = today.slice(0, 7); // YYYY-MM
+          const totalWordCount = allStats.reduce((acc, r) => acc + (r.words ?? 0), 0);
+          const monthWordCount = allStats
+            .filter(r => r.date.startsWith(currentMonth))
+            .reduce((acc, r) => acc + (r.words ?? 0), 0);
+          const todayWords = allStats.find(r => r.date === today)?.words ?? 0;
+
+          const sessionStartHour = new Date(session.startedAt).getHours();
+          const sessionMinutes = session.durationSeconds / 60;
+
+          const ctx = {
+            totalWords: totalWordCount,
+            todayWords,
+            monthWords: monthWordCount,
+            sessionWords: session.wordCount,
+            sessionMinutes,
+            streakDays: newStreak,
+            totalSessions: sessionCount,
+            totalChapters: 0,
+            totalProjects: 0,
+            totalNovels: 0,
+            sprintWords: 0,
+            sprintMinutes: 0,
+            versionCheckpoints: parseInt(localStorage.getItem('minstrel_version_checkpoints') ?? '0', 10),
+            characterNotes: charNotes,
+            wpmRecord: parseFloat(localStorage.getItem('minstrel_wpm_record') ?? '0'),
+            sessionHour: sessionStartHour,
+            offlineSessions: parseInt(localStorage.getItem('minstrel_offline_sessions') ?? '0', 10),
+            unlockedChronicleIds,
+          };
+
+          const newlyUnlocked = await checkChronicles(ctx);
+          setLastNewChronicles(newlyUnlocked);
+        } catch {
+          // Non-fatal — chronicles will be checked next session
+        }
       }, 300);
 
       setLastXPBreakdown(breakdown);
       setLastSessionWords(session.wordCount);
       setLastSessionDuration(session.durationSeconds);
+      setLastNewChronicles([]);
       setSongCompleteVisible(true);
     },
   });
@@ -1672,6 +1721,8 @@ export default function MinstrelCodex() {
         <WriterDashboard
           visible={dashboardOpen}
           profile={profile}
+          unlockedChronicles={unlockedChronicles}
+          allChronicles={allChronicles}
           onClose={() => {
             setDashboardOpen(false);
             setTimeout(() => editorRef.current?.focus(), 50);
@@ -2395,6 +2446,7 @@ export default function MinstrelCodex() {
         totalXp={totalXp}
         xpInLevel={xpInLevel}
         xpNeeded={xpNeeded}
+        newChronicles={lastNewChronicles}
         onClose={() => setSongCompleteVisible(false)}
       />
       {/* Milestone celebration queue (streak/level-up cards) */}
