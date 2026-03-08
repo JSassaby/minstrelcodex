@@ -212,6 +212,9 @@ export default function MinstrelCodex() {
   const musicPlayer = useMusicPlayer();
   const a11y = useAccessibility();
 
+  // Current project ID (first path segment of open file)
+  const currentProjectId = docStorage.currentDocument.filename?.split('/')[0] || '';
+
   // ── Gamification hooks ────────────────────────────────────────────
   const { profile, loaded: profileLoaded, updateProfile, addXP } = useWriterProfile();
   const { currentStreak, emberActive, checkStreak, recordStreak } = useStreakEngine(profile, updateProfile);
