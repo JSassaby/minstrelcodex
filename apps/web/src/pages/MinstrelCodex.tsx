@@ -101,6 +101,7 @@ export default function MinstrelCodex() {
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
   const [musicPlayerOpen, setMusicPlayerOpen] = useState(false);
   const [helpPanelOpen, setHelpPanelOpen] = useState(false);
+  const [activeHelpPageId, setActiveHelpPageId] = useState<string | null>(null);
 
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false);
