@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
+import { DESIGN_TOKENS as DT } from '@minstrelcodex/core';
 import type { FileNode, DocumentData } from '@minstrelcodex/core';
 
 // ── Drag-and-drop state ───────────────────────────────────────────────────────
@@ -163,6 +164,7 @@ export default function FileBrowser({
   const [statusMessage, setStatusMessage] = useState('');
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; item: FlatItem } | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ type: 'empty-bin' | 'delete-permanently'; item: FlatItem } | null>(null);
+  const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -212,6 +214,19 @@ export default function FileBrowser({
     document.addEventListener('mousedown', dismiss);
     return () => document.removeEventListener('mousedown', dismiss);
   }, [contextMenu]);
+
+  // Dismiss actions dropdown on outside click
+  useEffect(() => {
+    if (!actionsMenuOpen) return;
+    const dismiss = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.fb-actions-menu') && !target.closest('.fb-actions-btn')) {
+        setActionsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', dismiss);
+    return () => document.removeEventListener('mousedown', dismiss);
+  }, [actionsMenuOpen]);
 
   // Get the folder path the selected item lives in (for creating files)
   const getSelectedFolderPath = useCallback((): string[] => {
@@ -343,10 +358,10 @@ export default function FileBrowser({
             showStatus('Permanently deleted');
           } else if (item.type === 'file') {
             onDeleteFile(item.name);
-            showStatus('Moved to Deleted');
+            showStatus('Moved to Recycle Bin');
           } else {
             onDeleteFolder(item.path);
-            showStatus('Folder moved to Deleted');
+            showStatus('Folder moved to Recycle Bin');
           }
           setSelectedIndex(prev => Math.max(0, prev - 1));
         }
@@ -378,7 +393,7 @@ export default function FileBrowser({
         const item = filteredItems[selectedIndex];
         if (item && item.path[0] === 'Deleted') {
           onEmptyDeleted();
-          showStatus('Deleted emptied');
+          showStatus('Recycle Bin emptied');
         }
         e.preventDefault();
       }
@@ -426,33 +441,146 @@ export default function FileBrowser({
         }}
       >
         <span style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: uiFont, opacity: 0.65, display: 'flex', alignItems: 'center', gap: '7px' }}>
-          <FolderIcon open size={16} /> Files
+          <span style={{ fontSize: '14px', lineHeight: 1 }}>📚</span> Files
         </span>
-        <button
-          onClick={onClose}
-          title="Esc to close"
-          style={{
-            background: 'transparent',
-            border: '1px solid var(--terminal-border)',
-            borderRadius: '6px',
-            color: 'var(--terminal-text)',
-            opacity: 0.45,
-            cursor: 'pointer',
-            width: '22px',
-            height: '22px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '13px',
-            lineHeight: 1,
-            fontFamily: uiFont,
-            transition: 'opacity 0.15s, border-color 0.15s',
-          }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '0.9'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--terminal-accent)'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.45'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--terminal-border)'; }}
-        >
-          ✕
-        </button>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', position: 'relative' }}>
+          {/* ⋯ actions button */}
+          <button
+            className="fb-actions-btn"
+            onClick={(e) => { e.stopPropagation(); setActionsMenuOpen(prev => !prev); }}
+            title="Actions"
+            style={{
+              background: 'transparent',
+              border: actionsMenuOpen ? '1px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
+              borderRadius: DT.BORDER_RADIUS.button,
+              color: 'var(--terminal-text)',
+              opacity: actionsMenuOpen ? 0.9 : 0.45,
+              cursor: 'pointer',
+              width: '22px',
+              height: '22px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '15px',
+              lineHeight: 1,
+              fontFamily: uiFont,
+              transition: 'opacity 0.15s, border-color 0.15s',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '0.9'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--terminal-accent)'; }}
+            onMouseLeave={e => { if (!actionsMenuOpen) { (e.currentTarget as HTMLElement).style.opacity = '0.45'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--terminal-border)'; } }}
+          >
+            ⋯
+          </button>
+
+          {/* Actions dropdown */}
+          {actionsMenuOpen && (
+            <div
+              className="fb-actions-menu"
+              style={{
+                position: 'absolute',
+                top: '110%',
+                right: 0,
+                zIndex: DT.Z_INDEX.dropdown,
+                background: DT.COLORS.background.menu,
+                border: DT.BORDERS.default,
+                borderRadius: DT.BORDER_RADIUS.dropdown,
+                boxShadow: DT.SHADOWS.dropdown,
+                minWidth: '136px',
+                fontFamily: uiFont,
+              }}
+            >
+              {([
+                { key: 'Enter', label: 'Open' },
+                { key: 'n',     label: 'New File' },
+                { key: 'N',     label: 'New Folder', shift: true },
+                { key: 'r',     label: 'Rename' },
+                { key: 'm',     label: 'Move' },
+                { key: 'd',     label: 'Delete' },
+                { key: '/',     label: 'Search' },
+              ] as { key: string; label: string; shift?: boolean }[]).map(({ key, label, shift }) => (
+                <button
+                  key={key + label}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActionsMenuOpen(false);
+                    window.dispatchEvent(new KeyboardEvent('keydown', { key, shiftKey: !!shift, bubbles: true }));
+                  }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderRadius: DT.BORDER_RADIUS.dropdown,
+                    color: 'var(--terminal-text)',
+                    fontFamily: uiFont,
+                    fontSize: '11px',
+                    fontWeight: 400,
+                    letterSpacing: '0.04em',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = DT.COLORS.background.cardHover; (e.currentTarget as HTMLElement).style.color = 'var(--terminal-accent)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--terminal-text)'; }}
+                >
+                  {label}
+                </button>
+              ))}
+              {onSyncGoogleDrive && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setActionsMenuOpen(false); onSyncGoogleDrive!(); }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderTop: DT.BORDERS.subtle,
+                    borderRadius: DT.BORDER_RADIUS.dropdown,
+                    color: 'var(--terminal-text)',
+                    fontFamily: uiFont,
+                    fontSize: '11px',
+                    fontWeight: 400,
+                    letterSpacing: '0.04em',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = DT.COLORS.background.cardHover; (e.currentTarget as HTMLElement).style.color = 'var(--terminal-accent)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--terminal-text)'; }}
+                >
+                  ☁ Sync
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            title="Esc to close"
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--terminal-border)',
+              borderRadius: DT.BORDER_RADIUS.button,
+              color: 'var(--terminal-text)',
+              opacity: 0.45,
+              cursor: 'pointer',
+              width: '22px',
+              height: '22px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '13px',
+              lineHeight: 1,
+              fontFamily: uiFont,
+              transition: 'opacity 0.15s, border-color 0.15s',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '0.9'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--terminal-accent)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.45'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--terminal-border)'; }}
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
       {/* Search bar */}
@@ -492,7 +620,8 @@ export default function FileBrowser({
             {[{ path: [] as string[], name: 'Root' }, ...allFolders].map((f, i) => (
               <div key={i} onClick={() => setMoveTargetIdx(i)}
                 style={{ padding: '6px 10px', borderRadius: '8px', background: moveTargetIdx === i ? 'var(--terminal-accent)' : 'var(--terminal-bg)', color: moveTargetIdx === i ? 'var(--terminal-bg)' : 'var(--terminal-text)', cursor: 'pointer', fontSize: '12px', fontFamily: uiFont, transition: 'background 0.1s', border: `1px solid ${moveTargetIdx === i ? 'var(--terminal-accent)' : 'var(--terminal-border)'}`, display: 'flex', alignItems: 'center', gap: '7px' }}>
-                <FolderIcon size={14} /> {f.name}
+                <span style={{ fontSize: '12px', lineHeight: 1 }}>{f.name === 'Deleted' ? '🗑️' : '📚'}</span>
+                {f.name === 'Deleted' ? 'Recycle Bin' : f.name}
               </div>
             ))}
           </div>
@@ -752,10 +881,11 @@ export default function FileBrowser({
                 )}
                 {!isFolder && <span style={{ width: '11px', flexShrink: 0 }} />}
 
-                {isFolder
-                  ? <FolderIcon open={!item.collapsed} isDeleted={item.name === 'Deleted'} size={16} />
-                  : <FileIcon isDeleted={isDeleted} focused={false} size={16} />
-                }
+                <span style={{ fontSize: '15px', lineHeight: 1, flexShrink: 0 }}>
+                  {isFolder
+                    ? (item.name === 'Deleted' ? '🗑️' : '📚')
+                    : '🗒️'}
+                </span>
 
                 <span style={{
                   fontWeight: isFolder ? '600' : '400',
@@ -767,7 +897,7 @@ export default function FileBrowser({
                   opacity: isFocused ? 1 : 0.8,
                   fontSize: isFolder ? '11px' : '12px',
                 }}>
-                  {displayName}
+                  {item.name === 'Deleted' && item.type === 'folder' ? 'Recycle Bin' : displayName}
                 </span>
                 {!isFolder && (doc || item.name === currentFilename) && (
                   <span style={{
@@ -854,7 +984,7 @@ export default function FileBrowser({
         }}>
           <div style={{ fontSize: '11px', color: 'var(--terminal-text)', marginBottom: '10px', lineHeight: 1.45 }}>
             {confirmAction.type === 'empty-bin'
-              ? 'Permanently delete everything in Deleted?'
+              ? 'Permanently delete everything in Recycle Bin?'
               : `Permanently delete "${confirmAction.item.name}"?`}
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
@@ -926,90 +1056,6 @@ export default function FileBrowser({
           ✓ {statusMessage}
         </div>
       )}
-
-      {/* Action bar */}
-      <div
-        style={{
-          borderTop: '1px solid rgba(0,0,0,0.07)',
-          padding: '10px 12px 12px',
-          flexShrink: 0,
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '4px',
-          fontFamily: uiFont,
-          background: 'rgba(0,0,0,0.02)',
-        }}
-      >
-        {[
-          { key: 'Enter', label: 'Open' },
-          { key: 'n', label: 'New File' },
-          { key: 'N', label: 'New Folder', shift: true },
-          { key: 'r', label: 'Rename' },
-          { key: 'm', label: 'Move' },
-          { key: 'd', label: 'Delete' },
-          { key: '/', label: 'Search' },
-        ].map(({ key, label, shift }: { key: string; label: string; shift?: boolean }) => (
-          <button
-            key={key + label}
-            onClick={(e) => {
-              e.stopPropagation();
-              window.dispatchEvent(new KeyboardEvent('keydown', { key, shiftKey: !!shift, bubbles: true }));
-            }}
-            title={`${shift ? 'Shift+' : ''}${key} — ${label}`}
-            style={{
-              background: 'var(--terminal-bg)',
-              border: '1px solid var(--terminal-border)',
-              borderRadius: '7px',
-              color: 'var(--terminal-text)',
-              cursor: 'pointer',
-              padding: '3px 8px',
-              fontFamily: uiFont,
-              fontSize: '10px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '5px',
-              opacity: 0.75,
-              transition: 'opacity 0.12s, border-color 0.12s',
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--terminal-accent)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.75'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--terminal-border)'; }}
-          >
-            <span style={{
-              display: 'inline-block',
-              padding: '1px 5px',
-              background: 'var(--terminal-surface)',
-              border: '1px solid var(--terminal-border)',
-              borderRadius: '4px',
-              fontSize: '9px',
-              fontFamily: "'Courier Prime', monospace",
-              lineHeight: 1.4,
-              opacity: 0.4,
-            }}>{key === 'Enter' ? '↵' : shift ? `⇧${key}` : key}</span>
-            {label}
-          </button>
-        ))}
-        {onSyncGoogleDrive && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onSyncGoogleDrive!(); }}
-            style={{
-              background: 'var(--terminal-bg)',
-              border: '1px solid var(--terminal-border)',
-              borderRadius: '7px',
-              color: 'var(--terminal-text)',
-              cursor: 'pointer',
-              padding: '3px 8px',
-              fontFamily: uiFont,
-              fontSize: '10px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '5px',
-              opacity: 0.75,
-            }}
-          >
-            ☁ Sync
-          </button>
-        )}
-      </div>
 
       {/* Keyboard hint bar */}
       <div style={{
