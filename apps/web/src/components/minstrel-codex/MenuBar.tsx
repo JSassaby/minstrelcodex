@@ -256,6 +256,7 @@ export default function MenuBar({
         <div
           onClick={(e) => { e.stopPropagation(); onAction('opendashboard'); }}
           aria-label="Writer Dashboard"
+          title="Writer Dashboard"
           style={{
             cursor: 'pointer',
             opacity: 0.4,
@@ -274,7 +275,6 @@ export default function MenuBar({
             e.currentTarget.style.opacity = '0.4';
             e.currentTarget.style.background = 'transparent';
           }}
-          title="Writer Dashboard"
         >
           <User size={15} strokeWidth={1.6} />
         </div>
