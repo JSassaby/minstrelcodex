@@ -1,3 +1,7 @@
+// Import engine
+export { importFiles, convertTxt, convertMarkdown, convertDocx, convertPdf } from './import';
+export type { ImportedFile, SupportedExtension } from './import';
+
 // Design system
 export { DESIGN_TOKENS } from './design/tokens';
 export type { DesignTokens } from './design/tokens';

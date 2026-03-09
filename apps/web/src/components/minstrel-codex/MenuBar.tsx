@@ -4,7 +4,7 @@ import {
   FilePlus, BookOpen, FolderOpen, Clock, Save, FileOutput,
   Printer, PanelLeftOpen, Undo2, Redo2, Copy, ClipboardPaste,
   Wifi, Cloud, Settings, Camera, FileText, Music,
-  HelpCircle, ChevronDown, LayoutDashboard, User
+  HelpCircle, ChevronDown, LayoutDashboard, User, Upload
 } from 'lucide-react';
 import minstrelLogo from '@/assets/minstrel-logo.svg';
 import { t } from '@/lib/languages';
@@ -48,6 +48,7 @@ function getSubmenuItems(menu: string, language: string): MenuItem[] {
         { action: 'separator',     label: '' },
         { action: 'open',          label: t(language, 'file.open'),             shortcut: 'Ctrl+O',       icon: <FolderOpen size={14} color={ICON_ACCENT.amber} strokeWidth={1.6} /> },
         { action: 'recent',        label: t(language, 'file.recent'),           shortcut: '',             icon: <Clock size={14} color={ICON_ACCENT.muted} strokeWidth={1.6} /> },
+        { action: 'import',        label: 'Import…',                            shortcut: '',             icon: <Upload size={14} color={ICON_ACCENT.green} strokeWidth={1.6} /> },
         { action: 'separator',     label: '' },
         { action: 'save',          label: t(language, 'file.save'),             shortcut: 'Ctrl+S',       icon: <Save size={14} color={ICON_ACCENT.green} strokeWidth={1.6} /> },
         { action: 'saveas',        label: t(language, 'file.saveas'),           shortcut: '',             icon: <Save size={14} color={ICON_ACCENT.muted} strokeWidth={1.6} /> },

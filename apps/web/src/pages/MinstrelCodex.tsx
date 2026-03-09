@@ -41,6 +41,7 @@ import WriterDashboard from '@/components/minstrel-codex/WriterDashboard';
 import ChronicleLedger from '@/components/minstrel-codex/ChronicleLedger';
 import NovelWizard from '@/components/minstrel-codex/NovelWizard';
 import type { NovelConfig } from '@/components/minstrel-codex/NovelWizard';
+import ImportModal from '@/components/minstrel-codex/ImportModal';
 import MilestoneNotifier, { emitMilestones } from '@/components/minstrel-codex/MilestoneNotifier';
 import { detectStreakMilestones, detectLevelUp } from '@/components/minstrel-codex/milestoneDetection';
 import { useMusicPlayer } from '@/hooks/useMusicPlayer';
@@ -109,6 +110,7 @@ export default function MinstrelCodex() {
   const [activeHelpPageId, setActiveHelpPageId] = useState<string | null>(null);
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [chronicleLedgerOpen, setChronicleLedgerOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -1016,6 +1018,9 @@ export default function MinstrelCodex() {
       case 'export':
         setActiveModal('export');
         break;
+      case 'import':
+        setImportModalOpen(true);
+        break;
     }
   }, [docStorage, editorContent, fileStructure, theme, language, pinConfig, toggleFullscreen]);
 
@@ -1773,6 +1778,19 @@ export default function MinstrelCodex() {
         {!wizardComplete && (
           <NovelWizard onComplete={handleNovelWizardComplete} />
         )}
+
+        <ImportModal
+          isOpen={importModalOpen}
+          onClose={() => setImportModalOpen(false)}
+          onComplete={(imported) => {
+            for (const file of imported) {
+              docStorage.saveDocument(file.path, file.content);
+              fileStructure.addFileToTree(file.path);
+            }
+            setImportModalOpen(false);
+            showToast(`Imported ${imported.length} file${imported.length === 1 ? '' : 's'}`);
+          }}
+        />
 
         <WriterDashboard
           visible={dashboardOpen}
