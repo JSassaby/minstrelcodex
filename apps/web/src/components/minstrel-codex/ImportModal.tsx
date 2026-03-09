@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { DESIGN_TOKENS as DT } from '@minstrelcodex/core';
 import { importFiles } from '@minstrelcodex/core';
 import type { ImportedFile } from '@minstrelcodex/core';
@@ -13,25 +13,27 @@ type Stage = 'select' | 'importing' | 'done';
 
 interface PendingFile {
   file: File;
-  ext: 'txt' | 'md' | 'docx' | 'pdf';
+  ext: 'txt' | 'md' | 'html' | 'docx' | 'pdf';
   relativePath: string;
 }
 
-const SUPPORTED_EXTS = ['.txt', '.md', '.docx', '.pdf'] as const;
+const SUPPORTED_EXTS = ['.txt', '.md', '.html', '.docx', '.pdf'] as const;
 
-function detectExt(name: string): 'txt' | 'md' | 'docx' | 'pdf' | null {
+function detectExt(name: string): 'txt' | 'md' | 'html' | 'docx' | 'pdf' | null {
   const lower = name.toLowerCase();
   if (lower.endsWith('.txt'))  return 'txt';
   if (lower.endsWith('.md'))   return 'md';
+  if (lower.endsWith('.html')) return 'html';
   if (lower.endsWith('.docx')) return 'docx';
   if (lower.endsWith('.pdf'))  return 'pdf';
   return null;
 }
 
-function BadgeExt({ ext }: { ext: 'txt' | 'md' | 'docx' | 'pdf' }) {
+function BadgeExt({ ext }: { ext: 'txt' | 'md' | 'html' | 'docx' | 'pdf' }) {
   const styles: Record<typeof ext, React.CSSProperties> = {
     txt:  { border: `1px solid ${DT.COLORS.text.muted}`,   color: DT.COLORS.text.muted },
     md:   { border: DT.BORDERS.active,                      color: DT.COLORS.text.teal },
+    html: { border: DT.BORDERS.default,                     color: DT.COLORS.text.muted },
     docx: { border: DT.BORDERS.gold,                        color: DT.COLORS.text.gold },
     pdf:  { border: `1px solid ${DT.COLORS.text.danger}`,   color: DT.COLORS.text.danger },
   };
@@ -83,6 +85,28 @@ export default function ImportModal({ isOpen, onClose, onComplete }: ImportModal
 
   const fileInputRef   = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Reset on close ───────────────────────────────────────────────
+
+  const handleClose = useCallback(() => {
+    setStage('select');
+    setPending([]);
+    setProgress(0);
+    setStatuses([]);
+    setImported([]);
+    onClose();
+  }, [onClose]);
+
+  // ── Escape key to close ──────────────────────────────────────────
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, handleClose]);
 
   // ── File selection helpers ───────────────────────────────────────
 
@@ -137,21 +161,10 @@ export default function ImportModal({ isOpen, onClose, onComplete }: ImportModal
     setStage('done');
   }, [pending]);
 
-  // ── Reset on close ───────────────────────────────────────────────
-
-  const handleClose = () => {
-    setStage('select');
-    setPending([]);
-    setProgress(0);
-    setStatuses([]);
-    setImported([]);
-    onClose();
-  };
-
-  const handleDone = () => {
+  const handleDone = useCallback(() => {
     onComplete(imported);
     handleClose();
-  };
+  }, [onComplete, imported, handleClose]);
 
   if (!isOpen) return null;
 
@@ -276,7 +289,7 @@ export default function ImportModal({ isOpen, onClose, onComplete }: ImportModal
         marginBottom: '16px',
         letterSpacing: '0.05em',
       }}>
-        Supported formats:&nbsp;&nbsp;.txt&nbsp;&nbsp;.md&nbsp;&nbsp;.docx&nbsp;&nbsp;.pdf
+        Supported formats:&nbsp;&nbsp;.txt&nbsp;&nbsp;.md&nbsp;&nbsp;.html&nbsp;&nbsp;.docx&nbsp;&nbsp;.pdf
       </div>
 
       {/* Preview list */}

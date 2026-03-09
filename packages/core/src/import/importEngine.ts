@@ -1,7 +1,7 @@
 /**
  * importEngine.ts
  * ─────────────────────────────────────────────────────────────────────────────
- * File conversion and import logic for .txt, .md, .docx, and .pdf files.
+ * File conversion and import logic for .txt, .md, .docx, .pdf, and .html files.
  * All conversion runs in the browser; no server required.
  */
 
@@ -16,7 +16,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
-export type SupportedExtension = 'txt' | 'md' | 'docx' | 'pdf';
+export type SupportedExtension = 'txt' | 'md' | 'docx' | 'pdf' | 'html';
 
 export interface ImportedFile {
   /** Filename without extension, e.g. "Chapter1" */
@@ -37,6 +37,7 @@ function getExtension(filename: string): SupportedExtension | null {
   if (lower.endsWith('.md'))   return 'md';
   if (lower.endsWith('.docx')) return 'docx';
   if (lower.endsWith('.pdf'))  return 'pdf';
+  if (lower.endsWith('.html')) return 'html';
   return null;
 }
 
@@ -54,6 +55,14 @@ export async function convertTxt(file: File): Promise<string> {
 export async function convertMarkdown(file: File): Promise<string> {
   // Return markdown as-is — preserve all syntax
   return file.text();
+}
+
+export async function convertHtml(file: File): Promise<string> {
+  const text = await file.text();
+  // Strip all HTML tags
+  const stripped = text.replace(/<[^>]*>/g, '');
+  // Collapse multiple blank lines into a single blank line
+  return stripped.replace(/\n{3,}/g, '\n\n').trim();
 }
 
 export async function convertDocx(file: File): Promise<string> {
@@ -97,6 +106,7 @@ export async function importFiles(
       switch (ext) {
         case 'txt':  content = await convertTxt(file);      break;
         case 'md':   content = await convertMarkdown(file); break;
+        case 'html': content = await convertHtml(file);     break;
         case 'docx': content = await convertDocx(file);     break;
         case 'pdf':  content = await convertPdf(file);      break;
       }

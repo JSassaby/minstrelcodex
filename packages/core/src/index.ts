@@ -1,5 +1,5 @@
 // Import engine
-export { importFiles, convertTxt, convertMarkdown, convertDocx, convertPdf } from './import';
+export { importFiles, convertTxt, convertMarkdown, convertHtml, convertDocx, convertPdf } from './import';
 export type { ImportedFile, SupportedExtension } from './import';
 
 // Design system
