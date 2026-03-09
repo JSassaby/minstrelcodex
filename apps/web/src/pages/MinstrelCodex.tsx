@@ -1785,8 +1785,9 @@ export default function MinstrelCodex() {
           onComplete={(imported) => {
             for (const file of imported) {
               docStorage.saveDocument(file.path, file.content);
-              fileStructure.addFileToTree(file.path);
             }
+            // mergeRemotePaths walks/creates the full folder hierarchy for each path
+            fileStructure.mergeRemotePaths(imported.map(f => f.path));
             setImportModalOpen(false);
             showToast(`Imported ${imported.length} file${imported.length === 1 ? '' : 's'}`);
           }}

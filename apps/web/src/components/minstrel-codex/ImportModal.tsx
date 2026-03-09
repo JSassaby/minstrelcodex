@@ -329,17 +329,6 @@ export default function ImportModal({ isOpen, onClose, onComplete }: ImportModal
         </div>
       )}
 
-      {/* Footer buttons */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button style={ghostBtn} onClick={handleClose}>Cancel</button>
-        <button
-          style={pending.length > 0 ? primaryBtn : disabledBtn}
-          disabled={pending.length === 0}
-          onClick={runImport}
-        >
-          Import {pending.length > 0 ? `${pending.length} file${pending.length === 1 ? '' : 's'}` : ''} →
-        </button>
-      </div>
     </>
   );
 
@@ -412,35 +401,14 @@ export default function ImportModal({ isOpen, onClose, onComplete }: ImportModal
         })}
       </div>
 
-      {/* Summary / Done button */}
-      {stage === 'done' && (
-        <div style={{
-          display:     'flex',
-          justifyContent: 'space-between',
-          alignItems:  'center',
-        }}>
-          <div style={{
-            fontSize:   '11px',
-            color:      DT.COLORS.text.muted,
-            fontFamily: DT.TYPOGRAPHY.ui.fontFamily,
-            opacity:    0.7,
-          }}>
-            {imported.length} file{imported.length === 1 ? '' : 's'} imported successfully
-          </div>
-          <button style={primaryBtn} onClick={handleDone}>Done</button>
-        </div>
-      )}
     </>
   );
 
   return (
     <div style={OVERLAY}>
       <div style={MODAL}>
-        {/* ── Header ─────────────────────────────────────── */}
-        <div style={{
-          padding:      '24px 28px 0',
-          flexShrink:   0,
-        }}>
+        {/* ── Header — always visible ─────────────────────── */}
+        <div style={{ padding: '24px 28px 20px', flexShrink: 0 }}>
           <div style={sectionHeader}>
             {stage === 'select'    && 'Import Your Works'}
             {stage === 'importing' && 'Importing…'}
@@ -448,13 +416,38 @@ export default function ImportModal({ isOpen, onClose, onComplete }: ImportModal
           </div>
         </div>
 
-        {/* ── Body ───────────────────────────────────────── */}
-        <div style={{
-          padding:    '0 28px 28px',
-          overflowY:  'auto',
-          flex:       1,
-        }}>
-          {stage === 'select'               ? selectStage   : importingStage}
+        {/* ── Body — scrollable ───────────────────────────── */}
+        <div style={{ padding: '0 28px', overflowY: 'auto', flex: 1 }}>
+          {stage === 'select' ? selectStage : importingStage}
+        </div>
+
+        {/* ── Footer — pinned, never scrolls out of view ──── */}
+        <div style={{ padding: '16px 28px 24px', flexShrink: 0, borderTop: DT.BORDERS.subtle }}>
+          {stage === 'select' && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button style={ghostBtn} onClick={handleClose}>Cancel</button>
+              <button
+                style={pending.length > 0 ? primaryBtn : disabledBtn}
+                disabled={pending.length === 0}
+                onClick={runImport}
+              >
+                Import {pending.length > 0 ? `${pending.length} file${pending.length === 1 ? '' : 's'}` : ''} →
+              </button>
+            </div>
+          )}
+          {stage === 'done' && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{
+                fontSize:   '11px',
+                color:      DT.COLORS.text.muted,
+                fontFamily: DT.TYPOGRAPHY.ui.fontFamily,
+                opacity:    0.7,
+              }}>
+                {imported.length} file{imported.length === 1 ? '' : 's'} imported successfully
+              </div>
+              <button style={primaryBtn} onClick={handleDone}>Done</button>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -59,10 +59,22 @@ export async function convertMarkdown(file: File): Promise<string> {
 
 export async function convertHtml(file: File): Promise<string> {
   const text = await file.text();
-  // Strip all HTML tags
-  const stripped = text.replace(/<[^>]*>/g, '');
-  // Collapse multiple blank lines into a single blank line
-  return stripped.replace(/\n{3,}/g, '\n\n').trim();
+  // 1. Remove <style>...</style> blocks (including content — CSS rules, etc.)
+  let cleaned = text.replace(/<style[\s\S]*?<\/style>/gi, '');
+  // 2. Remove <script>...</script> blocks (including content)
+  cleaned = cleaned.replace(/<script[\s\S]*?<\/script>/gi, '');
+  // 3. Strip remaining HTML tags
+  cleaned = cleaned.replace(/<[^>]*>/g, '');
+  // 4. Decode common HTML entities
+  cleaned = cleaned
+    .replace(/&amp;/g,  '&')
+    .replace(/&lt;/g,   '<')
+    .replace(/&gt;/g,   '>')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&quot;/g, '"');
+  // 5. Collapse 3+ consecutive newlines to a single blank line
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+  return cleaned.trim();
 }
 
 export async function convertDocx(file: File): Promise<string> {
