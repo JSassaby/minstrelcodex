@@ -27,7 +27,6 @@ interface ToolbarButton {
 // Pill button style
 const pillBtn = (active: boolean): React.CSSProperties => ({
   padding: '4px 11px',
-  borderRadius: '7px',
   border: active ? '1.5px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
   background: active ? 'var(--terminal-accent)' : 'var(--terminal-surface)',
   color: active ? 'var(--terminal-bg)' : 'var(--terminal-text)',
@@ -214,9 +213,7 @@ export default function FormattingToolbar({
               overflowY: 'auto',
               background: 'var(--terminal-bg)',
               border: '1px solid var(--terminal-border)',
-              borderRadius: '12px',
               padding: '6px',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
               fontFamily: uiFont,
             }}
           >
@@ -235,7 +232,6 @@ export default function FormattingToolbar({
                       width: '100%',
                       textAlign: 'left',
                       padding: '6px 10px',
-                      borderRadius: '8px',
                       border: 'none',
                       background: fontFamily === f.value ? 'var(--terminal-accent)' : 'transparent',
                       color: fontFamily === f.value ? 'var(--terminal-bg)' : 'var(--terminal-text)',
@@ -291,7 +287,6 @@ export default function FormattingToolbar({
                         cursor: 'pointer',
                         fontSize: '11px',
                         padding: '4px 6px',
-                        borderRadius: '6px',
                         opacity: 0.6,
                       }}
                       onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
@@ -318,7 +313,6 @@ export default function FormattingToolbar({
                     flex: 1,
                     background: 'var(--terminal-surface)',
                     border: '1px solid var(--terminal-border)',
-                    borderRadius: '7px',
                     padding: '5px 8px',
                     fontSize: '12px',
                     fontFamily: uiFont,
@@ -338,7 +332,6 @@ export default function FormattingToolbar({
                   width: '100%',
                   textAlign: 'left',
                   padding: '7px 10px',
-                  borderRadius: '8px',
                   border: 'none',
                   background: 'transparent',
                   color: 'var(--terminal-accent)',
@@ -395,9 +388,7 @@ export default function FormattingToolbar({
               width: '220px',
               background: 'var(--terminal-bg)',
               border: '1px solid var(--terminal-border)',
-              borderRadius: '12px',
               padding: '6px',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
               fontFamily: uiFont,
             }}
           >
@@ -421,7 +412,6 @@ export default function FormattingToolbar({
                     alignItems: 'center',
                     textAlign: 'left',
                     padding: '6px 10px',
-                    borderRadius: '8px',
                     border: 'none',
                     background: item.isActive ? 'var(--terminal-accent)' : 'transparent',
                     color: item.isActive ? 'var(--terminal-bg)' : 'var(--terminal-text)',

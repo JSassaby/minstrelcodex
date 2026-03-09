@@ -131,7 +131,6 @@ export default function MenuBar({
       left: `${Math.max(8, rect.left - 4)}px`,
       minWidth: '280px',
       zIndex: 9999,
-      borderRadius: '14px',
       overflow: 'hidden',
       padding: '6px',
       // Solid opaque background
@@ -175,7 +174,6 @@ export default function MenuBar({
                 padding: '6px 12px',
                 position: 'relative',
                 cursor: 'pointer',
-                borderRadius: '8px',
                 background: isFocused ? 'rgba(0, 212, 200, 0.12)' : 'transparent',
                 color: isFocused ? 'var(--terminal-accent)' : 'var(--terminal-text)',
                 fontWeight: '500',
@@ -261,7 +259,6 @@ export default function MenuBar({
             cursor: 'pointer',
             opacity: 0.4,
             padding: '5px',
-            borderRadius: '8px',
             display: 'flex',
             alignItems: 'center',
             transition: 'all 0.2s',
@@ -284,7 +281,6 @@ export default function MenuBar({
             cursor: 'pointer',
             opacity: 0.4,
             padding: '5px',
-            borderRadius: '8px',
             display: 'flex',
             alignItems: 'center',
             transition: 'all 0.2s',
@@ -367,7 +363,6 @@ export default function MenuBar({
                     style={{
                       padding: '8px 12px',
                       cursor: 'pointer',
-                      borderRadius: '10px',
                       background: isActive
                         ? 'linear-gradient(135deg, rgba(0, 212, 200, 0.18), rgba(0, 212, 200, 0.08))'
                         : 'transparent',
@@ -407,7 +402,6 @@ export default function MenuBar({
                         letterSpacing: '0.02em',
                         flexShrink: 0,
                         padding: '2px 6px',
-                        borderRadius: '4px',
                         background: isActive ? 'rgba(0, 212, 200, 0.08)' : 'transparent',
                       }}>
                         {item.shortcut}

@@ -368,3 +368,11 @@ html[style*="--a11y-color-filter: grayscale"] body {
   font-size: 0.88em;
   font-family: var(--font-body);
 }
+
+/* ── Sharp right-angle design enforcement ─────────────────────────────
+   Removes all rounded corners from every UI chrome element.
+   The editor canvas (.ProseMirror, .tiptap) is excluded so its
+   styling is untouched. Scrollbar thumbs are also excluded.      */
+.minstrel-ui *:not(.ProseMirror):not(.ProseMirror *):not(.tiptap):not(.tiptap *):not(::-webkit-scrollbar-thumb) {
+  border-radius: 0 !important;
+}

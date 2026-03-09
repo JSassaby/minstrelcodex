@@ -1562,7 +1562,7 @@ export default function MinstrelCodex() {
   }
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
+    <div className="minstrel-ui" style={{ height: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
       {/* Reading guide overlay */}
       {a11y.settings.readingGuide && <ReadingGuide opacity={a11y.settings.readingGuideOpacity} />}
 
