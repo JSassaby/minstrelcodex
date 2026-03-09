@@ -161,6 +161,8 @@ export default function FileBrowser({
   const [searchQuery, setSearchQuery] = useState('');
   const [moveTargetIdx, setMoveTargetIdx] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; item: FlatItem } | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ type: 'empty-bin' | 'delete-permanently'; item: FlatItem } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -199,6 +201,17 @@ export default function FileBrowser({
     setStatusMessage(msg);
     setTimeout(() => setStatusMessage(''), 2000);
   }, []);
+
+  // Dismiss context menu on outside click
+  useEffect(() => {
+    if (!contextMenu) return;
+    const dismiss = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.fb-context-menu')) setContextMenu(null);
+    };
+    document.addEventListener('mousedown', dismiss);
+    return () => document.removeEventListener('mousedown', dismiss);
+  }, [contextMenu]);
 
   // Get the folder path the selected item lives in (for creating files)
   const getSelectedFolderPath = useCallback((): string[] => {
@@ -289,7 +302,11 @@ export default function FileBrowser({
       }
 
       // Global keys
-      if (e.key === 'Escape') { onClose(); e.preventDefault(); return; }
+      if (e.key === 'Escape') {
+        if (contextMenu) { setContextMenu(null); e.preventDefault(); return; }
+        if (confirmAction) { setConfirmAction(null); e.preventDefault(); return; }
+        onClose(); e.preventDefault(); return;
+      }
       if (e.key === '/') { setInputMode('search'); setInputValue(''); e.preventDefault(); return; }
       if (e.key === 'n' && !e.shiftKey) { setInputMode('new-file'); setInputValue(''); e.preventDefault(); return; }
       if (e.key === 'N' && e.shiftKey) { setInputMode('new-folder'); setInputValue(''); e.preventDefault(); return; }
@@ -372,7 +389,8 @@ export default function FileBrowser({
   }, [visible, focused, selectedIndex, inputMode, inputValue, searchQuery,
     moveTargetIdx, filteredItems, onClose, onOpenFile, onDeleteFile, onDeleteFolder,
     onRenameFile, onMoveFile, onToggleFolder, onRestoreFromDeleted, onEmptyDeleted,
-    onNewFolder, onCreateFile, getFolders, showStatus, getSelectedFolderPath]);
+    onNewFolder, onCreateFile, getFolders, showStatus, getSelectedFolderPath,
+    contextMenu, confirmAction]);
 
   if (!visible) return null;
 
@@ -679,6 +697,14 @@ export default function FileBrowser({
                   if (isFolder) onToggleFolder(item.path);
                   else onOpenFile(item.docKey || item.name);
                 }}
+                onContextMenu={(e) => {
+                  const isDeletedFolder = item.name === 'Deleted' && item.type === 'folder' && item.path.length === 1;
+                  const isInDeleted = item.path[0] === 'Deleted' && !isDeletedFolder;
+                  if (!isDeletedFolder && !isInDeleted) return;
+                  e.preventDefault();
+                  setSelectedIndex(i);
+                  setContextMenu({ x: e.clientX, y: e.clientY, item });
+                }}
                 className="file-browser-row"
                 style={{
                   padding: '6px 10px',
@@ -767,6 +793,123 @@ export default function FileBrowser({
           })
         )}
       </div>
+
+      {/* Context menu */}
+      {contextMenu && (
+        <div
+          className="fb-context-menu"
+          style={{
+            position: 'fixed',
+            left: contextMenu.x,
+            top: contextMenu.y,
+            zIndex: 9999,
+            background: 'var(--terminal-bg)',
+            border: '1px solid var(--terminal-border)',
+            minWidth: '148px',
+            fontFamily: uiFont,
+          }}
+        >
+          <button
+            style={{
+              display: 'block',
+              width: '100%',
+              padding: '9px 14px',
+              background: 'transparent',
+              border: 'none',
+              color: '#e05c5c',
+              fontFamily: uiFont,
+              fontSize: '11px',
+              fontWeight: 600,
+              letterSpacing: '0.07em',
+              textTransform: 'uppercase',
+              textAlign: 'left',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(224,92,92,0.12)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+            onClick={() => {
+              const isDeletedFolder = contextMenu.item.name === 'Deleted' && contextMenu.item.type === 'folder';
+              setConfirmAction({
+                type: isDeletedFolder ? 'empty-bin' : 'delete-permanently',
+                item: contextMenu.item,
+              });
+              setContextMenu(null);
+            }}
+          >
+            {contextMenu.item.name === 'Deleted' && contextMenu.item.type === 'folder'
+              ? 'Empty Bin'
+              : 'Delete Permanently'}
+          </button>
+        </div>
+      )}
+
+      {/* Confirmation strip */}
+      {confirmAction && (
+        <div style={{
+          padding: '12px 14px',
+          borderTop: '1px solid var(--terminal-border)',
+          background: 'var(--terminal-surface)',
+          flexShrink: 0,
+          fontFamily: uiFont,
+        }}>
+          <div style={{ fontSize: '11px', color: 'var(--terminal-text)', marginBottom: '10px', lineHeight: 1.45 }}>
+            {confirmAction.type === 'empty-bin'
+              ? 'Permanently delete everything in Deleted?'
+              : `Permanently delete "${confirmAction.item.name}"?`}
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              style={{
+                flex: 1,
+                padding: '6px 0',
+                background: 'transparent',
+                border: '1px solid #e05c5c',
+                color: '#e05c5c',
+                fontFamily: uiFont,
+                fontSize: '10px',
+                fontWeight: 600,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+              }}
+              onClick={() => {
+                if (confirmAction.type === 'empty-bin') {
+                  onEmptyDeleted();
+                  showStatus('Deleted emptied');
+                } else {
+                  const key = confirmAction.item.type === 'file'
+                    ? confirmAction.item.name
+                    : confirmAction.item.path.slice(1).join('/');
+                  onPermanentlyDeleteItem(key);
+                  showStatus('Permanently deleted');
+                }
+                setConfirmAction(null);
+              }}
+            >
+              Confirm
+            </button>
+            <button
+              style={{
+                flex: 1,
+                padding: '6px 0',
+                background: 'transparent',
+                border: '1px solid var(--terminal-border)',
+                color: 'var(--terminal-text)',
+                fontFamily: uiFont,
+                fontSize: '10px',
+                fontWeight: 500,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                opacity: 0.55,
+              }}
+              onClick={() => setConfirmAction(null)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Status message */}
       {statusMessage && (
