@@ -47,7 +47,7 @@ function A11yToggle({
     <div
       onClick={() => onChange(!checked)}
       style={{
-        padding: '10px 14px', marginBottom: '8px', borderRadius: '10px',
+        padding: '10px 14px', marginBottom: '8px',
         border: checked ? '1.5px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
         background: checked ? 'var(--terminal-surface)' : 'transparent',
         cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -140,7 +140,7 @@ export default function AccessibilitySection({ settings, onUpdate, onReset }: Ac
             key={tab.id}
             onClick={() => setSubTab(tab.id)}
             style={{
-              flex: 1, padding: '6px 8px', borderRadius: '8px',
+              flex: 1, padding: '6px 8px',
               border: subTab === tab.id ? '1.5px solid var(--terminal-accent)' : '1px solid transparent',
               background: subTab === tab.id ? 'var(--terminal-accent)' : 'transparent',
               color: subTab === tab.id ? 'var(--terminal-bg)' : 'var(--terminal-text)',
@@ -271,7 +271,7 @@ export default function AccessibilitySection({ settings, onUpdate, onReset }: Ac
                 key={filter.id}
                 onClick={() => onUpdate('colorFilter', filter.id)}
                 style={{
-                  padding: '8px 12px', borderRadius: '8px',
+                  padding: '8px 12px',
                   border: settings.colorFilter === filter.id ? '1.5px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
                   background: settings.colorFilter === filter.id ? 'var(--terminal-surface)' : 'transparent',
                   cursor: 'pointer', fontSize: '12px', fontFamily: uiFont,
@@ -312,7 +312,7 @@ export default function AccessibilitySection({ settings, onUpdate, onReset }: Ac
 
           {settings.voiceInputEnabled && !voiceSupported && (
             <div style={{
-              padding: '10px 14px', borderRadius: '8px', marginTop: '8px',
+              padding: '10px 14px', marginTop: '8px',
               background: 'rgba(224, 92, 92, 0.1)', border: '1px solid rgba(224, 92, 92, 0.3)',
               fontSize: '11px', fontFamily: uiFont, color: '#e05c5c', lineHeight: 1.5,
             }}>
@@ -322,11 +322,11 @@ export default function AccessibilitySection({ settings, onUpdate, onReset }: Ac
 
           {settings.voiceInputEnabled && voiceSupported && (
             <div style={{
-              padding: '10px 14px', borderRadius: '8px', marginTop: '8px',
+              padding: '10px 14px', marginTop: '8px',
               background: 'var(--terminal-surface)', border: '1px solid var(--terminal-border)',
               fontSize: '11px', fontFamily: uiFont, opacity: 0.65, lineHeight: 1.5,
             }}>
-              🎤 Press <kbd style={{ padding: '1px 4px', borderRadius: '3px', border: '1px solid var(--terminal-border)', fontSize: '10px' }}>Alt+Space</kbd> to start/stop dictation (or <kbd style={{ padding: '1px 4px', borderRadius: '3px', border: '1px solid var(--terminal-border)', fontSize: '10px' }}>Ctrl+Shift+D</kbd>). Spoken text will be inserted at your cursor position.
+              🎤 Press <kbd style={{ padding: '1px 4px', border: '1px solid var(--terminal-border)', fontSize: '10px' }}>Alt+Space</kbd> to start/stop dictation (or <kbd style={{ padding: '1px 4px', border: '1px solid var(--terminal-border)', fontSize: '10px' }}>Ctrl+Shift+D</kbd>). Spoken text will be inserted at your cursor position.
             </div>
           )}
 
@@ -355,7 +355,7 @@ export default function AccessibilitySection({ settings, onUpdate, onReset }: Ac
                   value={settings.ttsVoiceIdx}
                   onChange={e => onUpdate('ttsVoiceIdx', parseInt(e.target.value))}
                   style={{
-                    width: '100%', padding: '7px 10px', borderRadius: '8px',
+                    width: '100%', padding: '7px 10px',
                     background: 'var(--terminal-surface)', color: 'var(--terminal-text)',
                     border: '1px solid var(--terminal-border)', fontFamily: uiFont,
                     fontSize: '12px', cursor: 'pointer', outline: 'none',
@@ -369,11 +369,11 @@ export default function AccessibilitySection({ settings, onUpdate, onReset }: Ac
               </div>
 
               <div style={{
-                padding: '10px 14px', borderRadius: '8px',
+                padding: '10px 14px',
                 background: 'var(--terminal-surface)', border: '1px solid var(--terminal-border)',
                 fontSize: '11px', fontFamily: uiFont, opacity: 0.65, lineHeight: 1.5,
               }}>
-                🔊 Select text and press <kbd style={{ padding: '1px 4px', borderRadius: '3px', border: '1px solid var(--terminal-border)', fontSize: '10px' }}>Ctrl+Shift+R</kbd> to read aloud. Press again to stop.
+                🔊 Select text and press <kbd style={{ padding: '1px 4px', border: '1px solid var(--terminal-border)', fontSize: '10px' }}>Ctrl+Shift+R</kbd> to read aloud. Press again to stop.
               </div>
             </>
           )}
@@ -385,7 +385,7 @@ export default function AccessibilitySection({ settings, onUpdate, onReset }: Ac
         <button
           onClick={onReset}
           style={{
-            width: '100%', padding: '9px 16px', borderRadius: '8px',
+            width: '100%', padding: '9px 16px',
             border: '1px solid var(--terminal-border)', background: 'transparent',
             color: 'var(--terminal-text)', fontFamily: uiFont, fontSize: '12px',
             cursor: 'pointer', opacity: 0.6, transition: 'all 0.15s',

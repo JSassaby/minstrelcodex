@@ -112,7 +112,6 @@ function DropdownSelect<T extends string>({
         style={{
           width: '100%',
           padding: '10px 14px',
-          borderRadius: '10px',
           border: open ? '1px solid var(--terminal-accent)' : '1px solid rgba(0, 212, 200, 0.12)',
           background: 'rgba(0, 212, 200, 0.04)',
           color: 'var(--terminal-text)',
@@ -144,7 +143,6 @@ function DropdownSelect<T extends string>({
           left: 0,
           right: 0,
           zIndex: 100,
-          borderRadius: '12px',
           overflow: 'hidden',
           background: '#080e1e',
           border: '1px solid rgba(0, 212, 200, 0.12)',
@@ -161,7 +159,6 @@ function DropdownSelect<T extends string>({
                 onClick={() => { onChange(opt.value); setOpen(false); }}
                 style={{
                   padding: '9px 12px',
-                  borderRadius: '8px',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -372,7 +369,6 @@ export default function SettingsPanel({
       style={{
         padding: '12px 16px',
         marginBottom: '6px',
-        borderRadius: '12px',
         border: selected
           ? '1px solid var(--terminal-accent)'
           : '1px solid rgba(0, 212, 200, 0.08)',
@@ -408,7 +404,6 @@ export default function SettingsPanel({
       onClick={onClick}
       style={{
         padding: '9px 20px',
-        borderRadius: '10px',
         border: primary ? '1px solid var(--terminal-accent)' : '1px solid rgba(0, 212, 200, 0.12)',
         background: primary
           ? 'linear-gradient(135deg, rgba(0, 212, 200, 0.2), rgba(0, 212, 200, 0.08))'
@@ -470,7 +465,6 @@ export default function SettingsPanel({
           style={{
             background: 'rgba(0, 212, 200, 0.06)',
             border: '1px solid rgba(0, 212, 200, 0.1)',
-            borderRadius: '8px',
             color: 'var(--terminal-text)',
             opacity: 0.5,
             cursor: 'pointer',
@@ -513,7 +507,6 @@ export default function SettingsPanel({
               onClick={() => setActiveTabIdx(i)}
               style={{
                 padding: '7px 8px',
-                borderRadius: '8px',
                 border: 'none',
                 background: active ? 'rgba(0, 212, 200, 0.12)' : 'transparent',
                 color: active ? 'var(--terminal-accent)' : 'var(--terminal-text)',
@@ -544,7 +537,6 @@ export default function SettingsPanel({
                   transform: 'translateX(-50%)',
                   width: '16px',
                   height: '2px',
-                  borderRadius: '1px',
                   background: 'var(--terminal-accent)',
                 }} />
               )}
@@ -574,7 +566,6 @@ export default function SettingsPanel({
                       border: isActive
                         ? '1px solid var(--terminal-accent)'
                         : '1px solid rgba(0, 212, 200, 0.06)',
-                      borderRadius: '14px',
                       overflow: 'hidden',
                       transition: 'all 0.25s',
                       background: isActive
@@ -631,14 +622,14 @@ export default function SettingsPanel({
                 </GlassButton>
               ) : (
                 <div style={{
-                  padding: '14px', borderRadius: '12px',
+                  padding: '14px',
                   border: '1px solid rgba(0, 212, 200, 0.15)',
                   background: 'rgba(0, 212, 200, 0.04)',
                   display: 'flex', flexDirection: 'column', gap: '10px',
                 }}>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <div style={{
-                      width: '32px', height: '32px', borderRadius: '8px',
+                      width: '32px', height: '32px',
                       background: bgColorInput, border: '1px solid rgba(0, 212, 200, 0.12)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: '14px', fontWeight: 'bold', color: textColorInput,
@@ -664,7 +655,7 @@ export default function SettingsPanel({
                       }}
                       style={{
                         flex: 1, background: 'rgba(0, 0, 0, 0.3)',
-                        border: '1px solid rgba(0, 212, 200, 0.12)', borderRadius: '8px',
+                        border: '1px solid rgba(0, 212, 200, 0.12)',
                         color: 'var(--terminal-text)', padding: '8px 12px',
                         fontFamily: uiFont, fontSize: '13px', outline: 'none',
                       }}
@@ -698,7 +689,7 @@ export default function SettingsPanel({
             <div style={{
               border: '1px solid rgba(0, 212, 200, 0.1)', padding: '20px', marginBottom: '24px',
               background: bgColorInput, color: textColorInput, textAlign: 'center',
-              fontFamily: "'JetBrains Mono', monospace", borderRadius: '14px',
+              fontFamily: "'JetBrains Mono', monospace",
               boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
             }}>
               <div style={{ fontSize: '10px', opacity: 0.4, marginBottom: '8px', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: uiFont }}>Preview</div>
@@ -717,7 +708,7 @@ export default function SettingsPanel({
                   maxLength={7} placeholder="#33FF33" tabIndex={-1}
                   style={{
                     flex: 1, maxWidth: '140px', background: 'rgba(0, 0, 0, 0.3)',
-                    border: '1px solid rgba(0, 212, 200, 0.1)', borderRadius: '8px',
+                    border: '1px solid rgba(0, 212, 200, 0.1)',
                     color: 'var(--terminal-text)', padding: '7px 12px',
                     fontFamily: "'JetBrains Mono', monospace", fontSize: '12px',
                     textTransform: 'uppercase', outline: 'none',
@@ -755,7 +746,7 @@ export default function SettingsPanel({
                   maxLength={7} placeholder="#000000" tabIndex={-1}
                   style={{
                     flex: 1, maxWidth: '140px', background: 'rgba(0, 0, 0, 0.3)',
-                    border: '1px solid rgba(0, 212, 200, 0.1)', borderRadius: '8px',
+                    border: '1px solid rgba(0, 212, 200, 0.1)',
                     color: 'var(--terminal-text)', padding: '7px 12px',
                     fontFamily: "'JetBrains Mono', monospace", fontSize: '12px',
                     textTransform: 'uppercase', outline: 'none',
@@ -799,7 +790,7 @@ export default function SettingsPanel({
                       }}
                       style={{
                         border: (focused || sel) ? '1px solid var(--terminal-accent)' : '1px solid rgba(0, 212, 200, 0.06)',
-                        borderRadius: '10px', overflow: 'hidden',
+                        overflow: 'hidden',
                         cursor: 'pointer',
                         boxShadow: focused ? '0 0 16px rgba(0, 212, 200, 0.2)' : 'none',
                         transition: 'all 0.15s',
@@ -844,7 +835,7 @@ export default function SettingsPanel({
                         key={`custom-${i}-${ct.name}`}
                         style={{
                           border: isSelected ? '1px solid var(--terminal-accent)' : '1px solid rgba(0, 212, 200, 0.06)',
-                          borderRadius: '10px', overflow: 'hidden',
+                          overflow: 'hidden',
                           cursor: 'pointer',
                           transition: 'all 0.15s',
                         }}
@@ -920,7 +911,7 @@ export default function SettingsPanel({
             <div style={{
               marginTop: '20px', padding: '14px 16px',
               border: '1px solid rgba(0, 212, 200, 0.06)',
-              borderRadius: '12px', fontSize: '12px', opacity: 0.4,
+              fontSize: '12px', opacity: 0.4,
               lineHeight: 1.7, fontFamily: uiFont,
               background: 'rgba(0, 212, 200, 0.02)',
             }}>
