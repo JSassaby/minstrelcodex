@@ -1,3 +1,7 @@
+// Design system
+export { DESIGN_TOKENS } from './design/tokens';
+export type { DesignTokens } from './design/tokens';
+
 // Types
 export type {
   DocumentData,
