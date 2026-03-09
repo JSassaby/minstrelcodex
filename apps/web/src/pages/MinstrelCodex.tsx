@@ -37,6 +37,7 @@ import WifiSetupScreen from '@/components/minstrel-codex/WifiSetupScreen';
 import FirstBootWizard from '@/components/minstrel-codex/FirstBootWizard';
 import SongComplete from '@/components/minstrel-codex/SongComplete';
 import WriterDashboard from '@/components/minstrel-codex/WriterDashboard';
+import ChronicleLedger from '@/components/minstrel-codex/ChronicleLedger';
 import MilestoneNotifier, { emitMilestones } from '@/components/minstrel-codex/MilestoneNotifier';
 import { detectStreakMilestones, detectLevelUp } from '@/components/minstrel-codex/milestoneDetection';
 import { useMusicPlayer } from '@/hooks/useMusicPlayer';
@@ -104,6 +105,7 @@ export default function MinstrelCodex() {
   const [helpPanelOpen, setHelpPanelOpen] = useState(false);
   const [activeHelpPageId, setActiveHelpPageId] = useState<string | null>(null);
   const [dashboardOpen, setDashboardOpen] = useState(false);
+  const [chronicleLedgerOpen, setChronicleLedgerOpen] = useState(false);
 
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -1151,6 +1153,12 @@ export default function MinstrelCodex() {
         return;
       }
 
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'C' || e.key === 'c')) {
+        e.preventDefault();
+        setChronicleLedgerOpen(prev => !prev);
+        return;
+      }
+
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'V' || e.key === 'v')) {
         e.preventDefault();
         executeAction('savesnapshot');
@@ -1716,6 +1724,17 @@ export default function MinstrelCodex() {
           }}
           onOpenPage={(pageId) => setActiveHelpPageId(pageId)}
           activePageId={activeHelpPageId}
+        />
+
+        <ChronicleLedger
+          isOpen={chronicleLedgerOpen}
+          profile={profile}
+          unlockedChronicles={unlockedChronicles}
+          allChronicles={allChronicles}
+          onClose={() => {
+            setChronicleLedgerOpen(false);
+            setTimeout(() => editorRef.current?.focus(), 50);
+          }}
         />
 
         <WriterDashboard
