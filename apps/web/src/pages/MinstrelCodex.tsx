@@ -39,8 +39,7 @@ import FirstBootWizard from '@/components/minstrel-codex/FirstBootWizard';
 import SongComplete from '@/components/minstrel-codex/SongComplete';
 import WriterDashboard from '@/components/minstrel-codex/WriterDashboard';
 import ChronicleLedger from '@/components/minstrel-codex/ChronicleLedger';
-import NovelWizard from '@/components/minstrel-codex/NovelWizard';
-import type { NovelConfig } from '@/components/minstrel-codex/NovelWizard';
+import WelcomeIntro from '@/components/minstrel-codex/WelcomeIntro';
 import ImportModal from '@/components/minstrel-codex/ImportModal';
 import MilestoneNotifier, { emitMilestones } from '@/components/minstrel-codex/MilestoneNotifier';
 import { detectStreakMilestones, detectLevelUp } from '@/components/minstrel-codex/milestoneDetection';
@@ -155,10 +154,7 @@ export default function MinstrelCodex() {
   const [wifiSetupOpen, setWifiSetupOpen] = useState(false);
   const [firstBootWizardOpen, setFirstBootWizardOpen] = useState(false);
 
-  // Novel wizard (first-boot, separate from Pi wizard)
-  const [wizardComplete, setWizardComplete] = useState(() =>
-    !!localStorage.getItem('minstrel-wizard-complete')
-  );
+
 
   // Focus / Typewriter mode
   const [focusMode, setFocusMode] = useState(() => localStorage.getItem('mc-focus-mode') === 'true');
@@ -636,21 +632,6 @@ export default function MinstrelCodex() {
     setFirstBootWizardOpen(false);
     showToast(`"${title.trim()}" is ready — start writing!`);
   }, [fileStructure, docStorage, showToast]);
-
-  // Novel Wizard complete handler
-  const handleNovelWizardComplete = useCallback((config: NovelConfig) => {
-    localStorage.setItem('minstrel-wizard-complete', 'true');
-    localStorage.setItem('minstrel-wizard-config', JSON.stringify(config));
-    setWordCountTarget(config.wordTarget);
-    localStorage.setItem('mc-word-count-target', String(config.wordTarget));
-    // Use the wizard title as the default project title if no project exists yet
-    if (!docStorage.currentDocument.filename && config.title) {
-      const defaultFile = `${config.title.trim()}.txt`;
-      docStorage.setCurrentDocument(prev => ({ ...prev, filename: defaultFile }));
-    }
-    setWizardComplete(true);
-    showToast(`Your tale "${config.title}" begins — write on!`);
-  }, [docStorage, showToast]);
 
   // H1 blur rename handler
   const handleH1Blur = useCallback((text: string) => {
@@ -1774,10 +1755,8 @@ export default function MinstrelCodex() {
           }}
         />
 
-        {/* Novel Wizard — first-boot overlay */}
-        {!wizardComplete && (
-          <NovelWizard onComplete={handleNovelWizardComplete} />
-        )}
+        {/* Welcome Intro — first-boot overlay */}
+        <WelcomeIntro />
 
         <ImportModal
           isOpen={importModalOpen}
