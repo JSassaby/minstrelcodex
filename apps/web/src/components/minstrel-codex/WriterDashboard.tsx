@@ -62,6 +62,7 @@ function StatBox({ label, value, sub }: { label: string; value: string; sub?: st
       border: '1px solid var(--terminal-border)',
       padding: '12px 10px',
       background: 'var(--terminal-surface)',
+      textAlign: 'center',
     }}>
       <div style={{ fontSize: '10px', letterSpacing: '0.12em', opacity: 0.5, marginBottom: '4px' }}>{label}</div>
       <div style={{ fontSize: '22px', fontWeight: 700, fontFamily: 'Georgia, serif', color: GOLD, lineHeight: 1 }}>

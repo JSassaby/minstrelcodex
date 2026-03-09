@@ -92,7 +92,7 @@ export default function SongComplete({
         onClick={e => e.stopPropagation()}
         style={{
           background: 'var(--terminal-bg)',
-          border: '2px solid var(--terminal-text)',
+          border: '1px solid var(--terminal-border)',
           maxWidth: '440px',
           width: '90vw',
           padding: '32px 28px',
@@ -250,12 +250,15 @@ function StatBox({ label, value, highlight }: { label: string; value: string; hi
       border: '1px solid var(--terminal-border)',
       padding: '14px 10px',
       background: highlight ? 'var(--terminal-surface)' : 'transparent',
+      textAlign: 'center',
     }}>
-      <div style={{ fontSize: '10px', letterSpacing: '0.15em', opacity: 0.5, marginBottom: '4px' }}>{label}</div>
+      <div style={{ fontSize: '10px', letterSpacing: '0.12em', opacity: 0.5, marginBottom: '4px' }}>{label}</div>
       <div style={{
-        fontSize: highlight ? '22px' : '20px',
+        fontSize: '22px',
         fontWeight: 700,
-        textShadow: highlight ? '0 0 8px var(--terminal-glow)' : undefined,
+        fontFamily: 'Georgia, serif',
+        color: '#c8a84b',
+        lineHeight: 1,
       }}>{value}</div>
     </div>
   );

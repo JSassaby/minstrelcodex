@@ -47,7 +47,6 @@ function HelpTreeNode({
           letterSpacing: isFolder ? '0.03em' : '0.01em',
           color: isActive ? 'var(--terminal-bg)' : 'var(--terminal-text)',
           background: isActive ? 'var(--terminal-accent)' : 'transparent',
-          borderRadius: '6px',
           margin: '1px 6px',
           transition: 'background 0.12s, color 0.12s',
           userSelect: 'none',
@@ -146,7 +145,6 @@ export default function HelpPanel({ visible, onClose, onOpenPage, activePageId }
             cursor: 'pointer',
             opacity: 0.5,
             padding: '4px',
-            borderRadius: '4px',
             transition: 'opacity 0.15s',
           }}
           onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}

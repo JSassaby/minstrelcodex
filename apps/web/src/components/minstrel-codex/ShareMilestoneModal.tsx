@@ -107,9 +107,7 @@ export default function ShareMilestoneModal({ visible, data, onClose }: ShareMil
       <div onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
         {/* Card preview */}
         <div style={{
-          borderRadius: '4px',
           overflow: 'hidden',
-          boxShadow: '0 0 40px rgba(99, 179, 237, 0.1)',
         }}>
           <ShareableCard ref={cardRef} data={data} />
         </div>

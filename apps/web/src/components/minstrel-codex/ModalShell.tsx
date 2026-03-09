@@ -45,14 +45,12 @@ export default function ModalShell({ visible, title, children, onClose, width = 
           transform: 'translate(-50%, -50%)',
           backgroundColor: 'var(--terminal-bg)',
           border: '1px solid var(--terminal-border)',
-          borderRadius: '16px',
           padding: '0',
           width,
           maxWidth: '92vw',
           maxHeight: '80vh',
           overflowY: 'auto',
           zIndex: 2000,
-          boxShadow: '0 24px 64px rgba(0,0,0,0.28), 0 4px 16px rgba(0,0,0,0.12)',
           color: 'var(--terminal-text)',
           fontFamily: uiFont,
           outline: 'none',
@@ -66,7 +64,6 @@ export default function ModalShell({ visible, title, children, onClose, width = 
           justifyContent: 'space-between',
           alignItems: 'center',
           background: 'var(--terminal-surface)',
-          borderRadius: '16px 16px 0 0',
         }}>
           <div style={{
             fontSize: '15px',
@@ -81,7 +78,6 @@ export default function ModalShell({ visible, title, children, onClose, width = 
             style={{
               background: 'transparent',
               border: '1px solid var(--terminal-border)',
-              borderRadius: '7px',
               color: 'var(--terminal-text)',
               padding: '4px 10px',
               cursor: 'pointer',
@@ -128,7 +124,6 @@ export function ModalButton({ label, focused, onClick, selected, danger }: Modal
       onClick={onClick}
       style={{
         padding: '9px 20px',
-        borderRadius: '9px',
         background: focused
           ? (danger ? '#e05c5c' : 'var(--terminal-accent)')
           : 'var(--terminal-surface)',
@@ -180,7 +175,6 @@ export function ModalInput({
         width: '100%',
         background: 'var(--terminal-surface)',
         border: '1px solid var(--terminal-border)',
-        borderRadius: '9px',
         color: 'var(--terminal-text)',
         padding: '10px 14px',
         fontFamily: uiFont,

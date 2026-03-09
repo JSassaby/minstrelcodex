@@ -106,9 +106,10 @@ export default function ManuscriptStatsModal({
       display: 'flex',
       flexDirection: 'column',
       gap: '2px',
+      textAlign: 'center',
     }}>
-      <div style={{ fontSize: '10px', opacity: 0.5, letterSpacing: '0.06em', fontFamily: uiFont }}>{label}</div>
-      <div style={{ fontSize: '20px', fontWeight: '600', fontFamily: uiFont }}>{value}</div>
+      <div style={{ fontSize: '10px', opacity: 0.5, letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: uiFont }}>{label}</div>
+      <div style={{ fontSize: '22px', fontWeight: 700, fontFamily: 'Georgia, serif', color: '#c8a84b', lineHeight: 1 }}>{value}</div>
       {sub && <div style={{ fontSize: '10px', opacity: 0.4, fontFamily: uiFont }}>{sub}</div>}
     </div>
   );
@@ -121,7 +122,7 @@ export default function ManuscriptStatsModal({
         <Stat label="EST. READING TIME" value={readingTime(totalWords)} sub="at 250 wpm" />
         <Stat label="WORDS REMAINING" value={remaining.toLocaleString()} sub={projectedDate ? `finish ~${projectedDate}` : 'set a daily pace to project'} />
 
-        <div style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--terminal-border)', paddingTop: '8px', fontSize: '10px', opacity: 0.5, letterSpacing: '0.06em', fontFamily: uiFont }}>
+        <div style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--terminal-border)', paddingTop: '8px', fontSize: '10px', letterSpacing: '0.12em', fontWeight: 600, color: 'var(--terminal-accent)', fontFamily: uiFont, textTransform: 'uppercase' }}>
           WRITING PACE
         </div>
 
@@ -130,7 +131,7 @@ export default function ManuscriptStatsModal({
         <Stat label="THIS MONTH" value={monthWords.toLocaleString()} sub="last 30 days" />
         <Stat label="DAILY AVERAGE" value={dailyAvg > 0 ? dailyAvg.toLocaleString() : '—'} sub="past 14 active days" />
 
-        <div style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--terminal-border)', paddingTop: '8px', fontSize: '10px', opacity: 0.5, letterSpacing: '0.06em', fontFamily: uiFont }}>
+        <div style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--terminal-border)', paddingTop: '8px', fontSize: '10px', letterSpacing: '0.12em', fontWeight: 600, color: 'var(--terminal-accent)', fontFamily: uiFont, textTransform: 'uppercase' }}>
           PERSONAL RECORDS
         </div>
 
