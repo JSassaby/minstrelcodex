@@ -2,6 +2,10 @@
 export { DESIGN_TOKENS } from './design/tokens';
 export type { DesignTokens } from './design/tokens';
 
+// Narrative engine
+export { detectBeat, useNarrativeEngine } from './narrative';
+export type { BeatType, NarrativeBeat, NarrativeState } from './narrative';
+
 // Types
 export type {
   DocumentData,

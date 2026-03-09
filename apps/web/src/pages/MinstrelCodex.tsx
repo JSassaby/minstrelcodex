@@ -28,8 +28,9 @@ import { useGoogleToken } from '@/hooks/useGoogleToken';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import AuthModal from '@/components/minstrel-codex/AuthModal';
-import { useSyncEngine, GoogleDriveAdapter, db, useWriterProfile, useStreakEngine, useSessionTracker, useXPEngine, getLevelForXP, useChronicleEngine } from '@minstrelcodex/core';
+import { useSyncEngine, GoogleDriveAdapter, db, useWriterProfile, useStreakEngine, useSessionTracker, useXPEngine, getLevelForXP, useChronicleEngine, useNarrativeEngine } from '@minstrelcodex/core';
 import type { SessionXPBreakdown, ChronicleDefinition } from '@minstrelcodex/core';
+import NarrativeBeatToast from '@/components/minstrel-codex/NarrativeBeatToast';
 import ChapterOverviewPanel from '@/components/minstrel-codex/ChapterOverviewPanel';
 import NotesPanel from '@/components/minstrel-codex/NotesPanel';
 import ManuscriptStatsModal from '@/components/minstrel-codex/ManuscriptStatsModal';
@@ -431,6 +432,15 @@ export default function MinstrelCodex() {
 
   // Keep editorContentRef in sync (for stable effects)
   useEffect(() => { editorContentRef.current = editorContent; }, [editorContent]);
+
+  // ── Narrative Engine ────────────────────────────────────────────────────
+  // documentWords = live word count of the current open document
+  // totalWords    = the project's target word count (denominator for beat positions)
+  const narrativeDocWords = useMemo(() => {
+    const text = editorContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return text ? text.split(' ').filter((w: string) => w.length > 0).length : 0;
+  }, [editorContent]);
+  const { state: narrativeState, dismissBeat } = useNarrativeEngine(narrativeDocWords, wordCountTarget);
 
   // Writing stats: track words written per day in Dexie (every 30s)
   useEffect(() => {
@@ -1809,6 +1819,12 @@ export default function MinstrelCodex() {
               onToggleFocusMode={toggleFocusMode}
             />
           )}
+
+          {/* Narrative beat toast — position fixed, sits above editor */}
+          <NarrativeBeatToast
+            beat={narrativeState.pendingBeat}
+            onDismiss={dismissBeat}
+          />
         </div>
       </div>
 
