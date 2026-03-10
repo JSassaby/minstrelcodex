@@ -103,6 +103,9 @@ interface FlatItem {
   childCount?: number; // only set for Recycle Bin folders
 }
 
+const naturalSort = (a: string, b: string) =>
+  a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+
 function flattenTree(node: FileNode, path: string[] = [], depth: number = 0): FlatItem[] {
   const result: FlatItem[] = [];
   const children = node.children || {};
@@ -126,7 +129,7 @@ function flattenTree(node: FileNode, path: string[] = [], depth: number = 0): Fl
       const bFolder = children[b].type === 'folder';
       if (aFolder && !bFolder) return -1;
       if (!aFolder && bFolder) return 1;
-      return a.localeCompare(b);
+      return naturalSort(a, b);
     });
   }
   // Always put Recycle Bin last
@@ -925,7 +928,7 @@ export default function FileBrowser({
           <div style={{ maxHeight: '120px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '3px' }}>
             {[{ path: [] as string[], name: 'Root' }, ...allFolders].map((f, i) => (
               <div key={i} onClick={() => setMoveTargetIdx(i)}
-                style={{ padding: '6px 10px', borderRadius: '8px', background: moveTargetIdx === i ? 'var(--terminal-accent)' : 'var(--terminal-bg)', color: moveTargetIdx === i ? 'var(--terminal-bg)' : 'var(--terminal-text)', cursor: 'pointer', fontSize: '12px', fontFamily: uiFont, transition: 'background 0.1s', border: `1px solid ${moveTargetIdx === i ? 'var(--terminal-accent)' : 'var(--terminal-border)'}`, display: 'flex', alignItems: 'center', gap: '7px' }}>
+                style={{ padding: '6px 10px', borderRadius: 0, background: moveTargetIdx === i ? 'var(--terminal-accent)' : 'var(--terminal-bg)', color: moveTargetIdx === i ? 'var(--terminal-bg)' : 'var(--terminal-text)', cursor: 'pointer', fontSize: '12px', fontFamily: uiFont, transition: 'background 0.1s', border: `1px solid ${moveTargetIdx === i ? 'var(--terminal-accent)' : 'var(--terminal-border)'}`, display: 'flex', alignItems: 'center', gap: '7px' }}>
                 <span style={{ fontSize: '12px', lineHeight: 1 }}>{f.name === 'Deleted' ? '🗑️' : '📚'}</span>
                 {f.name === 'Deleted' ? 'Recycle Bin' : f.name}
               </div>
@@ -1013,7 +1016,7 @@ export default function FileBrowser({
                 {showDropBefore && (
                   <div style={{
                     position: 'absolute', top: 0, left: `${10 + item.depth * 16}px`, right: '8px',
-                    height: '2px', background: 'var(--terminal-accent)', borderRadius: '1px', zIndex: 10,
+                    height: '2px', background: 'var(--terminal-accent)', borderRadius: 0, zIndex: 10,
                   }} />
                 )}
               <div
@@ -1177,7 +1180,7 @@ export default function FileBrowser({
                   opacity: dragState && dragState.itemPath.join('/') === item.path.join('/') ? 0.35 : (isRecycleBin && (item.childCount ?? 0) === 0 && !isFocused ? 0.4 : isInRecycleBin && !isFocused ? 0.4 : 1),
                   transition: 'background 0.12s, opacity 0.12s',
                   borderLeft: isFocused ? '3px solid var(--terminal-accent)' : isActiveProject ? '3px solid #c8a84b' : '3px solid transparent',
-                  borderRadius: '0 8px 8px 0',
+                  borderRadius: 0,
                   marginRight: '4px',
                 }}
               >
@@ -1305,7 +1308,7 @@ export default function FileBrowser({
                 {showDropAfter && (
                   <div style={{
                     position: 'absolute', bottom: 0, left: `${10 + item.depth * 16}px`, right: '8px',
-                    height: '2px', background: 'var(--terminal-accent)', borderRadius: '1px', zIndex: 10,
+                    height: '2px', background: 'var(--terminal-accent)', borderRadius: 0, zIndex: 10,
                   }} />
                 )}
                 {/* Inline new-file / new-folder row */}
