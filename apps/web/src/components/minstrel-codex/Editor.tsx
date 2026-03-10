@@ -179,8 +179,8 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({
           maxWidth: '740px',
           background: '#faf9f6',
           padding: '64px 56px 80px',
-          boxShadow: '0 4px 40px rgba(0,0,0,0.55), 0 1px 6px rgba(0,0,0,0.35)',
-          borderRadius: '2px',
+          boxShadow: 'none',
+          borderRadius: 0,
           position: 'relative',
           boxSizing: 'border-box',
         }}
@@ -278,7 +278,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({
           .page-editor code {
             background: rgba(0,0,0,0.06);
             padding: 2px 5px;
-            border-radius: 3px;
+            border-radius: 0;
             font-size: 0.88em;
             font-family: 'Courier Prime', 'Courier New', monospace;
             color: #333;
@@ -289,7 +289,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({
             padding: 14px 16px;
             margin: 1em 0;
             overflow-x: auto;
-            border-radius: 3px;
+            border-radius: 0;
           }
           .page-editor pre code {
             background: none;

@@ -49,6 +49,7 @@ import MilestoneNotifier, { emitMilestones } from '@/components/minstrel-codex/M
 import { detectStreakMilestones, detectLevelUp } from '@/components/minstrel-codex/milestoneDetection';
 import { useMusicPlayer } from '@/hooks/useMusicPlayer';
 import { useAccessibility } from '@/hooks/useAccessibility';
+import { useLocalStorageBoolean } from '@/hooks/useLocalStorageBoolean';
 import type { ModalType, Language, Difficulty, PinConfig } from '@minstrelcodex/core';
 
 // ── Reading Guide Component ──────────────────────────────────────────
@@ -225,14 +226,13 @@ export default function MinstrelCodex() {
   const [profilePageTab, setProfilePageTab] = useState('account');
 
   // Editor Module
-  const [editorModuleEnabled, setEditorModuleEnabled] = useState(() =>
-    localStorage.getItem('minstrel-editor-enabled') === 'true'
-  );
+  const [editorModuleEnabled] = useLocalStorageBoolean('minstrel-editor-enabled', false);
   const [editorPanelOpen, setEditorPanelOpen] = useState(false);
   const [editorPanelText, setEditorPanelText] = useState('');
   const [editorPanelScope, setEditorPanelScope] = useState<'selection' | 'scene' | 'document'>('document');
   const [selectionText, setSelectionText] = useState('');
   const [selectionRect, setSelectionRect] = useState<DOMRect | null>(null);
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; hasSelection: boolean } | null>(null);
   const getSupabaseToken = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     return session?.access_token ?? null;
@@ -824,15 +824,6 @@ export default function MinstrelCodex() {
     syncOnChange(auth.user?.id ?? null);
   }, [fileStructure.structure, auth.user?.id]);
 
-  // Listen for Editor Module toggle from SettingsPanel
-  useEffect(() => {
-    const handler = () => {
-      setEditorModuleEnabled(localStorage.getItem('minstrel-editor-enabled') === 'true');
-    };
-    window.addEventListener('minstrel-editor-enabled-changed', handler);
-    return () => window.removeEventListener('minstrel-editor-enabled-changed', handler);
-  }, []);
-
   // Track text selection for floating toolbar
   useEffect(() => {
     if (!editorModuleEnabled) return;
@@ -850,6 +841,14 @@ export default function MinstrelCodex() {
     document.addEventListener('selectionchange', handler);
     return () => document.removeEventListener('selectionchange', handler);
   }, [editorModuleEnabled]);
+
+  // Close context menu on click-away
+  useEffect(() => {
+    if (!ctxMenu) return;
+    const handler = () => setCtxMenu(null);
+    window.addEventListener('mousedown', handler);
+    return () => window.removeEventListener('mousedown', handler);
+  }, [ctxMenu]);
 
   // Apply color filter
   useEffect(() => {
@@ -1339,8 +1338,8 @@ export default function MinstrelCodex() {
     typingPhase, typingBtnIdx, typingDifficulty,
     docStorage, fileStructure, theme, editorContent, executeAction, closeModal,
     toggleVoiceInput, toggleTTS, toggleFocusMode,
-    chapterOverviewOpen, notesPanelOpen,
-    editorModuleEnabled, editorContent,
+    chapterOverviewOpen, notesPanelOpen, editorContent,
+    editorModuleEnabled,
   ]);
 
   // Menu key handler
@@ -1889,7 +1888,16 @@ export default function MinstrelCodex() {
           }}
         />
 
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', marginRight: editorPanelOpen ? '340px' : 0, transition: 'margin-right 0.2s' }} onClick={() => setFileBrowserFocused(false)}>
+        <div
+          style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', marginRight: editorPanelOpen ? '340px' : 0, transition: 'margin-right 0.2s' }}
+          onClick={() => setFileBrowserFocused(false)}
+          onContextMenu={editorModuleEnabled ? (e) => {
+            e.preventDefault();
+            const sel = window.getSelection();
+            const hasSel = !!(sel && !sel.isCollapsed && sel.toString().trim());
+            setCtxMenu({ x: e.clientX, y: e.clientY, hasSelection: hasSel });
+          } : undefined}
+        >
           {activeHelpPageId && helpPanelOpen ? (
             <div
               style={{
@@ -2368,6 +2376,66 @@ export default function MinstrelCodex() {
           showToast(`Signed in as ${label}`);
         }}
       />
+
+      {/* Editor Module context menu */}
+      {editorModuleEnabled && ctxMenu && (
+        <div
+          onMouseDown={e => e.stopPropagation()}
+          style={{
+            position: 'fixed',
+            top: `${ctxMenu.y}px`,
+            left: `${ctxMenu.x}px`,
+            zIndex: 9500,
+            background: '#0d1117',
+            border: '1px solid #1a2540',
+            borderRadius: 0,
+            minWidth: '220px',
+            fontFamily: "var(--font-ui, 'Space Grotesk', sans-serif)",
+            padding: '4px 0',
+            boxShadow: 'none',
+          }}
+        >
+          {ctxMenu.hasSelection && (
+            <button
+              onClick={() => {
+                setCtxMenu(null);
+                const sel = window.getSelection()?.toString().trim() ?? '';
+                setEditorPanelText(sel);
+                setEditorPanelScope('selection');
+                setEditorPanelOpen(true);
+              }}
+              style={{
+                display: 'block', width: '100%', padding: '8px 14px',
+                background: 'transparent', border: 'none', borderRadius: 0,
+                color: '#c8c8c8', fontFamily: "var(--font-ui, 'Space Grotesk', sans-serif)",
+                fontSize: '13px', textAlign: 'left', cursor: 'pointer',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#1a2540'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+            >
+              <span style={{ color: '#4ecdc4' }}>✦</span> Consult Editor — Selection
+            </button>
+          )}
+          <button
+            onClick={() => {
+              setCtxMenu(null);
+              setEditorPanelText(editorContent);
+              setEditorPanelScope('document');
+              setEditorPanelOpen(true);
+            }}
+            style={{
+              display: 'block', width: '100%', padding: '8px 14px',
+              background: 'transparent', border: 'none', borderRadius: 0,
+              color: '#c8c8c8', fontFamily: "var(--font-ui, 'Space Grotesk', sans-serif)",
+              fontSize: '13px', textAlign: 'left', cursor: 'pointer',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#1a2540'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+          >
+            <span style={{ color: '#4ecdc4' }}>✦</span> Consult Editor — Full Document
+          </button>
+        </div>
+      )}
 
       {/* Floating selection toolbar (Editor Module) */}
       {editorModuleEnabled && selectionText && selectionRect && (

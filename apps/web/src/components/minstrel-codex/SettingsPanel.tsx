@@ -212,7 +212,9 @@ function EditorModuleToggle() {
     const next = !enabled;
     localStorage.setItem('minstrel-editor-enabled', String(next));
     setEnabled(next);
-    window.dispatchEvent(new Event('minstrel-editor-enabled-changed'));
+    window.dispatchEvent(
+      new StorageEvent('storage', { key: 'minstrel-editor-enabled', newValue: String(next) })
+    );
   };
 
   return (
