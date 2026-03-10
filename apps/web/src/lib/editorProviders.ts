@@ -121,6 +121,15 @@ export function getActiveProvider(): ProviderId {
 
 export function setActiveProvider(provider: ProviderId): void {
   localStorage.setItem(ACTIVE_PROVIDER_KEY, provider);
+  window.dispatchEvent(
+    new StorageEvent('storage', { key: ACTIVE_PROVIDER_KEY, newValue: provider })
+  );
+}
+
+/** Returns true if a provider is explicitly set in localStorage (not falling back). */
+export function hasActiveProvider(): boolean {
+  const saved = localStorage.getItem(ACTIVE_PROVIDER_KEY) as ProviderId | null;
+  return !!(saved && PROVIDERS[saved]);
 }
 
 export function getActiveModel(provider: ProviderId): string {
@@ -162,6 +171,11 @@ export async function consultEditor(params: {
   includeRewrite: boolean;
   scope: 'selection' | 'scene' | 'document';
 }): Promise<EditorialFeedback> {
+  if (!hasActiveProvider()) {
+    throw new Error(
+      "No active provider set. Go to Profile → Providers and click 'Set as active'."
+    );
+  }
   const provider = getActiveProvider();
   const model = provider === 'ollama' ? getOllamaModel() : getActiveModel(provider);
   const apiKey = provider === 'ollama' ? undefined : getProviderKey(provider);

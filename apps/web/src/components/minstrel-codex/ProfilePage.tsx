@@ -11,6 +11,7 @@ import {
   setProviderKey,
   getActiveProvider,
   setActiveProvider,
+  hasActiveProvider,
   getActiveModel,
   setActiveModel,
   getOllamaUrl,
@@ -628,7 +629,17 @@ function ProviderRow({
   const [saved, setSaved] = useState(false);
   const [ollamaUrl, setOllamaUrlLocal] = useState(() => getOllamaUrl());
   const [ollamaModelVal, setOllamaModelVal] = useState(() => getOllamaModel());
-  const isActive = getActiveProvider() === id;
+  // Reactive: re-reads whenever minstrel-editor-provider changes in localStorage
+  const [isActive, setIsActive] = useState(() => getActiveProvider() === id);
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key === 'minstrel-editor-provider') {
+        setIsActive(getActiveProvider() === id);
+      }
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, [id]);
 
   const handleSave = async () => {
     if (id === 'ollama') {
@@ -636,6 +647,14 @@ function ProviderRow({
       setOllamaModel(ollamaModelVal);
     } else {
       await setProviderKey(id, keyVal);
+    }
+    // Auto-set as active if no provider is currently set
+    if (!hasActiveProvider()) {
+      const hasValue = id === 'ollama' ? !!ollamaModelVal : !!keyVal;
+      if (hasValue) {
+        setActiveProvider(id); // also dispatches StorageEvent
+        setIsActive(true);
+      }
     }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -714,8 +733,9 @@ function ProviderRow({
         {!isActive && (id === 'ollama' ? ollamaModelVal : keyVal) && (
           <button
             onClick={() => {
-              setActiveProvider(id);
+              setActiveProvider(id); // dispatches StorageEvent — sibling rows update reactively
               if (id !== 'ollama' && config.models[0]) setActiveModel(id, config.models[0]);
+              setIsActive(true);
               onSaved();
             }}
             style={{
@@ -735,7 +755,7 @@ function ProviderRow({
         )}
       </div>
 
-      {!config.isLocal && config.models.length > 0 && (getActiveProvider() === id) && (
+      {!config.isLocal && config.models.length > 0 && isActive && (
         <div style={{ marginTop: '10px', borderTop: '1px solid #1a2540', paddingTop: '10px' }}>
           <div style={{ fontSize: '10px', fontFamily: uiFont, color: '#555', marginBottom: '6px', letterSpacing: '0.06em' }}>MODEL</div>
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>

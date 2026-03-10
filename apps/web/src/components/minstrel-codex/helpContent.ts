@@ -667,9 +667,10 @@ export const HELP_TREE: HelpFolder[] = [
 
 <h3>Adding Keys</h3>
 <p>Go to <strong>Profile → Providers</strong>. For each cloud provider, paste your API key into the input field and click Save. For Ollama, enter the base URL and the model name you have pulled (e.g. <code>mistral</code>, <code>llama3</code>).</p>
+<p>When you save the first key, that provider is automatically set as the active provider. You don't need to click "Set as active" unless you want to switch to a different provider.</p>
 
 <h3>Switching Providers</h3>
-<p>You can add keys for multiple providers and switch between them at any time using the "Set as active" button in Profile → Providers. The active provider is shown in the Editor Panel footer.</p>
+<p>You can add keys for multiple providers and switch between them at any time using the "Set as active" button in Profile → Providers. The active provider is shown immediately — a teal dot and "Active" label appears next to it. The active provider is also shown in the Editor Panel footer.</p>
 
 <h3>Security</h3>
 <p>API keys are stored in your browser's localStorage. If you are signed in to Minstrel Codex, keys are also synced to your encrypted profile in Supabase. Keys are never logged, never sent to Minstrel servers, and are only used to make the editorial feedback request directly from your browser to the provider's API via the Supabase edge function.</p>
