@@ -24,6 +24,7 @@ export function useFileStructure() {
       if (row?.data) {
         try {
           const fs = JSON.parse(row.data) as FileStructure;
+          migrateGlobalRecycleBin(fs);
           ensurePerProjectRecycleBins(fs);
           setStructure(fs);
         } catch {
@@ -35,6 +36,7 @@ export function useFileStructure() {
         if (saved) {
           try {
             const fs = JSON.parse(saved) as FileStructure;
+            migrateGlobalRecycleBin(fs);
             ensurePerProjectRecycleBins(fs);
             setStructure(fs);
             saveFs(fs);
@@ -60,6 +62,22 @@ export function useFileStructure() {
           'Recycle Bin': { type: 'folder', name: 'Recycle Bin', children: {}, collapsed: true },
         },
       };
+      saveFs(next);
+      return next;
+    });
+  }, []);
+
+  const createSubfolder = useCallback((name: string, parentPath: string[]) => {
+    setStructure(prev => {
+      const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
+      let node: FileNode = next.root;
+      for (const segment of parentPath) {
+        if (!node.children || !node.children[segment]) return prev;
+        node = node.children[segment];
+      }
+      if (!node.children) node.children = {};
+      if (node.children[name]) return prev;
+      node.children[name] = { type: 'folder', name, collapsed: false, children: {} };
       saveFs(next);
       return next;
     });
@@ -706,7 +724,7 @@ export function useFileStructure() {
   }, []);
 
   return {
-    structure, createFolder, addFileToTree, toggleFolder, moveFile, moveFolder,
+    structure, createFolder, createSubfolder, addFileToTree, toggleFolder, moveFile, moveFolder,
     deleteFile, deleteFolder, renameFile, getFolders, createNovelProject, saveVersion,
     saveSnapshot, findFilesInFolder, getNovelProjects, createFileInFolder,
     restoreFromDeleted, emptyDeleted, reorderItem, permanentlyDeleteItem,
@@ -715,6 +733,37 @@ export function useFileStructure() {
 }
 
 // ── Migration helper ──────────────────────────────────────────────────────────
+
+function migrateGlobalRecycleBin(fs: FileStructure): void {
+  const root = fs.root.children || {};
+  const migrateItems = (items: Record<string, FileNode>) => {
+    if (Object.keys(items).length === 0) return;
+    const firstProject = Object.entries(root).find(
+      ([name, node]) => node.type === 'folder' && name !== 'Recycle Bin' && name !== 'Deleted'
+    );
+    if (!firstProject) return;
+    const [, projNode] = firstProject;
+    if (!projNode.children) projNode.children = {};
+    if (!projNode.children['Recycle Bin']) {
+      projNode.children['Recycle Bin'] = { type: 'folder', name: 'Recycle Bin', children: {}, collapsed: true };
+    }
+    const targetBin = projNode.children['Recycle Bin'];
+    if (!targetBin.children) targetBin.children = {};
+    targetBin.children['Recovered'] = {
+      type: 'folder', name: 'Recovered', children: { ...items }, collapsed: false,
+    };
+  };
+  const globalBin = root['Recycle Bin'] as FileNode | undefined;
+  if (globalBin?.type === 'folder') {
+    migrateItems(globalBin.children || {});
+    delete root['Recycle Bin'];
+  }
+  const globalDeleted = root['Deleted'] as FileNode | undefined;
+  if (globalDeleted?.type === 'folder') {
+    migrateItems(globalDeleted.children || {});
+    delete root['Deleted'];
+  }
+}
 
 function ensurePerProjectRecycleBins(fs: FileStructure): void {
   for (const [name, node] of Object.entries(fs.root.children || {})) {

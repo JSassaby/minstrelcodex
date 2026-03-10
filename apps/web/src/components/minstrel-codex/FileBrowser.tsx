@@ -85,12 +85,13 @@ export interface FileBrowserProps {
   onMove?: (itemName: string) => void;
   onDelete?: (itemName: string) => void;
   onSearch?: () => void;
+  onCreateSubfolder: (name: string, parentPath: string[]) => void;
   onSyncGoogleDrive?: () => void;
   onSyncICloud?: () => void;
   onOpenProjectSettings?: (folderName: string) => void;
 }
 
-type InputMode = 'none' | 'search' | 'rename' | 'new-folder' | 'new-file' | 'move';
+type InputMode = 'none' | 'search' | 'rename' | 'move';
 
 interface FlatItem {
   name: string;
@@ -106,8 +107,12 @@ function flattenTree(node: FileNode, path: string[] = [], depth: number = 0): Fl
   const result: FlatItem[] = [];
   const children = node.children || {};
 
-  // Skip legacy global Deleted folder
-  const childKeys = Object.keys(children).filter(k => k !== 'Deleted');
+  // Skip legacy global Deleted folder and root-level Recycle Bin (pre-migration artifact)
+  const childKeys = Object.keys(children).filter(k => {
+    if (k === 'Deleted') return false;
+    if (depth === 0 && k === 'Recycle Bin') return false;
+    return true;
+  });
 
   // Use childOrder if available, otherwise sort folders first then alphabetically
   let keys: string[];
@@ -170,6 +175,7 @@ export default function FileBrowser({
   onMove,
   onDelete,
   onSearch,
+  onCreateSubfolder,
   onSyncGoogleDrive,
   onSyncICloud,
   onOpenProjectSettings,
@@ -187,7 +193,10 @@ export default function FileBrowser({
   const [confirmAction, setConfirmAction] = useState<{ type: 'empty-bin' | 'delete-permanently'; item: FlatItem } | null>(null);
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const [contextMenuFocusIdx, setContextMenuFocusIdx] = useState(0);
+  const [inlineInput, setInlineInput] = useState<{ mode: 'new-file' | 'new-folder'; parentPath: string[]; depth: number } | null>(null);
+  const [inlineInputValue, setInlineInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const inlineInputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   const allItems = flattenTree(rootNode);
@@ -203,6 +212,8 @@ export default function FileBrowser({
       setInputValue('');
       setSearchQuery('');
       setStatusMessage('');
+      setInlineInput(null);
+      setInlineInputValue('');
     }
   }, [visible]);
 
@@ -212,6 +223,13 @@ export default function FileBrowser({
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [inputMode]);
+
+  // Focus inline input when it opens
+  useEffect(() => {
+    if (inlineInput) {
+      setTimeout(() => inlineInputRef.current?.focus(), 50);
+    }
+  }, [inlineInput]);
 
   // Scroll selected item into view
   useEffect(() => {
@@ -252,8 +270,16 @@ export default function FileBrowser({
 
     if (isProjectFolder) {
       out.push({ label: item.collapsed ? 'Expand' : 'Collapse', action: () => onToggleFolder(item.path) });
-      out.push({ label: 'New File', action: () => { setInputMode('new-file'); setInputValue(''); } });
-      out.push({ label: 'New Subfolder', action: () => { setInputMode('new-folder'); setInputValue(''); } });
+      out.push({ label: 'New File', action: () => {
+        if (item.collapsed) onToggleFolder(item.path);
+        setInlineInput({ mode: 'new-file', parentPath: item.path, depth: item.depth + 1 });
+        setInlineInputValue('');
+      }});
+      out.push({ label: 'New Subfolder', action: () => {
+        if (item.collapsed) onToggleFolder(item.path);
+        setInlineInput({ mode: 'new-folder', parentPath: item.path, depth: item.depth + 1 });
+        setInlineInputValue('');
+      }});
       if (onOpenProjectSettings) {
         out.push({ separator: true });
         out.push({ label: 'Project Settings', action: () => onOpenProjectSettings!(item.name) });
@@ -265,8 +291,16 @@ export default function FileBrowser({
 
     if (isSubfolder) {
       out.push({ label: item.collapsed ? 'Expand' : 'Collapse', action: () => onToggleFolder(item.path) });
-      out.push({ label: 'New File Here', action: () => { setInputMode('new-file'); setInputValue(''); } });
-      out.push({ label: 'New Subfolder', action: () => { setInputMode('new-folder'); setInputValue(''); } });
+      out.push({ label: 'New File Here', action: () => {
+        if (item.collapsed) onToggleFolder(item.path);
+        setInlineInput({ mode: 'new-file', parentPath: item.path, depth: item.depth + 1 });
+        setInlineInputValue('');
+      }});
+      out.push({ label: 'New Subfolder', action: () => {
+        if (item.collapsed) onToggleFolder(item.path);
+        setInlineInput({ mode: 'new-folder', parentPath: item.path, depth: item.depth + 1 });
+        setInlineInputValue('');
+      }});
       out.push({ separator: true });
       out.push({ label: 'Delete', danger: true, action: () => { onDeleteFolder(item.path); showStatus('Folder moved to Recycle Bin'); setSelectedIndex(prev => Math.max(0, prev - 1)); } });
       return out;
@@ -305,14 +339,6 @@ export default function FileBrowser({
     return () => document.removeEventListener('mousedown', dismiss);
   }, [actionsMenuOpen]);
 
-  // Get the folder path the selected item lives in (for creating files)
-  const getSelectedFolderPath = useCallback((): string[] => {
-    const item = filteredItems[selectedIndex];
-    if (!item) return [];
-    if (item.type === 'folder') return item.path;
-    return item.path.slice(0, -1);
-  }, [filteredItems, selectedIndex]);
-
   // Keyboard handler
   useEffect(() => {
     if (!visible || !focused) return;
@@ -338,6 +364,30 @@ export default function FileBrowser({
         } else if (e.key === 'Escape') {
           setContextMenu(null);
           e.preventDefault();
+        }
+        return;
+      }
+
+      // Inline input row: intercept Enter/Escape only; let other keys pass through to the input
+      if (inlineInput) {
+        if (e.key === 'Escape') {
+          setInlineInput(null); setInlineInputValue(''); e.preventDefault();
+        } else if (e.key === 'Enter') {
+          if (inlineInputValue.trim()) {
+            if (inlineInput.mode === 'new-file') {
+              const docKey = inlineInput.parentPath.length > 0
+                ? `${inlineInput.parentPath.join('/')}/${inlineInputValue.trim()}`
+                : inlineInputValue.trim();
+              onCreateFile(inlineInputValue.trim(), inlineInput.parentPath);
+              onOpenFile(docKey);
+              showStatus('File created');
+            } else {
+              if (inlineInput.parentPath.length === 0) onCreateFolder(inlineInputValue.trim());
+              else onCreateSubfolder(inlineInputValue.trim(), inlineInput.parentPath);
+              showStatus('Folder created');
+            }
+          }
+          setInlineInput(null); setInlineInputValue(''); e.preventDefault();
         }
         return;
       }
@@ -370,32 +420,6 @@ export default function FileBrowser({
         return;
       }
 
-      if (inputMode === 'new-folder') {
-        if (e.key === 'Escape') { setInputMode('none'); e.preventDefault(); }
-        else if (e.key === 'Enter') {
-          if (inputValue.trim()) {
-            onCreateFolder(inputValue.trim());
-            showStatus(`Folder created`);
-          }
-          setInputMode('none');
-          e.preventDefault();
-        }
-        return;
-      }
-
-      if (inputMode === 'new-file') {
-        if (e.key === 'Escape') { setInputMode('none'); e.preventDefault(); }
-        else if (e.key === 'Enter') {
-          if (inputValue.trim()) {
-            onCreateFile(inputValue.trim(), getSelectedFolderPath());
-            showStatus(`File created`);
-          }
-          setInputMode('none');
-          e.preventDefault();
-        }
-        return;
-      }
-
       if (inputMode === 'move') {
         const folders = getFolders();
         if (e.key === 'Escape') { setInputMode('none'); e.preventDefault(); }
@@ -420,8 +444,30 @@ export default function FileBrowser({
         onClose(); e.preventDefault(); return;
       }
       if (e.key === '/') { setInputMode('search'); setInputValue(''); e.preventDefault(); return; }
-      if (e.key === 'n' && !e.shiftKey) { setInputMode('new-file'); setInputValue(''); e.preventDefault(); return; }
-      if (e.key === 'N' && e.shiftKey) { setInputMode('new-folder'); setInputValue(''); e.preventDefault(); return; }
+      if (e.key === 'n' && !e.shiftKey) {
+        const cur = filteredItems[selectedIndex];
+        let parentPath: string[]; let depth: number;
+        if (!cur || (cur.depth === 0 && cur.type === 'file')) { parentPath = []; depth = 0; }
+        else if (cur.type === 'folder' && cur.name !== 'Recycle Bin') {
+          parentPath = cur.path; depth = cur.depth + 1;
+          if (cur.collapsed) onToggleFolder(cur.path);
+        } else { parentPath = cur.path.slice(0, -1); depth = cur.depth; }
+        setInlineInput({ mode: 'new-file', parentPath, depth });
+        setInlineInputValue('');
+        e.preventDefault(); return;
+      }
+      if (e.key === 'N' && e.shiftKey) {
+        const cur = filteredItems[selectedIndex];
+        let parentPath: string[]; let depth: number;
+        if (!cur || (cur.depth === 0 && cur.type === 'file')) { parentPath = []; depth = 0; }
+        else if (cur.type === 'folder' && cur.name !== 'Recycle Bin') {
+          parentPath = cur.path; depth = cur.depth + 1;
+          if (cur.collapsed) onToggleFolder(cur.path);
+        } else { parentPath = cur.path.slice(0, -1); depth = cur.depth; }
+        setInlineInput({ mode: 'new-folder', parentPath, depth });
+        setInlineInputValue('');
+        e.preventDefault(); return;
+      }
 
       // Navigation
       if (e.key === 'ArrowDown') {
@@ -535,15 +581,49 @@ export default function FileBrowser({
   }, [visible, focused, selectedIndex, inputMode, inputValue, searchQuery,
     moveTargetIdx, filteredItems, onClose, onOpenFile, onDeleteFile, onDeleteFolder,
     onRenameFile, onMoveFile, onToggleFolder, onRestoreFromDeleted, onEmptyDeleted,
-    onPermanentlyDeleteItem, onCreateFolder, onCreateFile, getFolders, showStatus,
-    getSelectedFolderPath, contextMenu, contextMenuFocusIdx, confirmAction,
-    buildContextMenuItems]);
+    onPermanentlyDeleteItem, onCreateFolder, onCreateFile, onCreateSubfolder, getFolders,
+    showStatus, contextMenu, contextMenuFocusIdx, confirmAction,
+    buildContextMenuItems, inlineInput, inlineInputValue]);
 
   if (!visible) return null;
 
   const allFolders = getFolders();
-
   const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
+  const activeProject = localStorage.getItem('minstrel-active-project') || '';
+
+  // Word count rollup for a folder: sum all file descendants (excluding bin)
+  const folderWordCount = (folderPath: string[]): number => {
+    const pathStr = folderPath.join('/');
+    let total = 0;
+    for (const fi of allItems) {
+      if (fi.type !== 'file' || fi.path.includes('Recycle Bin')) continue;
+      const fiParent = fi.path.slice(0, -1).join('/');
+      if (fiParent === pathStr || fiParent.startsWith(pathStr + '/')) {
+        const fk = fi.docKey || fi.name;
+        const lc = (fk === currentFilename && currentContent != null) ? currentContent : allDocuments[fk]?.content;
+        if (lc) total += lc.replace(/<[^>]*>/g, ' ').split(/\s+/).filter(Boolean).length;
+      }
+    }
+    return total;
+  };
+
+  // Index of first root-level file (UNFILED label shows above it)
+  const firstUnfiledIdx = filteredItems.findIndex(fi => fi.type === 'file' && fi.depth === 0);
+
+  // Where to insert the inline input row
+  let inlineInsertAfterIdx = -1;
+  if (inlineInput) {
+    const pStr = inlineInput.parentPath.join('/');
+    for (let j = 0; j < filteredItems.length; j++) {
+      const fi = filteredItems[j];
+      const fiStr = fi.path.join('/');
+      if (fiStr === pStr) {
+        inlineInsertAfterIdx = j;
+      } else if (fiStr.startsWith(pStr + '/') && !fi.path.includes('Recycle Bin')) {
+        inlineInsertAfterIdx = j;
+      }
+    }
+  }
 
   return (
     <div
@@ -823,23 +903,18 @@ export default function FileBrowser({
         </div>
       )}
 
-      {/* Inline input bar (rename / new-folder / new-file) */}
-      {(inputMode === 'rename' || inputMode === 'new-folder' || inputMode === 'new-file') && (
+      {/* Inline input bar (rename only — new-file/folder use inline tree row) */}
+      {inputMode === 'rename' && (
         <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--terminal-border)', background: 'var(--terminal-surface)' }}>
           <div style={{ fontSize: '10px', opacity: 0.4, fontFamily: uiFont, fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '7px' }}>
-            {inputMode === 'rename' ? 'Rename File' : inputMode === 'new-folder' ? 'New Folder' : 'New File'}
+            Rename File
           </div>
           <input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} autoFocus
-            placeholder={inputMode === 'new-file' ? 'filename.txt' : inputMode === 'new-folder' ? 'Folder name…' : ''}
-            style={{ width: '100%', background: 'var(--terminal-bg)', border: '1px solid var(--terminal-border)', borderRadius: '8px', color: 'var(--terminal-text)', padding: '7px 10px', fontFamily: uiFont, fontSize: '12px', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s' }}
+            placeholder=""
+            style={{ width: '100%', background: 'var(--terminal-bg)', border: '1px solid var(--terminal-border)', borderRadius: 0, color: 'var(--terminal-text)', padding: '7px 10px', fontFamily: uiFont, fontSize: '12px', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s' }}
             onFocus={e => { e.currentTarget.style.borderColor = 'var(--terminal-accent)'; }}
             onBlur={e => { e.currentTarget.style.borderColor = 'var(--terminal-border)'; }}
           />
-          {inputMode === 'new-file' && (
-            <div style={{ fontSize: '10px', opacity: 0.35, marginTop: '5px', fontFamily: uiFont }}>
-              In: {getSelectedFolderPath().join('/') || 'root'}
-            </div>
-          )}
         </div>
       )}
 
@@ -916,14 +991,24 @@ export default function FileBrowser({
             const isDropTarget = isFolder && dropTargetPath !== null && dropTargetPath.join('/') === item.path.join('/');
             const showDropBefore = dropIndicator?.index === i && dropIndicator.position === 'before';
             const showDropAfter = dropIndicator?.index === i && dropIndicator.position === 'after';
+            const isProjectFolder = item.depth === 0 && isFolder && !isRecycleBin;
+            const isActiveProject = isProjectFolder && item.name === activeProject;
+            const showProjectSeparator = isProjectFolder && filteredItems.slice(0, i).some(p => p.depth === 0 && p.type === 'folder' && p.name !== 'Recycle Bin');
+            const wc = isFolder && !isRecycleBin ? folderWordCount(item.path) : 0;
 
             return (
               <div
                 key={item.path.join('/') + item.type}
                 data-idx={i}
                 data-drop-target={isDropTarget ? 'true' : undefined}
-                style={{ position: 'relative' }}
+                style={{ position: 'relative', marginTop: showProjectSeparator ? '4px' : 0, borderTop: showProjectSeparator ? '1px solid #1a2540' : 'none' }}
               >
+                {/* UNFILED section label */}
+                {i === firstUnfiledIdx && (
+                  <div style={{ padding: '5px 10px 3px 10px', fontSize: '10px', color: 'var(--terminal-accent)', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, fontFamily: uiFont, opacity: 0.7 }}>
+                    Unfiled
+                  </div>
+                )}
                 {/* Drop indicator line — before */}
                 {showDropBefore && (
                   <div style={{
@@ -1079,7 +1164,7 @@ export default function FileBrowser({
                 aria-level={item.depth + 1}
                 className="file-browser-row"
                 style={{
-                  padding: '6px 10px',
+                  padding: isProjectFolder ? '7px 10px' : '6px 10px',
                   paddingLeft: `${10 + item.depth * 16}px`,
                   cursor: dragState ? 'grabbing' : 'pointer',
                   background: isDropTarget ? 'var(--terminal-accent)' : isFocused ? 'var(--terminal-surface)' : 'transparent',
@@ -1087,11 +1172,11 @@ export default function FileBrowser({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '7px',
-                  fontSize: '12px',
+                  fontSize: isProjectFolder ? '13px' : '12px',
                   fontFamily: uiFont,
                   opacity: dragState && dragState.itemPath.join('/') === item.path.join('/') ? 0.35 : (isRecycleBin && (item.childCount ?? 0) === 0 && !isFocused ? 0.4 : isInRecycleBin && !isFocused ? 0.4 : 1),
                   transition: 'background 0.12s, opacity 0.12s',
-                  borderLeft: isFocused ? '3px solid var(--terminal-accent)' : '3px solid transparent',
+                  borderLeft: isFocused ? '3px solid var(--terminal-accent)' : isActiveProject ? '3px solid #c8a84b' : '3px solid transparent',
                   borderRadius: '0 8px 8px 0',
                   marginRight: '4px',
                 }}
@@ -1146,9 +1231,9 @@ export default function FileBrowser({
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                   flex: 1,
-                  letterSpacing: isFolder ? '0.02em' : 'normal',
-                  opacity: isFocused ? 1 : 0.8,
-                  fontSize: isFolder ? '11px' : '12px',
+                  letterSpacing: isProjectFolder ? '0.03em' : isFolder ? '0.02em' : 'normal',
+                  color: isDropTarget ? 'var(--terminal-bg)' : isProjectFolder ? '#c8c8c8' : '#a0a0a0',
+                  fontSize: isProjectFolder ? '13px' : isFolder ? '11px' : '12px',
                 }}>
                   {isRecycleBin
                     ? `Recycle Bin${item.childCount ? ` (${item.childCount})` : ''}`
@@ -1165,6 +1250,17 @@ export default function FileBrowser({
                     {words}w
                   </span>
                 )}
+                {isFolder && !isRecycleBin && wc > 0 && (
+                  <span style={{
+                    fontSize: '10px',
+                    opacity: isFocused ? 0.5 : 0.25,
+                    whiteSpace: 'nowrap',
+                    fontFamily: uiFont,
+                    letterSpacing: '0.02em',
+                  }}>
+                    {wc.toLocaleString()}w
+                  </span>
+                )}
                 {/* Inline hover action buttons */}
                 <div
                   className="fb-row-actions"
@@ -1176,8 +1272,9 @@ export default function FileBrowser({
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedIndex(i);
-                        setInputMode('new-file');
-                        setInputValue('');
+                        if (item.collapsed) onToggleFolder(item.path);
+                        setInlineInput({ mode: 'new-file', parentPath: item.path, depth: item.depth + 1 });
+                        setInlineInputValue('');
                       }}
                       style={{ background: 'transparent', border: 'none', padding: '1px 3px', cursor: 'pointer', color: 'var(--terminal-text)', display: 'flex', alignItems: 'center', opacity: 0.55, lineHeight: 1 }}
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
@@ -1210,6 +1307,31 @@ export default function FileBrowser({
                     position: 'absolute', bottom: 0, left: `${10 + item.depth * 16}px`, right: '8px',
                     height: '2px', background: 'var(--terminal-accent)', borderRadius: '1px', zIndex: 10,
                   }} />
+                )}
+                {/* Inline new-file / new-folder row */}
+                {i === inlineInsertAfterIdx && inlineInput && (
+                  <div style={{
+                    padding: '4px 10px',
+                    paddingLeft: `${10 + inlineInput.depth * 16}px`,
+                    display: 'flex', alignItems: 'center', gap: '7px', fontFamily: uiFont,
+                  }}>
+                    <span style={{ width: '10px', flexShrink: 0 }} />
+                    <span style={{ width: '11px', flexShrink: 0 }} />
+                    <span style={{ fontSize: '14px', lineHeight: 1, flexShrink: 0 }}>
+                      {inlineInput.mode === 'new-file' ? '🗒️' : '📁'}
+                    </span>
+                    <input
+                      ref={inlineInputRef}
+                      value={inlineInputValue}
+                      onChange={e => setInlineInputValue(e.target.value)}
+                      placeholder={inlineInput.mode === 'new-file' ? 'filename.txt' : 'Folder name…'}
+                      autoFocus
+                      style={{
+                        flex: 1, background: '#0d1117', border: '1px solid #4ecdc4', borderRadius: 0,
+                        color: '#c8c8c8', fontSize: '12px', fontFamily: uiFont, padding: '2px 6px', outline: 'none',
+                      }}
+                    />
+                  </div>
                 )}
               </div>
             );

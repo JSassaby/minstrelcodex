@@ -1730,6 +1730,7 @@ export default function MinstrelCodex() {
           }}
           onNewFolder={() => { setFolderName(''); setActiveModal('new-folder'); }}
           onCreateFolder={(name) => fileStructure.createFolder(name)}
+          onCreateSubfolder={(name, parentPath) => fileStructure.createSubfolder(name, parentPath)}
           onDeleteFile={(filename, fromPath) => fileStructure.deleteFile(filename, fromPath)}
           onDeleteFolder={(folderPath) => fileStructure.deleteFolder(folderPath)}
           onRenameFile={(oldName, newName) => fileStructure.renameFile(oldName, newName)}
