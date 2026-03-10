@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Editor } from '@tiptap/react';
 import { getAllFonts, addCustomFont, removeCustomFont, preloadBuiltInFonts, type FontOption } from '@/lib/fonts';
 
@@ -58,10 +58,17 @@ export default function FormattingToolbar({
   const [addingFont, setAddingFont] = useState(false);
   const [newFontName, setNewFontName] = useState('');
   const [fonts, setFonts] = useState<FontOption[]>(() => getAllFonts());
+  const [sizeEditing, setSizeEditing] = useState(false);
+  const [sizeInputVal, setSizeInputVal] = useState(String(fontSize));
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const formatMenuRef = useRef<HTMLDivElement>(null);
   const formatTriggerRef = useRef<HTMLButtonElement>(null);
+
+  // Sync size display when prop changes externally (keyboard shortcut etc.)
+  useEffect(() => {
+    if (!sizeEditing) setSizeInputVal(String(fontSize));
+  }, [fontSize, sizeEditing]);
 
   // Preload built-in fonts on mount
   useEffect(() => { preloadBuiltInFonts(); }, []);
@@ -351,14 +358,40 @@ export default function FormattingToolbar({
       </div>
 
       {/* Font size */}
-      <button onClick={() => onChangeFontSize(-2)} title="Decrease text size (Ctrl+-)" style={pillBtn(false)}
+      <button onClick={() => onChangeFontSize(-1)} title="Decrease text size (Ctrl+-)" style={pillBtn(false)}
         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.75'; }}
       >A−</button>
-      <span style={{ padding: '4px 6px', fontSize: '12px', opacity: 0.55, color: 'var(--terminal-text)', fontFamily: uiFont, minWidth: '28px', textAlign: 'center', fontWeight: '500' }}>
-        {fontSize}
-      </span>
-      <button onClick={() => onChangeFontSize(2)} title="Increase text size (Ctrl++)" style={pillBtn(false)}
+      {sizeEditing ? (
+        <input
+          value={sizeInputVal}
+          onChange={e => setSizeInputVal(e.target.value)}
+          onBlur={() => {
+            const parsed = parseInt(sizeInputVal, 10);
+            if (!isNaN(parsed)) onChangeFontSize(Math.max(12, Math.min(32, parsed)) - fontSize);
+            setSizeEditing(false);
+          }}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              const parsed = parseInt(sizeInputVal, 10);
+              if (!isNaN(parsed)) onChangeFontSize(Math.max(12, Math.min(32, parsed)) - fontSize);
+              setSizeEditing(false);
+            }
+            if (e.key === 'Escape') { setSizeEditing(false); setSizeInputVal(String(fontSize)); }
+          }}
+          autoFocus
+          style={{ width: '34px', textAlign: 'center', fontSize: '12px', fontFamily: uiFont, background: 'var(--terminal-surface)', border: '1px solid var(--terminal-accent)', color: 'var(--terminal-text)', padding: '3px 4px', outline: 'none' }}
+        />
+      ) : (
+        <span
+          onClick={() => { setSizeEditing(true); setSizeInputVal(String(fontSize)); }}
+          title="Click to set font size"
+          style={{ padding: '4px 6px', fontSize: '12px', opacity: 0.55, color: 'var(--terminal-text)', fontFamily: uiFont, minWidth: '28px', textAlign: 'center', fontWeight: '500', cursor: 'text' }}
+        >
+          {fontSize}
+        </span>
+      )}
+      <button onClick={() => onChangeFontSize(1)} title="Increase text size (Ctrl++)" style={pillBtn(false)}
         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.75'; }}
       >A+</button>

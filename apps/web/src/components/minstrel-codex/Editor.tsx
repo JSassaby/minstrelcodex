@@ -198,7 +198,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({
             outline: none;
             color: #2a2a2a;
             font-family: var(--editor-font, Georgia, 'Times New Roman', serif);
-            font-size: 17px;
+            font-size: var(--editor-font-size, 18px);
             line-height: 1.8;
             caret-color: #1a1a1a;
             min-height: 240px;

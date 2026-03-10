@@ -283,6 +283,11 @@ html[style*="--a11y-color-filter: grayscale"] body {
   box-shadow: 0 0 12px var(--terminal-glow), 0 0 24px var(--terminal-glow);
 }
 
+/* Editor font size (controlled via --editor-font-size CSS variable) */
+.ProseMirror {
+  font-size: var(--editor-font-size, 18px);
+}
+
 /* Apply a11y text scaling to editor */
 .terminal-editor {
   font-size: calc(var(--base-font-size, 16px) * var(--a11y-text-scale, 1)) !important;

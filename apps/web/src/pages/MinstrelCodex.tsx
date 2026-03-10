@@ -859,10 +859,10 @@ export default function MinstrelCodex() {
         document.execCommand('redo');
         break;
       case 'increasetext':
-        theme.changeFontSize(2);
+        theme.changeFontSize(1);
         break;
       case 'decreasetext':
-        theme.changeFontSize(-2);
+        theme.changeFontSize(-1);
         break;
       case 'customizecolors':
         setMusicPlayerOpen(false);

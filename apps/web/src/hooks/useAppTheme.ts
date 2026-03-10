@@ -23,7 +23,15 @@ export function useAppTheme() {
     const theme = THEMES[getSavedTheme()];
     return { text: theme.colors.text, background: theme.colors.background };
   });
-  const [fontSize, setFontSize] = useState(18);
+  const [fontSize, setFontSize] = useState(() => {
+    const saved = parseInt(localStorage.getItem('minstrel-editor-fontsize') || '18', 10);
+    return Math.max(12, Math.min(32, isNaN(saved) ? 18 : saved));
+  });
+
+  // Apply editor font-size CSS variable on mount and when fontSize changes
+  useEffect(() => {
+    document.documentElement.style.setProperty('--editor-font-size', `${fontSize}px`);
+  }, [fontSize]);
 
   // Apply theme on mount and when mode changes
   useEffect(() => {
@@ -78,7 +86,12 @@ export function useAppTheme() {
   }, [themeMode, updateColors]);
 
   const changeFontSize = useCallback((delta: number) => {
-    setFontSize(prev => Math.max(12, Math.min(32, prev + delta)));
+    setFontSize(prev => {
+      const next = Math.max(12, Math.min(32, prev + delta));
+      localStorage.setItem('minstrel-editor-fontsize', String(next));
+      document.documentElement.style.setProperty('--editor-font-size', `${next}px`);
+      return next;
+    });
   }, []);
 
   return {
