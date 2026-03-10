@@ -67,7 +67,8 @@ export interface FileBrowserProps {
   onOpenFile: (filename: string) => void;
   onNewFile: () => void;
   onCreateFile: (filename: string, folderPath: string[]) => void;
-  onNewFolder: (name: string) => void;
+  onNewFolder: () => void;
+  onCreateFolder: (name: string) => void;
   onDeleteFile: (filename: string) => void;
   onDeleteFolder: (folderPath: string[]) => void;
   onRenameFile: (oldName: string, newName: string) => void;
@@ -80,6 +81,10 @@ export interface FileBrowserProps {
   onEmptyDeleted: () => void;
   onFocus: () => void;
   getFolders: () => { name: string; path: string[] }[];
+  onRename?: (itemName: string) => void;
+  onMove?: (itemName: string) => void;
+  onDelete?: (itemName: string) => void;
+  onSearch?: () => void;
   onSyncGoogleDrive?: () => void;
   onSyncICloud?: () => void;
   onOpenProjectSettings?: (folderName: string) => void;
@@ -139,6 +144,7 @@ export default function FileBrowser({
   onOpenFile,
   onCreateFile,
   onNewFolder,
+  onCreateFolder,
   onDeleteFile,
   onDeleteFolder,
   onRenameFile,
@@ -151,6 +157,10 @@ export default function FileBrowser({
   onEmptyDeleted,
   onFocus,
   getFolders,
+  onRename,
+  onMove,
+  onDelete,
+  onSearch,
   onSyncGoogleDrive,
   onSyncICloud,
   onOpenProjectSettings,
@@ -278,7 +288,7 @@ export default function FileBrowser({
         if (e.key === 'Escape') { setInputMode('none'); e.preventDefault(); }
         else if (e.key === 'Enter') {
           if (inputValue.trim()) {
-            onNewFolder(inputValue.trim());
+            onCreateFolder(inputValue.trim());
             showStatus(`Folder created`);
           }
           setInputMode('none');
@@ -406,7 +416,7 @@ export default function FileBrowser({
   }, [visible, focused, selectedIndex, inputMode, inputValue, searchQuery,
     moveTargetIdx, filteredItems, onClose, onOpenFile, onDeleteFile, onDeleteFolder,
     onRenameFile, onMoveFile, onToggleFolder, onRestoreFromDeleted, onEmptyDeleted,
-    onNewFolder, onCreateFile, getFolders, showStatus, getSelectedFolderPath,
+    onCreateFolder, onCreateFile, getFolders, showStatus, getSelectedFolderPath,
     contextMenu, confirmAction]);
 
   if (!visible) return null;
@@ -503,24 +513,32 @@ export default function FileBrowser({
                 },
                 {
                   label: 'New File',
-                  action: () => { setInputMode('new-file'); setInputValue(''); },
+                  action: () => { onNewFile(); },
                 },
                 {
                   label: 'New Folder',
-                  action: () => { setInputMode('new-folder'); setInputValue(''); },
+                  action: () => { onNewFolder(); },
                 },
                 {
                   label: 'Rename',
                   action: () => {
                     const item = filteredItems[selectedIndex];
-                    if (item?.type === 'file') { setInputMode('rename'); setInputValue(item.name); }
+                    if (item?.type === 'file') {
+                      setInputMode('rename');
+                      setInputValue(item.name);
+                      onRename?.(item.name);
+                    }
                   },
                 },
                 {
                   label: 'Move',
                   action: () => {
                     const item = filteredItems[selectedIndex];
-                    if (item?.type === 'file') { setInputMode('move'); setMoveTargetIdx(0); }
+                    if (item?.type === 'file') {
+                      setInputMode('move');
+                      setMoveTargetIdx(0);
+                      onMove?.(item.name);
+                    }
                   },
                 },
                 {
@@ -528,6 +546,7 @@ export default function FileBrowser({
                   action: () => {
                     const item = filteredItems[selectedIndex];
                     if (!item) return;
+                    onDelete?.(item.name);
                     const isInDeleted = item.path[0] === 'Deleted';
                     if (isInDeleted) {
                       const key = item.type === 'file' ? item.name : item.path.slice(1).join('/');
@@ -545,7 +564,7 @@ export default function FileBrowser({
                 },
                 {
                   label: 'Search',
-                  action: () => { setInputMode('search'); setSearchQuery(''); },
+                  action: () => { setInputMode('search'); setSearchQuery(''); onSearch?.(); },
                 },
               ]).map(({ label, action }) => (
                 <button

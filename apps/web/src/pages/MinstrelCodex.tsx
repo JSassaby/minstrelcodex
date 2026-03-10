@@ -1728,7 +1728,8 @@ export default function MinstrelCodex() {
           onCreateFile={(filename, folderPath) => {
             fileStructure.createFileInFolder(filename, folderPath, '');
           }}
-          onNewFolder={(name) => fileStructure.createFolder(name)}
+          onNewFolder={() => { setFolderName(''); setActiveModal('new-folder'); }}
+          onCreateFolder={(name) => fileStructure.createFolder(name)}
           onDeleteFile={(filename) => fileStructure.deleteFile(filename)}
           onDeleteFolder={(folderPath) => fileStructure.deleteFolder(folderPath)}
           onRenameFile={(oldName, newName) => fileStructure.renameFile(oldName, newName)}
