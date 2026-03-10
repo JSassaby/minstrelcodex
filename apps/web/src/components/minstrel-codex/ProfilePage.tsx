@@ -5,10 +5,24 @@ import { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword } fro
 import { supabase } from '@/integrations/supabase/client';
 import { pullSettings, pushSettings } from '@/lib/settingsSync';
 import { VERSION } from '@/lib/version';
+import {
+  PROVIDERS,
+  getProviderKey,
+  setProviderKey,
+  getActiveProvider,
+  setActiveProvider,
+  getActiveModel,
+  setActiveModel,
+  getOllamaUrl,
+  setOllamaUrl,
+  getOllamaModel,
+  setOllamaModel,
+} from '@/lib/editorProviders';
+import type { ProviderId } from '@/lib/editorProviders';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-type Tab = 'account' | 'preferences' | 'sync' | 'security' | 'about';
+type Tab = 'account' | 'preferences' | 'providers' | 'sync' | 'security' | 'about';
 type AccountView = 'signin' | 'signup' | 'reset' | 'profile';
 
 interface ProfilePageProps {
@@ -601,6 +615,178 @@ function AboutTab() {
   );
 }
 
+function ProviderRow({
+  id,
+  onSaved,
+}: {
+  id: ProviderId;
+  onSaved: () => void;
+}) {
+  const config = PROVIDERS[id];
+  const [keyVal, setKeyVal] = useState(() => getProviderKey(id));
+  const [show, setShow] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [ollamaUrl, setOllamaUrlLocal] = useState(() => getOllamaUrl());
+  const [ollamaModelVal, setOllamaModelVal] = useState(() => getOllamaModel());
+  const isActive = getActiveProvider() === id;
+
+  const handleSave = async () => {
+    if (id === 'ollama') {
+      setOllamaUrl(ollamaUrl);
+      setOllamaModel(ollamaModelVal);
+    } else {
+      await setProviderKey(id, keyVal);
+    }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+    onSaved();
+  };
+
+  const inputStyle: React.CSSProperties = {
+    flex: 1, background: '#0a0f1a', border: '1px solid #2a3550',
+    borderRadius: 0, color: '#c8c8c8', fontFamily: uiFont, fontSize: '12px',
+    padding: '7px 10px', outline: 'none',
+  };
+
+  return (
+    <div style={{ border: '1px solid #1a2540', padding: '14px', marginBottom: '10px', background: '#0a0a0a' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+        <span style={{ fontSize: '13px', fontFamily: uiFont, color: '#c8c8c8', fontWeight: 600, flex: 1 }}>
+          {config.label}
+        </span>
+        <span style={{
+          fontSize: '10px', fontFamily: uiFont, letterSpacing: '0.06em',
+          color: config.isLocal ? '#f5c542' : '#5b9cf6',
+          border: `1px solid ${config.isLocal ? '#f5c54240' : '#5b9cf640'}`,
+          padding: '2px 6px',
+        }}>
+          {config.isLocal ? 'LOCAL' : 'CLOUD'}
+        </span>
+        {isActive && (
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', fontFamily: uiFont, color: '#4ecdc4' }}>
+            <span style={{ width: '6px', height: '6px', background: '#4ecdc4', display: 'inline-block' }} />
+            Active
+          </span>
+        )}
+      </div>
+
+      {id === 'ollama' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '10px' }}>
+          <input
+            style={{ ...inputStyle, flex: 'none', width: '100%', boxSizing: 'border-box' }}
+            placeholder="http://localhost:11434"
+            value={ollamaUrl}
+            onChange={e => setOllamaUrlLocal(e.target.value)}
+          />
+          <input
+            style={{ ...inputStyle, flex: 'none', width: '100%', boxSizing: 'border-box' }}
+            placeholder="e.g. mistral, llama3"
+            value={ollamaModelVal}
+            onChange={e => setOllamaModelVal(e.target.value)}
+          />
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+          <input
+            type={show ? 'text' : 'password'}
+            style={inputStyle}
+            placeholder={config.keyPlaceholder ?? ''}
+            value={keyVal}
+            onChange={e => setKeyVal(e.target.value)}
+          />
+          <button
+            onClick={() => setShow(p => !p)}
+            style={{ background: 'transparent', border: '1px solid #2a3550', borderRadius: 0, color: '#888', padding: '0 10px', cursor: 'pointer', fontFamily: uiFont, fontSize: '11px' }}
+          >{show ? 'Hide' : 'Show'}</button>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <button
+          onClick={handleSave}
+          style={{
+            padding: '6px 14px', background: '#4ecdc4', border: 'none', borderRadius: 0,
+            color: '#0a0a0a', fontFamily: uiFont, fontSize: '12px', fontWeight: 600,
+            cursor: 'pointer', letterSpacing: '0.04em',
+          }}
+        >Save</button>
+        {saved && <span style={{ fontSize: '12px', fontFamily: uiFont, color: '#4ecdc4' }}>✓ Saved</span>}
+        {!isActive && (id === 'ollama' ? ollamaModelVal : keyVal) && (
+          <button
+            onClick={() => {
+              setActiveProvider(id);
+              if (id !== 'ollama' && config.models[0]) setActiveModel(id, config.models[0]);
+              onSaved();
+            }}
+            style={{
+              padding: '6px 14px', background: 'transparent', border: '1px solid #444',
+              borderRadius: 0, color: '#888', fontFamily: uiFont, fontSize: '12px',
+              cursor: 'pointer',
+            }}
+          >Set as active</button>
+        )}
+        {id !== 'ollama' && (
+          <a
+            href={config.keyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ marginLeft: 'auto', fontSize: '11px', fontFamily: uiFont, color: '#5b9cf6', textDecoration: 'none', opacity: 0.8 }}
+          >Get key →</a>
+        )}
+      </div>
+
+      {!config.isLocal && config.models.length > 0 && (getActiveProvider() === id) && (
+        <div style={{ marginTop: '10px', borderTop: '1px solid #1a2540', paddingTop: '10px' }}>
+          <div style={{ fontSize: '10px', fontFamily: uiFont, color: '#555', marginBottom: '6px', letterSpacing: '0.06em' }}>MODEL</div>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            {config.models.map(m => (
+              <button
+                key={m}
+                onClick={() => { setActiveModel(id, m); onSaved(); }}
+                style={{
+                  padding: '4px 10px', background: getActiveModel(id) === m ? '#4ecdc4' : 'transparent',
+                  border: `1px solid ${getActiveModel(id) === m ? '#4ecdc4' : '#333'}`,
+                  borderRadius: 0, color: getActiveModel(id) === m ? '#0a0a0a' : '#888',
+                  fontFamily: uiFont, fontSize: '11px', cursor: 'pointer',
+                }}
+              >{m}</button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProvidersTab() {
+  const [, forceUpdate] = useState(0);
+  const refresh = () => forceUpdate(n => n + 1);
+
+  return (
+    <div>
+      <div style={{ fontSize: '10px', fontFamily: uiFont, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#4ecdc4', marginBottom: '12px' }}>
+        AI Editor Providers
+      </div>
+      <div style={{ fontSize: '13px', fontFamily: uiFont, color: '#888', lineHeight: 1.6, marginBottom: '20px' }}>
+        Add your API key for any AI provider you already use. Keys are stored locally and never shared.
+      </div>
+
+      {(Object.keys(PROVIDERS) as ProviderId[]).map(id => (
+        <ProviderRow key={id} id={id} onSaved={refresh} />
+      ))}
+
+      <div style={{
+        marginTop: '16px', padding: '12px 14px',
+        border: '1px solid #1a2540', background: '#080c14',
+        fontSize: '11px', fontFamily: uiFont, color: '#555', lineHeight: 1.65,
+        borderLeft: '2px solid #1a2540',
+      }}>
+        Your API keys are stored securely in your browser. They are only used to make editorial feedback requests and are never sent to Minstrel servers.
+      </div>
+    </div>
+  );
+}
+
 // ── Main ProfilePage ───────────────────────────────────────────────────────
 
 export default function ProfilePage({
@@ -626,6 +812,7 @@ export default function ProfilePage({
   const TABS: { id: Tab; label: string }[] = [
     { id: 'account', label: 'Account' },
     { id: 'preferences', label: 'Preferences' },
+    { id: 'providers', label: 'Providers' },
     { id: 'sync', label: 'Sync' },
     { id: 'security', label: 'Security' },
     { id: 'about', label: 'About' },
@@ -714,6 +901,7 @@ export default function ProfilePage({
                 onSync={() => { if (user) pushSettings(user.id).catch(() => {}); }}
               />
             )}
+            {activeTab === 'providers' && <ProvidersTab />}
             {activeTab === 'sync' && (
               <SyncTab user={user} onSwitchTab={setActiveTab} />
             )}

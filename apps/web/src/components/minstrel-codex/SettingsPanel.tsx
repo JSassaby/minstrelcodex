@@ -146,7 +146,7 @@ function DropdownSelect<T extends string>({
           overflow: 'hidden',
           background: '#080e1e',
           border: '1px solid rgba(0, 212, 200, 0.12)',
-          boxShadow: '0 12px 40px rgba(0, 0, 0, 0.5)',
+          boxShadow: 'none',
           padding: '4px',
           maxHeight: '240px',
           overflowY: 'auto',
@@ -196,6 +196,63 @@ function DropdownSelect<T extends string>({
 
 // Need useRef for DropdownSelect
 import { useRef } from 'react';
+
+function EditorModuleToggle() {
+  const [enabled, setEnabled] = useState(() =>
+    localStorage.getItem('minstrel-editor-enabled') === 'true'
+  );
+  const hasKey = (() => {
+    try {
+      const store = JSON.parse(localStorage.getItem('minstrel-editor-keys') || '{}');
+      return Object.values(store).some(v => typeof v === 'string' && (v as string).length > 0);
+    } catch { return false; }
+  })();
+
+  const toggle = () => {
+    const next = !enabled;
+    localStorage.setItem('minstrel-editor-enabled', String(next));
+    setEnabled(next);
+    window.dispatchEvent(new Event('minstrel-editor-enabled-changed'));
+  };
+
+  return (
+    <div style={{ padding: '12px 0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+        <button
+          onClick={toggle}
+          style={{
+            width: '36px', height: '20px',
+            background: enabled ? 'var(--terminal-accent)' : '#1a2540',
+            border: 'none', cursor: 'pointer', position: 'relative',
+            transition: 'background 0.2s', flexShrink: 0,
+          }}
+        >
+          <span style={{
+            position: 'absolute', top: '3px',
+            left: enabled ? '18px' : '3px',
+            width: '14px', height: '14px',
+            background: '#fff', transition: 'left 0.2s', display: 'block',
+          }} />
+        </button>
+        <span style={{ fontSize: '13px', fontFamily: uiFont, color: 'var(--terminal-text)', opacity: 0.85 }}>
+          AI Editorial Feedback
+        </span>
+      </div>
+      {enabled && !hasKey && (
+        <div style={{
+          fontSize: '12px', fontFamily: uiFont, color: '#888',
+          borderLeft: '2px solid var(--terminal-accent)', paddingLeft: '10px',
+          lineHeight: 1.55,
+        }}>
+          Add your AI provider key in your Profile → Providers to get started.
+        </div>
+      )}
+      <div style={{ fontSize: '11px', fontFamily: uiFont, color: '#555', marginTop: '6px', lineHeight: 1.55 }}>
+        Consult an AI editor for feedback on your writing. Never interrupts your flow — only runs when you ask.
+      </div>
+    </div>
+  );
+}
 
 export default function SettingsPanel({
   visible, language, colors, wifiOn, bluetoothOn, pinConfig, themeMode,
@@ -965,6 +1022,9 @@ export default function SettingsPanel({
         {/* SYSTEM */}
         {activeTab === 'system' && (
           <div>
+            <SectionLabel>Editor Module</SectionLabel>
+            <EditorModuleToggle />
+            <div style={{ height: '16px' }} />
             <SectionLabel>Tools & Actions</SectionLabel>
             <GlassCard focused={focusedItemIdx === 0} onClick={() => { onOpenTypingChallenge(); setFocusedItemIdx(0); }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

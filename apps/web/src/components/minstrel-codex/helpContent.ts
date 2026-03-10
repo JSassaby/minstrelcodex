@@ -55,7 +55,8 @@ export const HELP_TREE: HelpFolder[] = [
 <li><strong>Menu Bar</strong> (top) — Access all commands, settings, and tools.</li>
 <li><strong>Sidebar</strong> (left) — File browser, help, notes, and chapter overview panels live here. Only one sidebar can be open at a time.</li>
 <li><strong>Editor</strong> (centre) — Your writing canvas. Supports rich text formatting, headings, and scene breaks.</li>
-<li><strong>Status Bar</strong> (bottom) — Shows word count, save status, battery, Wi-Fi, and your current writing session stats.</li>
+<li><strong>Status Bar</strong> (bottom) — Shows word count, save status, battery, Wi-Fi, and your current writing session stats. When the Editor Module is enabled, a <strong>✦ EDITOR</strong> indicator appears here — click it to open the Editor Panel.</li>
+<li><strong>Editor Panel</strong> (right) — Optional AI editorial feedback panel. Opens alongside the editor when you request feedback. Enable it in Settings → System.</li>
 </ul>
 `,
       },
@@ -599,6 +600,82 @@ export const HELP_TREE: HelpFolder[] = [
 
 <h3>Daily Writing Stats</h3>
 <p>Your daily word counts are logged to help you maintain writing habits. These feed into the streak and Renown systems.</p>
+`,
+      },
+      {
+        id: 'editor-module',
+        title: 'The Editor Module',
+        content: `
+<h2>The Editor Module</h2>
+<p>The Editor Module is an optional AI editorial feedback companion. It gives you the kind of thoughtful, constructive feedback a professional editor would give — not a grammar checker, not autocomplete. It only runs when you ask for it and leaves zero trace in the UI when disabled.</p>
+
+<h3>Enabling the Module</h3>
+<p>Go to <strong>Settings → System → Editor Module</strong> and toggle "AI Editorial Feedback" on. You'll also need to add at least one AI provider key in <strong>Profile → Providers</strong>.</p>
+
+<h3>Three Ways to Request Feedback</h3>
+<ol>
+<li><strong>Select text</strong> — Highlight any passage in the editor. A small floating "✦ Consult Editor" button appears above your selection. Click it to review just that passage.</li>
+<li><strong>Right-click</strong> — Right-click anywhere in the editor to access "✦ Consult Editor — Selection" (if text is selected) or "✦ Consult Editor — Full Document".</li>
+<li><strong>Keyboard shortcut</strong> — Press <kbd>Ctrl+Shift+E</kbd> to immediately open the Editor Panel for a full document review.</li>
+</ol>
+
+<h3>Status Bar Indicator</h3>
+<p>When the Editor Module is enabled, a subtle <strong>✦ EDITOR</strong> indicator appears in the status bar (teal, right side). Clicking it opens the Editor Panel for a full document review.</p>
+
+<h3>The Context Panel</h3>
+<p>Before requesting feedback you can optionally provide context to guide the editor:</p>
+<ul>
+<li><strong>Scene purpose</strong> — What is this scene trying to achieve?</li>
+<li><strong>POV character</strong> — Whose perspective is this written from?</li>
+<li><strong>Emotional goal</strong> — How should the reader feel after this scene?</li>
+<li><strong>Specific concerns</strong> — Anything particular you want the editor to focus on.</li>
+</ul>
+<p>Genre, audience, and premise are auto-populated from your novel project settings if available.</p>
+
+<h3>Feedback Sections</h3>
+<p>Editorial feedback is organised into collapsible sections:</p>
+<ul>
+<li><strong>✦ Strengths</strong> — 2–4 specific things that are working well</li>
+<li><strong>Clarity & Language</strong> — How clearly ideas are communicated</li>
+<li><strong>Pacing & Tension</strong> — The rhythm and momentum of the prose</li>
+<li><strong>Dialogue</strong> — Only shown when dialogue is present in the text</li>
+<li><strong>Character & Consistency</strong> — Character voice and behaviour</li>
+<li><strong>Emotional Impact</strong> — Whether the scene achieves its emotional intent</li>
+<li><strong>Narrative Purpose</strong> — How well the scene serves the larger story</li>
+<li><strong>✦ Top Suggestions</strong> — The 3 most important actionable changes</li>
+<li><strong>✦ Example Rewrite</strong> — Optional: a rewritten opening paragraph showing suggestions applied (opt-in per request)</li>
+</ul>
+
+<h3>Tone</h3>
+<p>The editor speaks directly but kindly — like a professional human editor, not a bot. It won't rewrite your work unless you ask for the example rewrite. It won't correct grammar pedantically. The goal is insight, not interference.</p>
+`,
+      },
+      {
+        id: 'ai-providers',
+        title: 'AI Providers',
+        content: `
+<h2>AI Providers</h2>
+<p>The Editor Module uses your own AI provider key. You choose which AI service you already use — Minstrel Codex never provides or resells AI access.</p>
+
+<h3>Supported Providers</h3>
+<table>
+<tr><td><strong>Claude (Anthropic)</strong></td><td>Recommended for literary feedback. Nuanced, context-aware, excellent for long-form writing. Get a key at console.anthropic.com.</td></tr>
+<tr><td><strong>ChatGPT (OpenAI)</strong></td><td>Widely used, strong general editorial feedback. Get a key at platform.openai.com/api-keys.</td></tr>
+<tr><td><strong>Gemini (Google)</strong></td><td>Fast and capable, good for shorter selections. Get a key at aistudio.google.com.</td></tr>
+<tr><td><strong>Ollama (local)</strong></td><td>Fully offline — no API key required. Requires Ollama installed and running locally at http://localhost:11434. Your writing never leaves your machine.</td></tr>
+</table>
+
+<h3>Adding Keys</h3>
+<p>Go to <strong>Profile → Providers</strong>. For each cloud provider, paste your API key into the input field and click Save. For Ollama, enter the base URL and the model name you have pulled (e.g. <code>mistral</code>, <code>llama3</code>).</p>
+
+<h3>Switching Providers</h3>
+<p>You can add keys for multiple providers and switch between them at any time using the "Set as active" button in Profile → Providers. The active provider is shown in the Editor Panel footer.</p>
+
+<h3>Security</h3>
+<p>API keys are stored in your browser's localStorage. If you are signed in to Minstrel Codex, keys are also synced to your encrypted profile in Supabase. Keys are never logged, never sent to Minstrel servers, and are only used to make the editorial feedback request directly from your browser to the provider's API via the Supabase edge function.</p>
+
+<h3>Ollama: Fully Offline Writing Feedback</h3>
+<p>If you install Ollama on your computer, you can get editorial feedback with no internet connection and no API costs. Run <code>ollama pull mistral</code> (or any model you prefer) and enter the model name in Profile → Providers. The Editor Module will route all requests through your local Ollama instance.</p>
 `,
       },
     ],

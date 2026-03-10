@@ -29,6 +29,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import AuthModal from '@/components/minstrel-codex/AuthModal';
 import ProfilePage from '@/components/minstrel-codex/ProfilePage';
+import EditorPanel from '@/components/minstrel-codex/EditorPanel';
 import { signOut as authSignOut } from '@/lib/auth';
 import { pullSettings, pushSettings, syncOnChange, flushPendingSync } from '@/lib/settingsSync';
 import { useSyncEngine, GoogleDriveAdapter, db, useWriterProfile, useStreakEngine, useSessionTracker, useXPEngine, getLevelForXP, useChronicleEngine, useNarrativeEngine } from '@minstrelcodex/core';
@@ -221,6 +222,17 @@ export default function MinstrelCodex() {
   const auth = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [profilePageOpen, setProfilePageOpen] = useState(false);
+  const [profilePageTab, setProfilePageTab] = useState('account');
+
+  // Editor Module
+  const [editorModuleEnabled, setEditorModuleEnabled] = useState(() =>
+    localStorage.getItem('minstrel-editor-enabled') === 'true'
+  );
+  const [editorPanelOpen, setEditorPanelOpen] = useState(false);
+  const [editorPanelText, setEditorPanelText] = useState('');
+  const [editorPanelScope, setEditorPanelScope] = useState<'selection' | 'scene' | 'document'>('document');
+  const [selectionText, setSelectionText] = useState('');
+  const [selectionRect, setSelectionRect] = useState<DOMRect | null>(null);
   const getSupabaseToken = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     return session?.access_token ?? null;
@@ -812,6 +824,33 @@ export default function MinstrelCodex() {
     syncOnChange(auth.user?.id ?? null);
   }, [fileStructure.structure, auth.user?.id]);
 
+  // Listen for Editor Module toggle from SettingsPanel
+  useEffect(() => {
+    const handler = () => {
+      setEditorModuleEnabled(localStorage.getItem('minstrel-editor-enabled') === 'true');
+    };
+    window.addEventListener('minstrel-editor-enabled-changed', handler);
+    return () => window.removeEventListener('minstrel-editor-enabled-changed', handler);
+  }, []);
+
+  // Track text selection for floating toolbar
+  useEffect(() => {
+    if (!editorModuleEnabled) return;
+    const handler = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.toString().trim()) {
+        setSelectionText('');
+        setSelectionRect(null);
+        return;
+      }
+      const range = sel.getRangeAt(0);
+      setSelectionText(sel.toString().trim());
+      setSelectionRect(range.getBoundingClientRect());
+    };
+    document.addEventListener('selectionchange', handler);
+    return () => document.removeEventListener('selectionchange', handler);
+  }, [editorModuleEnabled]);
+
   // Apply color filter
   useEffect(() => {
     const filter = a11y.settings.colorFilter;
@@ -1267,6 +1306,17 @@ export default function MinstrelCodex() {
         return;
       }
 
+      // Editor Panel: Ctrl+Shift+E
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'E' || e.key === 'e')) {
+        if (editorModuleEnabled) {
+          e.preventDefault();
+          setEditorPanelText(editorContent);
+          setEditorPanelScope('document');
+          setEditorPanelOpen(true);
+        }
+        return;
+      }
+
       if (e.ctrlKey || e.metaKey) {
         // Ctrl+B/I/U are reserved for text formatting (TipTap handles them)
         if (e.key === 'b' || e.key === 'i' || e.key === 'u') return;
@@ -1290,6 +1340,7 @@ export default function MinstrelCodex() {
     docStorage, fileStructure, theme, editorContent, executeAction, closeModal,
     toggleVoiceInput, toggleTTS, toggleFocusMode,
     chapterOverviewOpen, notesPanelOpen,
+    editorModuleEnabled, editorContent,
   ]);
 
   // Menu key handler
@@ -1838,7 +1889,7 @@ export default function MinstrelCodex() {
           }}
         />
 
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={() => setFileBrowserFocused(false)}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', marginRight: editorPanelOpen ? '340px' : 0, transition: 'margin-right 0.2s' }} onClick={() => setFileBrowserFocused(false)}>
           {activeHelpPageId && helpPanelOpen ? (
             <div
               style={{
@@ -1949,6 +2000,12 @@ export default function MinstrelCodex() {
           onSprintStart={() => setSprintSetupOpen(true)}
           onSprintTogglePause={() => setSprintPaused(prev => !prev)}
           onStatsClick={() => setStatsModalOpen(true)}
+          editorModuleEnabled={editorModuleEnabled}
+          onEditorClick={() => {
+            setEditorPanelText(editorContent);
+            setEditorPanelScope('document');
+            setEditorPanelOpen(true);
+          }}
         />
       )}
 
@@ -2312,11 +2369,63 @@ export default function MinstrelCodex() {
         }}
       />
 
+      {/* Floating selection toolbar (Editor Module) */}
+      {editorModuleEnabled && selectionText && selectionRect && (
+        <div
+          style={{
+            position: 'fixed',
+            top: `${selectionRect.top - 40}px`,
+            left: `${selectionRect.left + selectionRect.width / 2}px`,
+            transform: 'translateX(-50%)',
+            zIndex: 9000,
+            background: '#0d1117',
+            border: '1px solid #1a2540',
+            borderRadius: 0,
+            padding: '5px 10px',
+            display: 'flex',
+            alignItems: 'center',
+            opacity: 1,
+            transition: 'opacity 0.15s',
+            pointerEvents: 'all',
+          }}
+        >
+          <button
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setEditorPanelText(selectionText);
+              setEditorPanelScope('selection');
+              setEditorPanelOpen(true);
+            }}
+            style={{
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: '#c8c8c8', fontFamily: "var(--font-ui, 'Space Grotesk', sans-serif)",
+              fontSize: '12px', padding: 0, display: 'flex', alignItems: 'center', gap: '5px',
+            }}
+          >
+            <span style={{ color: '#4ecdc4' }}>✦</span> Consult Editor
+          </button>
+        </div>
+      )}
+
+      {/* Editor Panel */}
+      <EditorPanel
+        visible={editorPanelOpen}
+        text={editorPanelText}
+        scope={editorPanelScope}
+        onClose={() => setEditorPanelOpen(false)}
+        onOpenProviders={() => {
+          setEditorPanelOpen(false);
+          setProfilePageTab('providers');
+          setProfilePageOpen(true);
+        }}
+      />
+
       {/* Profile Page */}
       <ProfilePage
         visible={profilePageOpen}
         user={auth.user}
-        onClose={() => setProfilePageOpen(false)}
+        defaultTab={profilePageTab as Parameters<typeof ProfilePage>[0]['defaultTab']}
+        onClose={() => { setProfilePageOpen(false); setProfilePageTab('account'); }}
         onOpenSecuritySettings={() => {
           setProfilePageOpen(false);
           setSettingsPanelOpen(true);
@@ -2575,7 +2684,7 @@ export default function MinstrelCodex() {
             fontFamily: "'Courier Prime', 'Courier New', monospace",
             color: 'var(--terminal-text)',
             zIndex: 10000,
-            boxShadow: '0 0 20px var(--terminal-glow)',
+            boxShadow: 'none',
             animation: 'fadeIn 0.3s ease',
             maxWidth: '400px',
           }}
