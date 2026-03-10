@@ -144,6 +144,7 @@ export default function MinstrelCodex() {
   const [novelTitle, setNovelTitle] = useState('');
   const [novelWizardOpen, setNovelWizardOpen] = useState(false);
   const [projectSettingsOpen, setProjectSettingsOpen] = useState(false);
+  const [projectSettingsTitle, setProjectSettingsTitle] = useState<string | null>(null);
 
   // Save version
 
@@ -950,9 +951,16 @@ export default function MinstrelCodex() {
       case 'newnovel':
         setNovelWizardOpen(true);
         break;
-      case 'projectsettings':
-        setProjectSettingsOpen(true);
+      case 'projectsettings': {
+        const activeProject = localStorage.getItem('minstrel-active-project');
+        if (activeProject) {
+          setProjectSettingsTitle(activeProject);
+          setProjectSettingsOpen(true);
+        } else {
+          showToast('Select a project folder first');
+        }
         break;
+      }
       case 'saveversion': {
         const novels = fileStructure.getNovelProjects();
         if (novels.length === 0) {
@@ -1735,6 +1743,10 @@ export default function MinstrelCodex() {
           getFolders={() => fileStructure.getFolders()}
           onSyncGoogleDrive={syncToGoogleDrive}
           onSyncICloud={() => showToast('iCloud sync requires Apple CloudKit — coming soon.')}
+          onOpenProjectSettings={(folderName) => {
+            setProjectSettingsTitle(folderName);
+            setProjectSettingsOpen(true);
+          }}
         />
 
         <HelpPanel
@@ -2394,11 +2406,13 @@ export default function MinstrelCodex() {
       <NovelProjectWizard
         visible={projectSettingsOpen}
         mode="settings"
-        onClose={() => setProjectSettingsOpen(false)}
+        projectTitle={projectSettingsTitle ?? undefined}
+        onClose={() => { setProjectSettingsOpen(false); setProjectSettingsTitle(null); }}
         onCreate={() => {}}
         onLinkStorage={(location) => {
           if (location === 'google-drive') {
             setProjectSettingsOpen(false);
+            setProjectSettingsTitle(null);
             setActiveModal('gdrive');
           }
         }}

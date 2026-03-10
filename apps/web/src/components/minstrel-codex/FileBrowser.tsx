@@ -82,6 +82,7 @@ export interface FileBrowserProps {
   getFolders: () => { name: string; path: string[] }[];
   onSyncGoogleDrive?: () => void;
   onSyncICloud?: () => void;
+  onOpenProjectSettings?: (folderName: string) => void;
 }
 
 type InputMode = 'none' | 'search' | 'rename' | 'new-folder' | 'new-file' | 'move';
@@ -152,6 +153,7 @@ export default function FileBrowser({
   getFolders,
   onSyncGoogleDrive,
   onSyncICloud,
+  onOpenProjectSettings,
 }: FileBrowserProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [inputMode, setInputMode] = useState<InputMode>('none');
@@ -526,6 +528,41 @@ export default function FileBrowser({
                   {label}
                 </button>
               ))}
+              {/* Project Settings — only when a top-level folder is selected */}
+              {(() => {
+                const sel = filteredItems[selectedIndex];
+                const isTopLevel = sel?.type === 'folder' && sel?.depth === 0 && sel?.name !== 'Deleted';
+                if (!isTopLevel || !onOpenProjectSettings) return null;
+                return (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActionsMenuOpen(false);
+                      onOpenProjectSettings(sel.name);
+                    }}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      padding: '8px 12px',
+                      background: 'transparent',
+                      border: 'none',
+                      borderTop: DT.BORDERS.subtle,
+                      borderRadius: DT.BORDER_RADIUS.dropdown,
+                      color: 'var(--terminal-text)',
+                      fontFamily: uiFont,
+                      fontSize: '11px',
+                      fontWeight: 400,
+                      letterSpacing: '0.04em',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = DT.COLORS.background.cardHover; (e.currentTarget as HTMLElement).style.color = 'var(--terminal-accent)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--terminal-text)'; }}
+                  >
+                    ⚙ Project Settings
+                  </button>
+                );
+              })()}
               {onSyncGoogleDrive && (
                 <button
                   onClick={(e) => { e.stopPropagation(); setActionsMenuOpen(false); onSyncGoogleDrive!(); }}
@@ -823,13 +860,21 @@ export default function FileBrowser({
                 }}
                 onClick={() => {
                   setSelectedIndex(i);
-                  if (isFolder) onToggleFolder(item.path);
-                  else onOpenFile(item.docKey || item.name);
+                  if (isFolder) {
+                    // Track the active project when a top-level folder is clicked
+                    if (item.depth === 0) {
+                      localStorage.setItem('minstrel-active-project', item.name);
+                    }
+                    onToggleFolder(item.path);
+                  } else {
+                    onOpenFile(item.docKey || item.name);
+                  }
                 }}
                 onContextMenu={(e) => {
                   const isDeletedFolder = item.name === 'Deleted' && item.type === 'folder' && item.path.length === 1;
                   const isInDeleted = item.path[0] === 'Deleted' && !isDeletedFolder;
-                  if (!isDeletedFolder && !isInDeleted) return;
+                  const isTopLevelFolder = item.type === 'folder' && item.depth === 0;
+                  if (!isDeletedFolder && !isInDeleted && !isTopLevelFolder) return;
                   e.preventDefault();
                   setSelectedIndex(i);
                   setContextMenu({ x: e.clientX, y: e.clientY, item });
@@ -939,37 +984,68 @@ export default function FileBrowser({
             fontFamily: uiFont,
           }}
         >
-          <button
-            style={{
-              display: 'block',
-              width: '100%',
-              padding: '9px 14px',
-              background: 'transparent',
-              border: 'none',
-              color: '#e05c5c',
-              fontFamily: uiFont,
-              fontSize: '11px',
-              fontWeight: 600,
-              letterSpacing: '0.07em',
-              textTransform: 'uppercase',
-              textAlign: 'left',
-              cursor: 'pointer',
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(224,92,92,0.12)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-            onClick={() => {
-              const isDeletedFolder = contextMenu.item.name === 'Deleted' && contextMenu.item.type === 'folder';
-              setConfirmAction({
-                type: isDeletedFolder ? 'empty-bin' : 'delete-permanently',
-                item: contextMenu.item,
-              });
-              setContextMenu(null);
-            }}
-          >
-            {contextMenu.item.name === 'Deleted' && contextMenu.item.type === 'folder'
-              ? 'Empty Bin'
-              : 'Delete Permanently'}
-          </button>
+          {/* Project Settings — top-level non-Deleted folders */}
+          {contextMenu.item.type === 'folder' && contextMenu.item.depth === 0 && contextMenu.item.name !== 'Deleted' && (
+            <button
+              style={{
+                display: 'block',
+                width: '100%',
+                padding: '9px 14px',
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--terminal-text)',
+                fontFamily: uiFont,
+                fontSize: '11px',
+                fontWeight: 500,
+                letterSpacing: '0.07em',
+                textTransform: 'uppercase',
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = DT.COLORS.background.cardHover; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+              onClick={() => {
+                onOpenProjectSettings?.(contextMenu.item.name);
+                setContextMenu(null);
+              }}
+            >
+              Project Settings
+            </button>
+          )}
+          {/* Empty Bin / Delete Permanently — Deleted folder or items inside it */}
+          {(contextMenu.item.name === 'Deleted' || contextMenu.item.path[0] === 'Deleted') && (
+            <button
+              style={{
+                display: 'block',
+                width: '100%',
+                padding: '9px 14px',
+                background: 'transparent',
+                border: 'none',
+                color: '#e05c5c',
+                fontFamily: uiFont,
+                fontSize: '11px',
+                fontWeight: 600,
+                letterSpacing: '0.07em',
+                textTransform: 'uppercase',
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(224,92,92,0.12)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+              onClick={() => {
+                const isDeletedFolder = contextMenu.item.name === 'Deleted' && contextMenu.item.type === 'folder';
+                setConfirmAction({
+                  type: isDeletedFolder ? 'empty-bin' : 'delete-permanently',
+                  item: contextMenu.item,
+                });
+                setContextMenu(null);
+              }}
+            >
+              {contextMenu.item.name === 'Deleted' && contextMenu.item.type === 'folder'
+                ? 'Empty Bin'
+                : 'Delete Permanently'}
+            </button>
+          )}
         </div>
       )}
 

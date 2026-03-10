@@ -33,6 +33,8 @@ interface Props {
   onCreate:         (config: NovelProjectConfig) => void;
   onLinkStorage:    (location: StorageLocation) => void;
   mode?:            'create' | 'settings';
+  /** In settings mode, the project whose settings to load/save. */
+  projectTitle?:    string;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -184,7 +186,7 @@ type TreeNode = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function NovelProjectWizard({
-  visible, onClose, onCreate, onLinkStorage, mode = 'create',
+  visible, onClose, onCreate, onLinkStorage, mode = 'create', projectTitle,
 }: Props) {
   const [title,              setTitle]              = useState('');
   const [abbreviation,       setAbbreviation]       = useState('');
@@ -234,8 +236,10 @@ export default function NovelProjectWizard({
   useEffect(() => {
     if (!visible) return;
     if (mode === 'settings') {
-      const saved = JSON.parse(localStorage.getItem('minstrel-project-settings') || '{}');
-      setTitle(saved.title || '');
+      const key = `minstrel-project-settings:${projectTitle || ''}`;
+      const saved = JSON.parse(localStorage.getItem(key) || '{}');
+      // Pre-fill title from projectTitle prop; fall back to saved value
+      setTitle(projectTitle || saved.title || '');
       setAbbreviation(saved.abbreviation || '');
       setAbrManual(!!saved.abbreviation);
       setChapterCount(saved.chapterCount || 10);
@@ -264,7 +268,7 @@ export default function NovelProjectWizard({
       setIncludeWorldbuilding(false); setIncludeFrontMatter(false);
       setStorageLocation('local'); setCloudSyncMode('direct');
     }
-  }, [visible, mode]);
+  }, [visible, mode, projectTitle]);
 
   const { googleToken } = useGoogleToken();
   const isGoogleConnected = !!googleToken;
@@ -297,9 +301,12 @@ export default function NovelProjectWizard({
   const handleCreate = () => {
     if (!canCreate) return;
     const config = buildConfig();
-    // Persist settings
-    const existing = JSON.parse(localStorage.getItem('minstrel-project-settings') || '{}');
-    localStorage.setItem('minstrel-project-settings', JSON.stringify({
+    // Namespaced key: per-project settings
+    const storageKey = mode === 'settings'
+      ? `minstrel-project-settings:${projectTitle || config.title}`
+      : `minstrel-project-settings:${config.title}`;
+    const existing = JSON.parse(localStorage.getItem(storageKey) || '{}');
+    localStorage.setItem(storageKey, JSON.stringify({
       ...config,
       fileNamingFormat: config.namingFormat,
       wordTarget:       config.targetWordCount,
@@ -459,12 +466,20 @@ export default function NovelProjectWizard({
               <input
                 type="text"
                 value={title}
-                onChange={e => setTitle(e.target.value)}
+                onChange={e => { if (!isSettings) setTitle(e.target.value); }}
                 placeholder="Enter your novel title..."
-                autoFocus
-                style={INPUT_STYLE}
+                autoFocus={!isSettings}
+                readOnly={isSettings}
+                style={{
+                  ...INPUT_STYLE,
+                  ...(isSettings ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
+                }}
               />
-              <div style={HINT_STYLE}>Working title — you can change it later.</div>
+              <div style={HINT_STYLE}>
+                {isSettings
+                  ? 'Project title cannot be changed after creation.'
+                  : 'Working title — you can change it later.'}
+              </div>
             </div>
             <div>
               <label style={LABEL_STYLE}>Abbreviation</label>
