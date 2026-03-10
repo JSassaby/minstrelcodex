@@ -492,20 +492,68 @@ export default function FileBrowser({
               }}
             >
               {([
-                { key: 'Enter', label: 'Open' },
-                { key: 'n',     label: 'New File' },
-                { key: 'N',     label: 'New Folder', shift: true },
-                { key: 'r',     label: 'Rename' },
-                { key: 'm',     label: 'Move' },
-                { key: 'd',     label: 'Delete' },
-                { key: '/',     label: 'Search' },
-              ] as { key: string; label: string; shift?: boolean }[]).map(({ key, label, shift }) => (
+                {
+                  label: 'Open',
+                  action: () => {
+                    const item = filteredItems[selectedIndex];
+                    if (!item) return;
+                    if (item.type === 'folder') onToggleFolder(item.path);
+                    else onOpenFile(item.docKey || item.name);
+                  },
+                },
+                {
+                  label: 'New File',
+                  action: () => { setInputMode('new-file'); setInputValue(''); },
+                },
+                {
+                  label: 'New Folder',
+                  action: () => { setInputMode('new-folder'); setInputValue(''); },
+                },
+                {
+                  label: 'Rename',
+                  action: () => {
+                    const item = filteredItems[selectedIndex];
+                    if (item?.type === 'file') { setInputMode('rename'); setInputValue(item.name); }
+                  },
+                },
+                {
+                  label: 'Move',
+                  action: () => {
+                    const item = filteredItems[selectedIndex];
+                    if (item?.type === 'file') { setInputMode('move'); setMoveTargetIdx(0); }
+                  },
+                },
+                {
+                  label: 'Delete',
+                  action: () => {
+                    const item = filteredItems[selectedIndex];
+                    if (!item) return;
+                    const isInDeleted = item.path[0] === 'Deleted';
+                    if (isInDeleted) {
+                      const key = item.type === 'file' ? item.name : item.path.slice(1).join('/');
+                      onPermanentlyDeleteItem(key);
+                      showStatus('Permanently deleted');
+                    } else if (item.type === 'file') {
+                      onDeleteFile(item.name);
+                      showStatus('Moved to Recycle Bin');
+                    } else {
+                      onDeleteFolder(item.path);
+                      showStatus('Folder moved to Recycle Bin');
+                    }
+                    setSelectedIndex(prev => Math.max(0, prev - 1));
+                  },
+                },
+                {
+                  label: 'Search',
+                  action: () => { setInputMode('search'); setSearchQuery(''); },
+                },
+              ]).map(({ label, action }) => (
                 <button
-                  key={key + label}
+                  key={label}
                   onClick={(e) => {
                     e.stopPropagation();
                     setActionsMenuOpen(false);
-                    window.dispatchEvent(new KeyboardEvent('keydown', { key, shiftKey: !!shift, bubbles: true }));
+                    action();
                   }}
                   style={{
                     display: 'block',
