@@ -23,7 +23,9 @@ export function useFileStructure() {
       const row = await db.fileStructure.get('root');
       if (row?.data) {
         try {
-          setStructure(JSON.parse(row.data) as FileStructure);
+          const fs = JSON.parse(row.data) as FileStructure;
+          ensurePerProjectRecycleBins(fs);
+          setStructure(fs);
         } catch {
           // corrupt data — keep default
         }
@@ -33,6 +35,7 @@ export function useFileStructure() {
         if (saved) {
           try {
             const fs = JSON.parse(saved) as FileStructure;
+            ensurePerProjectRecycleBins(fs);
             setStructure(fs);
             saveFs(fs);
           } catch {
@@ -51,7 +54,12 @@ export function useFileStructure() {
       const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
       if (!next.root.children) next.root.children = {};
       if (next.root.children[name]) return prev;
-      next.root.children[name] = { type: 'folder', name, children: {}, collapsed: false };
+      next.root.children[name] = {
+        type: 'folder', name, collapsed: false,
+        children: {
+          'Recycle Bin': { type: 'folder', name: 'Recycle Bin', children: {}, collapsed: true },
+        },
+      };
       saveFs(next);
       return next;
     });
@@ -127,7 +135,7 @@ export function useFileStructure() {
     });
   }, []);
 
-  const deleteFile = useCallback((filename: string) => {
+  const deleteFile = useCallback((filename: string, fromPath?: string[]) => {
     setStructure(prev => {
       const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
       const node = findFile(next.root, filename);
@@ -135,10 +143,22 @@ export function useFileStructure() {
       const nodeCopy = JSON.parse(JSON.stringify(node));
       removeFromTree(next.root, filename);
       if (!next.root.children) next.root.children = {};
-      if (!next.root.children['Deleted']) {
-        next.root.children['Deleted'] = { type: 'folder', name: 'Deleted', children: {}, collapsed: true };
+
+      // Move to the owning project's Recycle Bin, or root Recycle Bin
+      const projectName = fromPath?.[0];
+      const projectNode = projectName ? next.root.children[projectName] : null;
+      if (projectNode?.type === 'folder') {
+        if (!projectNode.children) projectNode.children = {};
+        if (!projectNode.children['Recycle Bin']) {
+          projectNode.children['Recycle Bin'] = { type: 'folder', name: 'Recycle Bin', children: {}, collapsed: true };
+        }
+        projectNode.children['Recycle Bin'].children![filename] = nodeCopy;
+      } else {
+        if (!next.root.children['Recycle Bin']) {
+          next.root.children['Recycle Bin'] = { type: 'folder', name: 'Recycle Bin', children: {}, collapsed: true };
+        }
+        next.root.children['Recycle Bin'].children![filename] = nodeCopy;
       }
-      next.root.children['Deleted'].children![filename] = nodeCopy;
       saveFs(next);
       return next;
     });
@@ -158,11 +178,23 @@ export function useFileStructure() {
       const folderCopy = JSON.parse(JSON.stringify(parent.children[folderName]));
       delete parent.children[folderName];
       if (!next.root.children) next.root.children = {};
-      if (!next.root.children['Deleted']) {
-        next.root.children['Deleted'] = { type: 'folder', name: 'Deleted', children: {}, collapsed: true };
-      }
       const key = folderPath.join('/');
-      next.root.children['Deleted'].children![key] = folderCopy;
+
+      // Move to the owning project's Recycle Bin (depth > 1), or root Recycle Bin
+      const projectName = folderPath.length > 1 ? folderPath[0] : null;
+      const projectNode = projectName ? next.root.children[projectName] : null;
+      if (projectNode?.type === 'folder') {
+        if (!projectNode.children) projectNode.children = {};
+        if (!projectNode.children['Recycle Bin']) {
+          projectNode.children['Recycle Bin'] = { type: 'folder', name: 'Recycle Bin', children: {}, collapsed: true };
+        }
+        projectNode.children['Recycle Bin'].children![key] = folderCopy;
+      } else {
+        if (!next.root.children['Recycle Bin']) {
+          next.root.children['Recycle Bin'] = { type: 'folder', name: 'Recycle Bin', children: {}, collapsed: true };
+        }
+        next.root.children['Recycle Bin'].children![key] = folderCopy;
+      }
       saveFs(next);
       return next;
     });
@@ -334,6 +366,7 @@ export function useFileStructure() {
 
     projectChildren['Versions'] = { type: 'folder', name: 'Versions', collapsed: false, children: {} };
     projectChildren['Snapshots'] = { type: 'folder', name: 'Snapshots', collapsed: false, children: {} };
+    projectChildren['Recycle Bin'] = { type: 'folder', name: 'Recycle Bin', children: {}, collapsed: true };
 
     const vhKey = `${title}/Version History - ${abr}.txt`;
     const vhContent = `VERSION HISTORY - ${title}\nAbbreviation: ${abr}\nCreated: ${now}\n\nAdd notes about each version here.\n`;
@@ -466,25 +499,45 @@ export function useFileStructure() {
       .map(([name]) => name);
   }, [structure]);
 
-  const restoreFromDeleted = useCallback((itemName: string) => {
+  // itemPath = FlatItem.path e.g. ['MyNovel', 'Recycle Bin', 'filename.txt']
+  const restoreFromDeleted = useCallback((itemPath: string[]) => {
     setStructure(prev => {
       const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
-      const deleted = next.root.children?.['Deleted'];
-      if (!deleted?.children?.[itemName]) return prev;
-      const item = deleted.children[itemName];
-      delete deleted.children[itemName];
-      if (!next.root.children) next.root.children = {};
-      next.root.children[itemName] = item;
+      const binIdx = itemPath.indexOf('Recycle Bin');
+      if (binIdx === -1 || binIdx >= itemPath.length - 1) return prev;
+      const itemKey = itemPath[itemPath.length - 1];
+
+      // Navigate to the Recycle Bin
+      let binNode: FileNode = next.root;
+      for (let i = 0; i <= binIdx; i++) {
+        if (!binNode.children?.[itemPath[i]]) return prev;
+        binNode = binNode.children[itemPath[i]];
+      }
+      if (!binNode.children?.[itemKey]) return prev;
+      const item = JSON.parse(JSON.stringify(binNode.children[itemKey]));
+      delete binNode.children[itemKey];
+
+      // Restore to the project root (parent of the Recycle Bin) or tree root
+      let restoreTarget: FileNode = next.root;
+      for (let i = 0; i < binIdx; i++) {
+        if (!restoreTarget.children?.[itemPath[i]]) return prev;
+        restoreTarget = restoreTarget.children[itemPath[i]];
+      }
+      if (!restoreTarget.children) restoreTarget.children = {};
+      restoreTarget.children[itemKey] = item;
       saveFs(next);
       return next;
     });
   }, []);
 
-  // Collect doc IDs from current structure before the setStructure call
-  // so the callback remains a pure prev → next transform.
-  const emptyDeleted = useCallback(() => {
-    const deleted = structure.root.children?.['Deleted'];
-    if (!deleted?.children) return;
+  // binPath = FlatItem.path of the Recycle Bin folder e.g. ['MyNovel', 'Recycle Bin']
+  const emptyDeleted = useCallback((binPath: string[]) => {
+    let binNode: FileNode = structure.root;
+    for (const p of binPath) {
+      if (!binNode.children?.[p]) return;
+      binNode = binNode.children[p];
+    }
+    if (!binNode.children) return;
 
     const docIds: string[] = [];
     const collectFileIds = (node: FileNode) => {
@@ -494,10 +547,9 @@ export function useFileStructure() {
         if (item.type === 'folder') collectFileIds(item);
       }
     };
-    collectFileIds(deleted);
+    collectFileIds(binNode);
 
     docIds.forEach(id => { delete docsCache[id]; });
-    // Mark as 'deleted' so sync engine can trash them from Drive
     Promise.all(
       docIds.map(id =>
         db.documents.get(id).then(doc => {
@@ -512,9 +564,12 @@ export function useFileStructure() {
 
     setStructure(prev => {
       const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
-      const del = next.root.children?.['Deleted'];
-      if (!del?.children) return prev;
-      del.children = {};
+      let node: FileNode = next.root;
+      for (const p of binPath) {
+        if (!node.children?.[p]) return prev;
+        node = node.children[p];
+      }
+      node.children = {};
       saveFs(next);
       return next;
     });
@@ -549,13 +604,17 @@ export function useFileStructure() {
     });
   }, []);
 
-  const permanentlyDeleteItem = useCallback((itemKey: string) => {
-    const deleted = structure.root.children?.['Deleted'];
-    if (!deleted?.children?.[itemKey]) return;
+  // itemKey = tree key inside the bin; binPath = e.g. ['MyNovel', 'Recycle Bin']
+  const permanentlyDeleteItem = useCallback((itemKey: string, binPath: string[]) => {
+    let binNode: FileNode = structure.root;
+    for (const p of binPath) {
+      if (!binNode.children?.[p]) return;
+      binNode = binNode.children[p];
+    }
+    if (!binNode.children?.[itemKey]) return;
 
-    // Collect doc IDs from current structure before the state update.
     const docIds: string[] = [];
-    const item = deleted.children[itemKey];
+    const item = binNode.children[itemKey];
     if (item.type === 'file') {
       docIds.push(item.name);
     } else {
@@ -569,15 +628,12 @@ export function useFileStructure() {
       collectIds(item);
     }
     docIds.forEach(id => { delete docsCache[id]; });
-    // Mark as 'deleted' so the sync engine can remove them from Drive,
-    // then the sync engine will purge the tombstones after trashing remotely.
     Promise.all(
       docIds.map(id =>
         db.documents.get(id).then(doc => {
           if (doc) {
             return db.documents.put({ ...doc, syncStatus: 'deleted' });
           } else {
-            // No existing record — create a tombstone
             return db.documents.put({ id, content: '', lastModified: new Date().toISOString(), syncStatus: 'deleted' });
           }
         })
@@ -586,9 +642,13 @@ export function useFileStructure() {
 
     setStructure(prev => {
       const next = JSON.parse(JSON.stringify(prev)) as FileStructure;
-      const del = next.root.children?.['Deleted'];
-      if (!del?.children?.[itemKey]) return prev;
-      delete del.children[itemKey];
+      let node: FileNode = next.root;
+      for (const p of binPath) {
+        if (!node.children?.[p]) return prev;
+        node = node.children[p];
+      }
+      if (!node.children?.[itemKey]) return prev;
+      delete node.children[itemKey];
       saveFs(next);
       return next;
     });
@@ -652,6 +712,19 @@ export function useFileStructure() {
     restoreFromDeleted, emptyDeleted, reorderItem, permanentlyDeleteItem,
     mergeRemotePaths,
   };
+}
+
+// ── Migration helper ──────────────────────────────────────────────────────────
+
+function ensurePerProjectRecycleBins(fs: FileStructure): void {
+  for (const [name, node] of Object.entries(fs.root.children || {})) {
+    if (node.type === 'folder' && name !== 'Recycle Bin' && name !== 'Deleted') {
+      if (!node.children) node.children = {};
+      if (!node.children['Recycle Bin']) {
+        node.children['Recycle Bin'] = { type: 'folder', name: 'Recycle Bin', children: {}, collapsed: true };
+      }
+    }
+  }
 }
 
 // ── Pure tree helpers ─────────────────────────────────────────────────────────

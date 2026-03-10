@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronRight, ChevronDown } from 'lucide-react';
+import { ChevronRight, ChevronDown, Book, BookOpen } from 'lucide-react';
 import { DESIGN_TOKENS as DT } from '@minstrelcodex/core';
 import type { FileNode, DocumentData } from '@minstrelcodex/core';
 
@@ -69,16 +69,16 @@ export interface FileBrowserProps {
   onCreateFile: (filename: string, folderPath: string[]) => void;
   onNewFolder: () => void;
   onCreateFolder: (name: string) => void;
-  onDeleteFile: (filename: string) => void;
+  onDeleteFile: (filename: string, fromPath: string[]) => void;
   onDeleteFolder: (folderPath: string[]) => void;
   onRenameFile: (oldName: string, newName: string) => void;
   onMoveFile: (filename: string, fromPath: string[], toPath: string[]) => void;
   onMoveFolder: (folderName: string, fromPath: string[], toPath: string[]) => void;
   onReorderItem: (itemName: string, parentPath: string[], targetName: string, position: 'before' | 'after') => void;
   onToggleFolder: (path: string[]) => void;
-  onRestoreFromDeleted: (itemName: string) => void;
-  onPermanentlyDeleteItem: (itemKey: string) => void;
-  onEmptyDeleted: () => void;
+  onRestoreFromDeleted: (itemPath: string[]) => void;
+  onPermanentlyDeleteItem: (itemKey: string, binPath: string[]) => void;
+  onEmptyDeleted: (binPath: string[]) => void;
   onFocus: () => void;
   getFolders: () => { name: string; path: string[] }[];
   onRename?: (itemName: string) => void;
@@ -99,21 +99,24 @@ interface FlatItem {
   path: string[];
   depth: number;
   collapsed?: boolean;
+  childCount?: number; // only set for Recycle Bin folders
 }
 
 function flattenTree(node: FileNode, path: string[] = [], depth: number = 0): FlatItem[] {
   const result: FlatItem[] = [];
   const children = node.children || {};
 
+  // Skip legacy global Deleted folder
+  const childKeys = Object.keys(children).filter(k => k !== 'Deleted');
+
   // Use childOrder if available, otherwise sort folders first then alphabetically
   let keys: string[];
   if (node.childOrder && node.childOrder.length > 0) {
-    // Start with ordered keys, then append any missing ones
-    const ordered = node.childOrder.filter(k => k in children);
-    const remaining = Object.keys(children).filter(k => !ordered.includes(k));
+    const ordered = node.childOrder.filter(k => childKeys.includes(k) && k !== 'Recycle Bin');
+    const remaining = childKeys.filter(k => !ordered.includes(k) && k !== 'Recycle Bin');
     keys = [...ordered, ...remaining];
   } else {
-    keys = Object.keys(children).sort((a, b) => {
+    keys = childKeys.filter(k => k !== 'Recycle Bin').sort((a, b) => {
       const aFolder = children[a].type === 'folder';
       const bFolder = children[b].type === 'folder';
       if (aFolder && !bFolder) return -1;
@@ -121,11 +124,16 @@ function flattenTree(node: FileNode, path: string[] = [], depth: number = 0): Fl
       return a.localeCompare(b);
     });
   }
+  // Always put Recycle Bin last
+  if ('Recycle Bin' in children) keys.push('Recycle Bin');
 
   for (const name of keys) {
     const item = children[name];
     const itemPath = [...path, name];
-    result.push({ name, docKey: item.type === 'file' ? item.name : undefined, type: item.type, path: itemPath, depth, collapsed: item.collapsed });
+    const childCount = name === 'Recycle Bin' && item.type === 'folder'
+      ? Object.keys(item.children || {}).length
+      : undefined;
+    result.push({ name, docKey: item.type === 'file' ? item.name : undefined, type: item.type, path: itemPath, depth, collapsed: item.collapsed, childCount });
     if (item.type === 'folder' && !item.collapsed) {
       result.push(...flattenTree(item, itemPath, depth + 1));
     }
@@ -362,18 +370,22 @@ export default function FileBrowser({
       } else if (e.key === 'd' || e.key === 'D') {
         const item = filteredItems[selectedIndex];
         if (item) {
-          const isInDeleted = item.path[0] === 'Deleted';
-          if (isInDeleted) {
-            // Permanently delete items already in Deleted folder
-            const key = item.type === 'file' ? item.name : item.path.slice(1).join('/');
-            onPermanentlyDeleteItem(key);
+          const isRecycleBin = item.name === 'Recycle Bin' && item.type === 'folder';
+          const isInRecycleBin = !isRecycleBin && item.path.includes('Recycle Bin');
+          if (isInRecycleBin) {
+            // Permanently delete items already in Recycle Bin
+            const binPath = item.path.slice(0, item.path.lastIndexOf('Recycle Bin') + 1);
+            const itemKey = item.path[item.path.lastIndexOf('Recycle Bin') + 1];
+            onPermanentlyDeleteItem(itemKey, binPath);
             showStatus('Permanently deleted');
-          } else if (item.type === 'file') {
-            onDeleteFile(item.name);
-            showStatus('Moved to Recycle Bin');
-          } else {
-            onDeleteFolder(item.path);
-            showStatus('Folder moved to Recycle Bin');
+          } else if (!isRecycleBin) {
+            if (item.type === 'file') {
+              onDeleteFile(item.name, item.path);
+              showStatus('Moved to Recycle Bin');
+            } else {
+              onDeleteFolder(item.path);
+              showStatus('Folder moved to Recycle Bin');
+            }
           }
           setSelectedIndex(prev => Math.max(0, prev - 1));
         }
@@ -394,17 +406,16 @@ export default function FileBrowser({
         e.preventDefault();
       } else if (e.key === 'u' || e.key === 'U') {
         const item = filteredItems[selectedIndex];
-        if (item && item.path[0] === 'Deleted') {
-          const restoreName = item.type === 'folder' ? item.path[1] : item.name;
-          onRestoreFromDeleted(restoreName);
+        if (item && item.path.includes('Recycle Bin') && item.name !== 'Recycle Bin') {
+          onRestoreFromDeleted(item.path);
           showStatus(`Restored`);
           setSelectedIndex(prev => Math.max(0, prev - 1));
         }
         e.preventDefault();
       } else if (e.key === 'e' || e.key === 'E') {
         const item = filteredItems[selectedIndex];
-        if (item && item.path[0] === 'Deleted') {
-          onEmptyDeleted();
+        if (item?.name === 'Recycle Bin' && item.type === 'folder') {
+          onEmptyDeleted(item.path);
           showStatus('Recycle Bin emptied');
         }
         e.preventDefault();
@@ -547,17 +558,22 @@ export default function FileBrowser({
                     const item = filteredItems[selectedIndex];
                     if (!item) return;
                     onDelete?.(item.name);
-                    const isInDeleted = item.path[0] === 'Deleted';
-                    if (isInDeleted) {
-                      const key = item.type === 'file' ? item.name : item.path.slice(1).join('/');
-                      onPermanentlyDeleteItem(key);
+                    const rcBin = item.name === 'Recycle Bin' && item.type === 'folder';
+                    const inBin = !rcBin && item.path.includes('Recycle Bin');
+                    if (inBin) {
+                      const binIdx = item.path.lastIndexOf('Recycle Bin');
+                      const binPath = item.path.slice(0, binIdx + 1);
+                      const itemKey = item.path[binIdx + 1] ?? item.name;
+                      onPermanentlyDeleteItem(itemKey, binPath);
                       showStatus('Permanently deleted');
-                    } else if (item.type === 'file') {
-                      onDeleteFile(item.name);
-                      showStatus('Moved to Recycle Bin');
-                    } else {
-                      onDeleteFolder(item.path);
-                      showStatus('Folder moved to Recycle Bin');
+                    } else if (!rcBin) {
+                      if (item.type === 'file') {
+                        onDeleteFile(item.name, item.path);
+                        showStatus('Moved to Recycle Bin');
+                      } else {
+                        onDeleteFolder(item.path);
+                        showStatus('Folder moved to Recycle Bin');
+                      }
                     }
                     setSelectedIndex(prev => Math.max(0, prev - 1));
                   },
@@ -782,7 +798,8 @@ export default function FileBrowser({
               : doc?.content;
             const words = liveContent ? liveContent.replace(/<[^>]*>/g, ' ').split(/\s+/).filter(Boolean).length : 0;
             const displayName = item.name.includes('/') ? item.name.split('/').pop() || item.name : item.name;
-            const isDeleted = item.path[0] === 'Deleted';
+            const isRecycleBin = item.name === 'Recycle Bin' && item.type === 'folder';
+            const isInRecycleBin = !isRecycleBin && item.path.includes('Recycle Bin');
             const isDropTarget = isFolder && dropTargetPath !== null && dropTargetPath.join('/') === item.path.join('/');
             const showDropBefore = dropIndicator?.index === i && dropIndicator.position === 'before';
             const showDropAfter = dropIndicator?.index === i && dropIndicator.position === 'after';
@@ -938,10 +955,10 @@ export default function FileBrowser({
                   }
                 }}
                 onContextMenu={(e) => {
-                  const isDeletedFolder = item.name === 'Deleted' && item.type === 'folder' && item.path.length === 1;
-                  const isInDeleted = item.path[0] === 'Deleted' && !isDeletedFolder;
-                  const isTopLevelFolder = item.type === 'folder' && item.depth === 0;
-                  if (!isDeletedFolder && !isInDeleted && !isTopLevelFolder) return;
+                  const rcBin = item.name === 'Recycle Bin' && item.type === 'folder';
+                  const inBin = !rcBin && item.path.includes('Recycle Bin');
+                  const topLevel = item.type === 'folder' && item.depth === 0 && item.name !== 'Recycle Bin';
+                  if (!rcBin && !inBin && !topLevel) return;
                   e.preventDefault();
                   setSelectedIndex(i);
                   setContextMenu({ x: e.clientX, y: e.clientY, item });
@@ -958,7 +975,7 @@ export default function FileBrowser({
                   gap: '7px',
                   fontSize: '12px',
                   fontFamily: uiFont,
-                  opacity: dragState && dragState.itemPath.join('/') === item.path.join('/') ? 0.35 : (isDeleted && !isFocused ? 0.4 : 1),
+                  opacity: dragState && dragState.itemPath.join('/') === item.path.join('/') ? 0.35 : (isRecycleBin && (item.childCount ?? 0) === 0 && !isFocused ? 0.4 : isInRecycleBin && !isFocused ? 0.4 : 1),
                   transition: 'background 0.12s, opacity 0.12s',
                   borderLeft: isFocused ? '3px solid var(--terminal-accent)' : '3px solid transparent',
                   borderRadius: '0 8px 8px 0',
@@ -993,10 +1010,20 @@ export default function FileBrowser({
                 )}
                 {!isFolder && <span style={{ width: '11px', flexShrink: 0 }} />}
 
-                <span style={{ fontSize: '15px', lineHeight: 1, flexShrink: 0 }}>
-                  {isFolder
-                    ? (item.name === 'Deleted' ? '🗑️' : '📚')
-                    : '🗒️'}
+                <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                  {isFolder ? (
+                    isRecycleBin ? (
+                      <span style={{ fontSize: '14px', lineHeight: 1 }}>🗑️</span>
+                    ) : item.depth === 0 ? (
+                      item.collapsed
+                        ? <Book size={14} color="#6b9fd4" style={{ verticalAlign: 'middle', marginRight: 0, flexShrink: 0 }} />
+                        : <BookOpen size={14} color="#c8a84b" style={{ verticalAlign: 'middle', marginRight: 0, flexShrink: 0 }} />
+                    ) : (
+                      <span style={{ fontSize: '14px', lineHeight: 1 }}>{item.collapsed ? '📁' : '📂'}</span>
+                    )
+                  ) : (
+                    <span style={{ fontSize: '14px', lineHeight: 1 }}>🗒️</span>
+                  )}
                 </span>
 
                 <span style={{
@@ -1009,7 +1036,9 @@ export default function FileBrowser({
                   opacity: isFocused ? 1 : 0.8,
                   fontSize: isFolder ? '11px' : '12px',
                 }}>
-                  {item.name === 'Deleted' && item.type === 'folder' ? 'Recycle Bin' : displayName}
+                  {isRecycleBin
+                    ? `Recycle Bin${item.childCount ? ` (${item.childCount})` : ''}`
+                    : displayName}
                 </span>
                 {!isFolder && (doc || item.name === currentFilename) && (
                   <span style={{
@@ -1051,8 +1080,8 @@ export default function FileBrowser({
             fontFamily: uiFont,
           }}
         >
-          {/* Project Settings — top-level non-Deleted folders */}
-          {contextMenu.item.type === 'folder' && contextMenu.item.depth === 0 && contextMenu.item.name !== 'Deleted' && (
+          {/* Project Settings — top-level non-Recycle Bin folders */}
+          {contextMenu.item.type === 'folder' && contextMenu.item.depth === 0 && contextMenu.item.name !== 'Recycle Bin' && (
             <button
               style={{
                 display: 'block',
@@ -1079,8 +1108,8 @@ export default function FileBrowser({
               Project Settings
             </button>
           )}
-          {/* Empty Bin / Delete Permanently — Deleted folder or items inside it */}
-          {(contextMenu.item.name === 'Deleted' || contextMenu.item.path[0] === 'Deleted') && (
+          {/* Empty Bin / Delete Permanently — Recycle Bin folder or items inside it */}
+          {(contextMenu.item.name === 'Recycle Bin' || contextMenu.item.path.includes('Recycle Bin')) && (
             <button
               style={{
                 display: 'block',
@@ -1100,15 +1129,15 @@ export default function FileBrowser({
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(224,92,92,0.12)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
               onClick={() => {
-                const isDeletedFolder = contextMenu.item.name === 'Deleted' && contextMenu.item.type === 'folder';
+                const isRcBin = contextMenu.item.name === 'Recycle Bin' && contextMenu.item.type === 'folder';
                 setConfirmAction({
-                  type: isDeletedFolder ? 'empty-bin' : 'delete-permanently',
+                  type: isRcBin ? 'empty-bin' : 'delete-permanently',
                   item: contextMenu.item,
                 });
                 setContextMenu(null);
               }}
             >
-              {contextMenu.item.name === 'Deleted' && contextMenu.item.type === 'folder'
+              {contextMenu.item.name === 'Recycle Bin' && contextMenu.item.type === 'folder'
                 ? 'Empty Bin'
                 : 'Delete Permanently'}
             </button>
@@ -1147,13 +1176,13 @@ export default function FileBrowser({
               }}
               onClick={() => {
                 if (confirmAction.type === 'empty-bin') {
-                  onEmptyDeleted();
-                  showStatus('Deleted emptied');
+                  onEmptyDeleted(confirmAction.item.path);
+                  showStatus('Recycle Bin emptied');
                 } else {
-                  const key = confirmAction.item.type === 'file'
-                    ? confirmAction.item.name
-                    : confirmAction.item.path.slice(1).join('/');
-                  onPermanentlyDeleteItem(key);
+                  const binIdx = confirmAction.item.path.lastIndexOf('Recycle Bin');
+                  const binPath = confirmAction.item.path.slice(0, binIdx + 1);
+                  const itemKey = confirmAction.item.path[binIdx + 1] ?? confirmAction.item.name;
+                  onPermanentlyDeleteItem(itemKey, binPath);
                   showStatus('Permanently deleted');
                 }
                 setConfirmAction(null);

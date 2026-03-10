@@ -1730,16 +1730,16 @@ export default function MinstrelCodex() {
           }}
           onNewFolder={() => { setFolderName(''); setActiveModal('new-folder'); }}
           onCreateFolder={(name) => fileStructure.createFolder(name)}
-          onDeleteFile={(filename) => fileStructure.deleteFile(filename)}
+          onDeleteFile={(filename, fromPath) => fileStructure.deleteFile(filename, fromPath)}
           onDeleteFolder={(folderPath) => fileStructure.deleteFolder(folderPath)}
           onRenameFile={(oldName, newName) => fileStructure.renameFile(oldName, newName)}
           onMoveFile={(filename, fromPath, toPath) => fileStructure.moveFile(filename, fromPath, toPath)}
           onMoveFolder={(folderName, fromPath, toPath) => fileStructure.moveFolder(folderName, fromPath, toPath)}
           onReorderItem={(itemName, parentPath, targetName, position) => fileStructure.reorderItem(itemName, parentPath, targetName, position)}
           onToggleFolder={(path) => fileStructure.toggleFolder(path)}
-          onRestoreFromDeleted={(itemName) => fileStructure.restoreFromDeleted(itemName)}
-          onPermanentlyDeleteItem={(key) => fileStructure.permanentlyDeleteItem(key)}
-          onEmptyDeleted={() => fileStructure.emptyDeleted()}
+          onRestoreFromDeleted={(itemPath) => fileStructure.restoreFromDeleted(itemPath)}
+          onPermanentlyDeleteItem={(key, binPath) => fileStructure.permanentlyDeleteItem(key, binPath)}
+          onEmptyDeleted={(binPath) => fileStructure.emptyDeleted(binPath)}
           onFocus={() => setFileBrowserFocused(true)}
           getFolders={() => fileStructure.getFolders()}
           onSyncGoogleDrive={syncToGoogleDrive}

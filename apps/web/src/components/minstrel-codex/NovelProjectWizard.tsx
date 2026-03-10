@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { BookOpen } from 'lucide-react';
 import { DESIGN_TOKENS as DT } from '@minstrelcodex/core';
 import { useGoogleToken } from '@/hooks/useGoogleToken';
 
@@ -374,7 +375,7 @@ export default function NovelProjectWizard({
     nodes.push({ kind: 'folder', name: 'Versions',  depth: 1 });
     nodes.push({ kind: 'folder', name: 'Snapshots', depth: 1 });
     nodes.push({ kind: 'file',   name: `Version History - ${abr}.txt`, depth: 1 });
-    nodes.push({ kind: 'bin',    name: 'Recycle Bin', depth: 0, muted: true });
+    nodes.push({ kind: 'bin',    name: 'Recycle Bin', depth: 1, muted: true });
     return nodes;
   }, [title, chapterCount, namingFormat, abr, chapterLabel,
       includeBible, includeNotes, includeResearch, includeWorldbuilding, includeFrontMatter]);
@@ -859,8 +860,15 @@ export default function NovelProjectWizard({
                     lineHeight: 1.5,
                   }}
                 >
-                  <span style={{ fontSize: '12px', lineHeight: 1, flexShrink: 0 }}>
-                    {node.kind === 'bin' ? '🗑️' : node.kind === 'folder' ? '📚' : '🗒️'}
+                  <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0, marginRight: '2px' }}>
+                    {node.kind === 'bin'
+                      ? <span style={{ fontSize: '12px', lineHeight: 1 }}>🗑️</span>
+                      : node.kind === 'file'
+                      ? <span style={{ fontSize: '12px', lineHeight: 1 }}>🗒️</span>
+                      : node.depth === 0
+                      ? <BookOpen size={13} color="#c8a84b" style={{ verticalAlign: 'middle', flexShrink: 0 }} />
+                      : <span style={{ fontSize: '12px', lineHeight: 1 }}>📂</span>
+                    }
                   </span>
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {node.name}
