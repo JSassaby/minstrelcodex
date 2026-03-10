@@ -1,319 +1,461 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { DESIGN_TOKENS as DT } from '@minstrelcodex/core';
 import { useGoogleToken } from '@/hooks/useGoogleToken';
 
-export type NamingFormat = 'ch-abr' | 'abr-ch' | 'abr_ch';
-export type GenrePreset = 'novel' | 'screenplay' | 'short-stories' | 'custom';
+export type NamingFormat  = 'ch-abr' | 'abr-ch' | 'abr_ch';
+export type GenrePreset   = 'novel' | 'screenplay' | 'short-stories' | 'custom';
 export type StorageLocation = 'local' | 'google-drive';
 export type CloudSyncMode = 'direct' | 'periodic';
+
 export interface NovelProjectConfig {
-  title: string;
-  abbreviation: string;
-  chapterCount: number;
-  namingFormat: NamingFormat;
-  genre: GenrePreset;
-  targetWordCount: number;
-  pov: string;
-  tense: string;
-  styleNotes: string;
-  includeBible: boolean;
-  includeNotes: boolean;
-  includeResearch: boolean;
+  title:               string;
+  abbreviation:        string;
+  chapterLabel:        string;
+  chapterCount:        number;
+  namingFormat:        NamingFormat;
+  genre:               GenrePreset;
+  targetWordCount:     number;
+  pov:                 string;
+  tense:               string;
+  styleNotes:          string;
+  includeBible:        boolean;
+  includeNotes:        boolean;
+  includeResearch:     boolean;
   includeWorldbuilding: boolean;
-  includeFrontMatter: boolean;
-  storageLocation: StorageLocation;
-  cloudSyncMode: CloudSyncMode;
+  includeFrontMatter:  boolean;
+  storageLocation:     StorageLocation;
+  cloudSyncMode:       CloudSyncMode;
 }
 
 interface Props {
-  visible: boolean;
-  onClose: () => void;
-  onCreate: (config: NovelProjectConfig) => void;
-  onLinkStorage: (location: StorageLocation) => void;
+  visible:          boolean;
+  onClose:          () => void;
+  onCreate:         (config: NovelProjectConfig) => void;
+  onLinkStorage:    (location: StorageLocation) => void;
+  mode?:            'create' | 'settings';
 }
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function generateAbbreviation(title: string): string {
   if (!title.trim()) return '';
-  const words = title.trim().split(/\s+/).filter(w => !['the', 'a', 'an', 'of', 'and', 'in', 'to', 'for'].includes(w.toLowerCase()));
+  const words = title.trim().split(/\s+/).filter(
+    w => !['the','a','an','of','and','in','to','for'].includes(w.toLowerCase()),
+  );
   if (words.length === 0) return title.trim().substring(0, 3).toUpperCase();
   if (words.length === 1) return words[0].substring(0, 3).toUpperCase();
   return words.map(w => w[0]).join('').toUpperCase().substring(0, 4);
 }
 
-function formatChapterName(format: NamingFormat, abr: string, num: number): string {
+function formatChapterName(
+  format: NamingFormat,
+  abr: string,
+  num: number,
+  label: string = 'Chapter',
+): string {
   const ch = String(num).padStart(2, '0');
   switch (format) {
-    case 'ch-abr': return `Chapter ${ch} - ${abr}.txt`;
-    case 'abr-ch': return `${abr} - Chapter ${ch}.txt`;
+    case 'ch-abr': return `${label} ${ch} - ${abr}.txt`;
+    case 'abr-ch': return `${abr} - ${label} ${ch}.txt`;
     case 'abr_ch': return `${abr}_Ch${ch}.txt`;
   }
 }
 
-const GENRE_FOLDERS: Record<GenrePreset, { bible: boolean; notes: boolean; research: boolean; worldbuilding: boolean; frontMatter: boolean }> = {
-  novel: { bible: true, notes: true, research: false, worldbuilding: false, frontMatter: false },
-  screenplay: { bible: true, notes: true, research: false, worldbuilding: false, frontMatter: false },
-  'short-stories': { bible: false, notes: true, research: false, worldbuilding: false, frontMatter: false },
-  custom: { bible: true, notes: true, research: false, worldbuilding: false, frontMatter: false },
+const GENRE_FOLDERS: Record<GenrePreset, {
+  bible: boolean; notes: boolean; research: boolean;
+  worldbuilding: boolean; frontMatter: boolean;
+}> = {
+  novel:          { bible: true,  notes: true,  research: false, worldbuilding: false, frontMatter: false },
+  screenplay:     { bible: true,  notes: true,  research: false, worldbuilding: false, frontMatter: false },
+  'short-stories':{ bible: false, notes: true,  research: false, worldbuilding: false, frontMatter: false },
+  custom:         { bible: true,  notes: true,  research: false, worldbuilding: false, frontMatter: false },
 };
 
-const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
+// ── Styles ───────────────────────────────────────────────────────────────────
 
 const SECTION_STYLE: React.CSSProperties = {
-  marginBottom: '20px',
-  padding: '20px',
-  border: '1px solid var(--terminal-border)',
-  borderRadius: '12px',
-  background: 'var(--terminal-surface)',
+  marginBottom: '16px',
+  padding:      '18px 20px',
+  border:       DT.BORDERS.default,
+  borderRadius: 0,
+  background:   DT.COLORS.background.panel,
+};
+
+const SECTION_HEADER: React.CSSProperties = {
+  ...DT.TYPOGRAPHY.sectionHeader,
+  fontSize:      '11px',
+  marginBottom:  '14px',
+  borderBottom:  DT.BORDERS.subtle,
+  paddingBottom: '10px',
+  color:         DT.COLORS.ui.teal,
 };
 
 const LABEL_STYLE: React.CSSProperties = {
-  fontSize: '11px',
-  marginBottom: '8px',
-  letterSpacing: '0.07em',
-  fontWeight: '600',
-  textTransform: 'uppercase',
-  opacity: 0.55,
-  fontFamily: "var(--font-ui, 'Space Grotesk', sans-serif)",
+  fontSize:      '10px',
+  marginBottom:  '7px',
+  letterSpacing: '0.12em',
+  fontWeight:    600,
+  textTransform: 'uppercase' as const,
+  color:         DT.COLORS.ui.teal,
+  fontFamily:    DT.TYPOGRAPHY.ui.fontFamily,
+  display:       'block',
 };
 
 const HINT_STYLE: React.CSSProperties = {
-  fontSize: '11px',
-  marginTop: '6px',
-  opacity: 0.45,
-  fontFamily: "var(--font-ui, 'Space Grotesk', sans-serif)",
+  fontSize:   '11px',
+  marginTop:  '5px',
+  color:      DT.COLORS.text.muted,
+  fontFamily: DT.TYPOGRAPHY.ui.fontFamily,
+  opacity:    0.7,
 };
 
 const INPUT_STYLE: React.CSSProperties = {
-  width: '100%',
-  background: 'var(--terminal-bg)',
-  border: '1px solid var(--terminal-border)',
-  borderRadius: '9px',
-  color: 'var(--terminal-text)',
-  padding: '10px 14px',
-  fontFamily: "var(--font-ui, 'Space Grotesk', sans-serif)",
-  fontSize: '15px',
-  outline: 'none',
-  boxSizing: 'border-box',
+  width:      '100%',
+  background: '#0d1117',
+  border:     DT.BORDERS.default,
+  borderRadius: 0,
+  color:      '#c8c8c8',
+  padding:    '10px 14px',
+  fontFamily: DT.TYPOGRAPHY.ui.fontFamily,
+  fontSize:   '14px',
+  outline:    'none',
+  boxSizing:  'border-box' as const,
 };
 
 const OPTION_BTN = (selected: boolean): React.CSSProperties => ({
-  padding: '9px 16px',
-  borderRadius: '9px',
-  background: selected ? 'var(--terminal-accent)' : 'var(--terminal-bg)',
-  color: selected ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-  border: selected ? '1.5px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
-  fontWeight: selected ? '600' : '400',
-  cursor: 'pointer',
-  fontFamily: "var(--font-ui, 'Space Grotesk', sans-serif)",
-  fontSize: '13px',
-  transition: 'all 0.12s',
+  padding:      '9px 16px',
+  borderRadius: 0,
+  background:   selected ? 'rgba(0, 223, 160, 0.08)' : DT.COLORS.background.input,
+  color:        selected ? DT.COLORS.ui.teal : '#c8c8c8',
+  border:       selected ? DT.BORDERS.active : DT.BORDERS.default,
+  fontWeight:   selected ? 600 : 400,
+  cursor:       'pointer',
+  fontFamily:   DT.TYPOGRAPHY.ui.fontFamily,
+  fontSize:     '13px',
+  transition:   'all 0.12s',
+  boxShadow:    'none',
+});
+
+const NAMING_ROW = (selected: boolean): React.CSSProperties => ({
+  padding:      '9px 14px',
+  borderRadius: 0,
+  background:   selected ? '#0d1a2a' : DT.COLORS.background.input,
+  color:        selected ? DT.COLORS.ui.teal : '#c8c8c8',
+  border:       DT.BORDERS.default,
+  borderLeft:   selected ? `3px solid ${DT.COLORS.ui.teal}` : DT.BORDERS.default,
+  fontWeight:   selected ? 600 : 400,
+  cursor:       'pointer',
+  fontFamily:   DT.TYPOGRAPHY.ui.fontFamily,
+  fontSize:     '13px',
+  textAlign:    'left' as const,
+  display:      'flex',
+  alignItems:   'center',
+  gap:          '10px',
+  boxShadow:    'none',
+  transition:   'all 0.12s',
 });
 
 const TOGGLE_STYLE = (on: boolean): React.CSSProperties => ({
-  padding: '7px 14px',
-  borderRadius: '8px',
-  background: on ? 'var(--terminal-accent)' : 'var(--terminal-bg)',
-  color: on ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-  border: on ? '1.5px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
-  cursor: 'pointer',
-  fontFamily: "var(--font-ui, 'Space Grotesk', sans-serif)",
-  fontSize: '12px',
-  fontWeight: on ? '600' : '400',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '6px',
-  transition: 'all 0.12s',
+  padding:      '7px 14px',
+  borderRadius: 0,
+  background:   on ? 'rgba(0, 223, 160, 0.08)' : DT.COLORS.background.input,
+  color:        on ? DT.COLORS.ui.teal : '#c8c8c8',
+  border:       on ? DT.BORDERS.active : DT.BORDERS.default,
+  cursor:       'pointer',
+  fontFamily:   DT.TYPOGRAPHY.ui.fontFamily,
+  fontSize:     '12px',
+  fontWeight:   on ? 600 : 400,
+  display:      'flex',
+  alignItems:   'center',
+  gap:          '6px',
+  transition:   'all 0.12s',
+  boxShadow:    'none',
 });
 
-export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkStorage }: Props) {
-  const [title, setTitle] = useState('');
-  const [abbreviation, setAbbreviation] = useState('');
-  const [abrManual, setAbrManual] = useState(false);
-  const [chapterCount, setChapterCount] = useState(10);
-  const [namingFormat, setNamingFormat] = useState<NamingFormat>('ch-abr');
-  const [genre, setGenre] = useState<GenrePreset>('novel');
-  const [targetWordCount, setTargetWordCount] = useState(80000);
-  const [pov, setPov] = useState('');
-  const [tense, setTense] = useState('');
-  const [styleNotes, setStyleNotes] = useState('');
-  const [includeBible, setIncludeBible] = useState(true);
-  const [includeNotes, setIncludeNotes] = useState(true);
-  const [includeResearch, setIncludeResearch] = useState(false);
+// ── Tree preview types ────────────────────────────────────────────────────────
+
+type TreeNode = {
+  kind:   'folder' | 'file' | 'bin';
+  name:   string;
+  depth:  number;
+  muted?: boolean;
+};
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export default function NovelProjectWizard({
+  visible, onClose, onCreate, onLinkStorage, mode = 'create',
+}: Props) {
+  const [title,              setTitle]              = useState('');
+  const [abbreviation,       setAbbreviation]       = useState('');
+  const [abrManual,          setAbrManual]          = useState(false);
+  const [chapterCount,       setChapterCount]       = useState(10);
+  const [namingFormat,       setNamingFormat]       = useState<NamingFormat>('ch-abr');
+  const [useCustomLabel,     setUseCustomLabel]     = useState(false);
+  const [chapterLabel,       setChapterLabel]       = useState('Chapter');
+  const [genre,              setGenre]              = useState<GenrePreset>('novel');
+  const [targetWordCount,    setTargetWordCount]    = useState(80000);
+  const [pov,                setPov]                = useState('');
+  const [tense,              setTense]              = useState('');
+  const [styleNotes,         setStyleNotes]         = useState('');
+  const [includeBible,       setIncludeBible]       = useState(true);
+  const [includeNotes,       setIncludeNotes]       = useState(true);
+  const [includeResearch,    setIncludeResearch]    = useState(false);
   const [includeWorldbuilding, setIncludeWorldbuilding] = useState(false);
   const [includeFrontMatter, setIncludeFrontMatter] = useState(false);
-  const [storageLocation, setStorageLocation] = useState<StorageLocation>('local');
-  const [cloudSyncMode, setCloudSyncMode] = useState<CloudSyncMode>('direct');
+  const [storageLocation,    setStorageLocation]    = useState<StorageLocation>('local');
+  const [cloudSyncMode,      setCloudSyncMode]      = useState<CloudSyncMode>('direct');
+
+  const customLabelRef = useRef<HTMLInputElement>(null);
 
   // Auto-generate abbreviation from title
   useEffect(() => {
-    if (!abrManual) {
-      setAbbreviation(generateAbbreviation(title));
-    }
+    if (!abrManual) setAbbreviation(generateAbbreviation(title));
   }, [title, abrManual]);
 
   // Apply genre preset
   useEffect(() => {
     if (genre !== 'custom') {
-      const preset = GENRE_FOLDERS[genre];
-      setIncludeBible(preset.bible);
-      setIncludeNotes(preset.notes);
-      setIncludeResearch(preset.research);
-      setIncludeWorldbuilding(preset.worldbuilding);
-      setIncludeFrontMatter(preset.frontMatter);
+      const p = GENRE_FOLDERS[genre];
+      setIncludeBible(p.bible);
+      setIncludeNotes(p.notes);
+      setIncludeResearch(p.research);
+      setIncludeWorldbuilding(p.worldbuilding);
+      setIncludeFrontMatter(p.frontMatter);
     }
   }, [genre]);
 
-  // Reset on open
+  // Autofocus custom label input when revealed
   useEffect(() => {
-    if (visible) {
+    if (useCustomLabel) customLabelRef.current?.focus();
+  }, [useCustomLabel]);
+
+  // Reset / pre-populate on open
+  useEffect(() => {
+    if (!visible) return;
+    if (mode === 'settings') {
+      const saved = JSON.parse(localStorage.getItem('minstrel-project-settings') || '{}');
+      setTitle(saved.title || '');
+      setAbbreviation(saved.abbreviation || '');
+      setAbrManual(!!saved.abbreviation);
+      setChapterCount(saved.chapterCount || 10);
+      setNamingFormat((saved.fileNamingFormat as NamingFormat) || 'ch-abr');
+      const savedLabel = saved.chapterLabel || 'Chapter';
+      setChapterLabel(savedLabel);
+      setUseCustomLabel(savedLabel !== 'Chapter');
+      setGenre((saved.projectType as GenrePreset) || 'novel');
+      setTargetWordCount(saved.wordTarget || 80000);
+      setPov(saved.pov || '');
+      setTense(saved.tense || '');
+      setStyleNotes(saved.styleNotes || '');
+      setStorageLocation((saved.syncTarget as StorageLocation) || 'local');
+      setCloudSyncMode(saved.cloudSyncMode || 'direct');
+      setIncludeBible(saved.includeBible ?? true);
+      setIncludeNotes(saved.includeNotes ?? true);
+      setIncludeResearch(saved.includeResearch ?? false);
+      setIncludeWorldbuilding(saved.includeWorldbuilding ?? false);
+      setIncludeFrontMatter(saved.includeFrontMatter ?? false);
+    } else {
       setTitle(''); setAbbreviation(''); setAbrManual(false);
       setChapterCount(10); setNamingFormat('ch-abr'); setGenre('novel');
+      setChapterLabel('Chapter'); setUseCustomLabel(false);
       setTargetWordCount(80000); setPov(''); setTense(''); setStyleNotes('');
       setIncludeBible(true); setIncludeNotes(true); setIncludeResearch(false);
       setIncludeWorldbuilding(false); setIncludeFrontMatter(false);
       setStorageLocation('local'); setCloudSyncMode('direct');
     }
-  }, [visible]);
+  }, [visible, mode]);
 
-  // Use googleToken (not isConnected) — isConnected includes Google identity without Drive access
   const { googleToken } = useGoogleToken();
   const isGoogleConnected = !!googleToken;
 
   const abr = abbreviation || 'ABR';
 
-  // Build preview tree
-  const treePreview = useMemo(() => {
-    const t = title || '[Title]';
-    const lines: string[] = [`📁 ${t}/`];
-    lines.push('├─ 📁 Active/');
-    lines.push('│  ├─ 📁 Chapters/');
-    const maxShow = Math.min(chapterCount, 3);
-    for (let i = 1; i <= maxShow; i++) {
-      const prefix = i === maxShow && !includeBible && !includeNotes && !includeResearch && !includeWorldbuilding ? '│  │  └─' : '│  │  ├─';
-      lines.push(`${prefix} 📄 ${formatChapterName(namingFormat, abr, i)}`);
-    }
-    if (chapterCount > 3) lines.push(`│  │  └─ ... (${chapterCount} total)`);
-
-    if (includeBible) {
-      lines.push('│  ├─ 📁 Bible/');
-      lines.push(`│  │  ├─ 📄 Characters - ${abr}.txt`);
-      lines.push(`│  │  ├─ 📄 Outline - ${abr}.txt`);
-      lines.push(`│  │  └─ 📄 Setting - ${abr}.txt`);
-    }
-    if (includeNotes) {
-      lines.push('│  ├─ 📁 Notes/');
-      lines.push(`│  │  └─ 📄 Ideas - ${abr}.txt`);
-    }
-    if (includeResearch) {
-      lines.push('│  ├─ 📁 Research/');
-      lines.push(`│  │  └─ 📄 Research Notes - ${abr}.txt`);
-    }
-    if (includeWorldbuilding) {
-      lines.push('│  └─ 📁 Worldbuilding/');
-      lines.push(`│     └─ 📄 World Notes - ${abr}.txt`);
-    }
-    if (includeFrontMatter) {
-      lines.push('├─ 📁 Front Matter/');
-      lines.push(`│  ├─ 📄 Dedication - ${abr}.txt`);
-      lines.push(`│  ├─ 📄 Epigraph - ${abr}.txt`);
-      lines.push(`│  └─ 📄 Prologue - ${abr}.txt`);
-    }
-    lines.push('├─ 📁 Versions/');
-    lines.push('├─ 📁 Snapshots/');
-    lines.push(`└─ 📄 Version History - ${abr}.txt`);
-    return lines.join('\n');
-  }, [title, chapterCount, namingFormat, abr, includeBible, includeNotes, includeResearch, includeWorldbuilding, includeFrontMatter]);
-
   const canCreate = title.trim().length > 0 && abbreviation.trim().length > 0;
+
+  // Build config object
+  const buildConfig = (): NovelProjectConfig => ({
+    title:               title.trim(),
+    abbreviation:        abbreviation.trim(),
+    chapterLabel:        chapterLabel || 'Chapter',
+    chapterCount,
+    namingFormat,
+    genre,
+    targetWordCount,
+    pov:                 pov.trim(),
+    tense:               tense.trim(),
+    styleNotes:          styleNotes.trim(),
+    includeBible,
+    includeNotes,
+    includeResearch,
+    includeWorldbuilding,
+    includeFrontMatter,
+    storageLocation,
+    cloudSyncMode,
+  });
 
   const handleCreate = () => {
     if (!canCreate) return;
-    onCreate({
-      title: title.trim(),
-      abbreviation: abbreviation.trim(),
-      chapterCount,
-      namingFormat,
-      genre,
-      targetWordCount,
-      pov: pov.trim(),
-      tense: tense.trim(),
-      styleNotes: styleNotes.trim(),
-      includeBible,
-      includeNotes,
-      includeResearch,
-      includeWorldbuilding,
-      includeFrontMatter,
-      storageLocation,
-      cloudSyncMode,
-    });
+    const config = buildConfig();
+    // Persist settings
+    const existing = JSON.parse(localStorage.getItem('minstrel-project-settings') || '{}');
+    localStorage.setItem('minstrel-project-settings', JSON.stringify({
+      ...config,
+      fileNamingFormat: config.namingFormat,
+      wordTarget:       config.targetWordCount,
+      projectType:      config.genre,
+      syncTarget:       config.storageLocation,
+      pov:              config.pov,
+      tense:            config.tense,
+      styleNotes:       config.styleNotes,
+      includeBible:     config.includeBible,
+      includeNotes:     config.includeNotes,
+      includeResearch:  config.includeResearch,
+      includeWorldbuilding: config.includeWorldbuilding,
+      includeFrontMatter: config.includeFrontMatter,
+      cloudSyncMode:    config.cloudSyncMode,
+      createdAt:        mode === 'settings'
+        ? (existing.createdAt || new Date().toISOString())
+        : new Date().toISOString(),
+    }));
+    if (mode === 'settings') {
+      onClose();
+    } else {
+      onCreate(config);
+    }
   };
 
+  // ── Tree preview ───────────────────────────────────────────────────────────
+
+  const treeNodes = useMemo((): TreeNode[] => {
+    const nodes: TreeNode[] = [];
+    const t = title || '[Title]';
+    nodes.push({ kind: 'folder', name: t, depth: 0 });
+    nodes.push({ kind: 'folder', name: 'Active', depth: 1 });
+    nodes.push({ kind: 'folder', name: 'Chapters', depth: 2 });
+    const maxShow = Math.min(chapterCount, 3);
+    for (let i = 1; i <= maxShow; i++) {
+      nodes.push({ kind: 'file', name: formatChapterName(namingFormat, abr, i, chapterLabel || 'Chapter'), depth: 3 });
+    }
+    if (chapterCount > 3) {
+      nodes.push({ kind: 'file', name: `… (${chapterCount} total)`, depth: 3, muted: true });
+    }
+    if (includeBible) {
+      nodes.push({ kind: 'folder', name: 'Bible', depth: 2 });
+      nodes.push({ kind: 'file', name: `Characters - ${abr}.txt`, depth: 3 });
+      nodes.push({ kind: 'file', name: `Outline - ${abr}.txt`, depth: 3 });
+      nodes.push({ kind: 'file', name: `Setting - ${abr}.txt`, depth: 3 });
+    }
+    if (includeNotes) {
+      nodes.push({ kind: 'folder', name: 'Notes', depth: 2 });
+      nodes.push({ kind: 'file', name: `Ideas - ${abr}.txt`, depth: 3 });
+    }
+    if (includeResearch) {
+      nodes.push({ kind: 'folder', name: 'Research', depth: 2 });
+      nodes.push({ kind: 'file', name: `Research Notes - ${abr}.txt`, depth: 3 });
+    }
+    if (includeWorldbuilding) {
+      nodes.push({ kind: 'folder', name: 'Worldbuilding', depth: 2 });
+      nodes.push({ kind: 'file', name: `World Notes - ${abr}.txt`, depth: 3 });
+    }
+    if (includeFrontMatter) {
+      nodes.push({ kind: 'folder', name: 'Front Matter', depth: 1 });
+      nodes.push({ kind: 'file', name: `Dedication - ${abr}.txt`, depth: 2 });
+      nodes.push({ kind: 'file', name: `Epigraph - ${abr}.txt`, depth: 2 });
+      nodes.push({ kind: 'file', name: `Prologue - ${abr}.txt`, depth: 2 });
+    }
+    nodes.push({ kind: 'folder', name: 'Versions',  depth: 1 });
+    nodes.push({ kind: 'folder', name: 'Snapshots', depth: 1 });
+    nodes.push({ kind: 'file',   name: `Version History - ${abr}.txt`, depth: 1 });
+    nodes.push({ kind: 'bin',    name: 'Recycle Bin', depth: 0, muted: true });
+    return nodes;
+  }, [title, chapterCount, namingFormat, abr, chapterLabel,
+      includeBible, includeNotes, includeResearch, includeWorldbuilding, includeFrontMatter]);
+
   if (!visible) return null;
+
+  const isSettings = mode === 'settings';
+  const modalTitle = isSettings ? 'Project Settings' : 'New Novel Wizard';
+  const primaryLabel = isSettings ? 'Save Changes' : 'Create Project';
+
+  // ── Derived naming format options with live chapterLabel preview ───────────
+  const label = chapterLabel || 'Chapter';
+  const namingOptions = [
+    { value: 'ch-abr' as NamingFormat, preview: `${label} 01 - ${abr}.txt` },
+    { value: 'abr-ch' as NamingFormat, preview: `${abr} - ${label} 01.txt` },
+    { value: 'abr_ch' as NamingFormat, preview: `${abr}_Ch01.txt` },
+  ];
 
   return (
     <div
       style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'var(--terminal-bg)',
-        color: 'var(--terminal-text)',
-        fontFamily: uiFont,
-        zIndex: 3000,
-        overflowY: 'auto',
-        display: 'flex',
-        flexDirection: 'column',
+        position:       'fixed',
+        inset:          0,
+        background:     'rgba(0, 0, 0, 0.92)',
+        color:          '#c8c8c8',
+        fontFamily:     DT.TYPOGRAPHY.ui.fontFamily,
+        zIndex:         DT.Z_INDEX.modal,
+        overflowY:      'auto',
+        display:        'flex',
+        flexDirection:  'column',
       }}
     >
-      {/* Header */}
+      {/* ── Header ───────────────────────────────────────────────────────── */}
       <div style={{
-        borderBottom: '1px solid var(--terminal-border)',
-        padding: '14px 24px',
-        display: 'flex',
+        borderBottom: DT.BORDERS.default,
+        padding:      '14px 24px',
+        display:      'flex',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        flexShrink: 0,
-        background: 'var(--terminal-surface)',
+        alignItems:   'center',
+        flexShrink:   0,
+        background:   DT.COLORS.background.panel,
       }}>
-        <div style={{ fontSize: '17px', fontWeight: '700', fontFamily: uiFont, letterSpacing: '-0.01em', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ opacity: 0.7 }}>📖</span> New Novel Project
+        <div style={{
+          ...DT.TYPOGRAPHY.sectionHeader,
+          fontSize: '13px',
+          display:  'flex',
+          alignItems: 'center',
+          gap:      '10px',
+        }}>
+          <span style={{ opacity: 0.7 }}>📖</span> {modalTitle}
         </div>
         <button
           onClick={onClose}
           style={{
-            background: 'transparent',
-            border: '1px solid var(--terminal-border)',
-            borderRadius: '8px',
-            color: 'var(--terminal-text)',
-            padding: '6px 14px',
-            cursor: 'pointer',
-            fontFamily: uiFont,
-            fontSize: '13px',
-            opacity: 0.6,
-            transition: 'opacity 0.1s',
+            background:   'transparent',
+            border:       DT.BORDERS.default,
+            borderRadius: 0,
+            color:        '#888',
+            padding:      '6px 14px',
+            cursor:       'pointer',
+            fontFamily:   DT.TYPOGRAPHY.ui.fontFamily,
+            fontSize:     '11px',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            boxShadow:    'none',
           }}
-          onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-          onMouseLeave={e => (e.currentTarget.style.opacity = '0.6')}
         >
           ✕ Close
         </button>
       </div>
 
-      {/* Body */}
+      {/* ── Body ─────────────────────────────────────────────────────────── */}
       <div style={{
-        flex: 1,
+        flex:      1,
         overflowY: 'auto',
-        padding: '24px',
-        display: 'flex',
-        gap: '32px',
+        padding:   '24px',
+        display:   'flex',
+        gap:       '24px',
       }}>
-        {/* Left: Form */}
+
+        {/* ── Left: Form ───────────────────────────────────────────────── */}
         <div style={{ flex: 1, maxWidth: '640px' }}>
-          {/* ── Title & Abbreviation ── */}
+
+          {/* ── Title & Abbreviation ──────────────────────────────────── */}
           <div style={SECTION_STYLE}>
-            <div style={{ fontSize: '12px', fontWeight: '700', marginBottom: '16px', borderBottom: '1px solid var(--terminal-border)', paddingBottom: '10px', fontFamily: uiFont, opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Title &amp; Abbreviation
-            </div>
+            <div style={SECTION_HEADER}>Title &amp; Abbreviation</div>
             <div style={{ marginBottom: '16px' }}>
-              <div style={LABEL_STYLE}>PROJECT TITLE</div>
+              <label style={LABEL_STYLE}>Project Title</label>
               <input
                 type="text"
                 value={title}
@@ -322,10 +464,10 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
                 autoFocus
                 style={INPUT_STYLE}
               />
-              <div style={HINT_STYLE}>This is your working title — you can change it later.</div>
+              <div style={HINT_STYLE}>Working title — you can change it later.</div>
             </div>
             <div>
-              <div style={LABEL_STYLE}>ABBREVIATION</div>
+              <label style={LABEL_STYLE}>Abbreviation</label>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <input
                   type="text"
@@ -333,14 +475,14 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
                   onChange={e => { setAbbreviation(e.target.value.toUpperCase()); setAbrManual(true); }}
                   placeholder="ABR"
                   maxLength={5}
-                  style={{ ...INPUT_STYLE, width: '100px', textAlign: 'center', fontWeight: 'bold', fontSize: '18px' }}
+                  style={{ ...INPUT_STYLE, width: '100px', textAlign: 'center', fontWeight: 700, fontSize: '18px' }}
                 />
                 {abrManual && (
                   <button
                     onClick={() => { setAbrManual(false); setAbbreviation(generateAbbreviation(title)); }}
-                    style={{ ...OPTION_BTN(false), fontSize: '11px', padding: '4px 10px' }}
+                    style={{ ...OPTION_BTN(false), fontSize: '11px', padding: '5px 12px' }}
                   >
-                    AUTO
+                    Auto
                   </button>
                 )}
               </div>
@@ -348,13 +490,13 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
             </div>
           </div>
 
-          {/* ── Chapters ── */}
+          {/* ── Chapters ─────────────────────────────────────────────── */}
           <div style={SECTION_STYLE}>
-            <div style={{ fontSize: '12px', fontWeight: '700', marginBottom: '16px', borderBottom: '1px solid var(--terminal-border)', paddingBottom: '10px', fontFamily: uiFont, opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Chapters
-            </div>
-            <div style={{ marginBottom: '16px' }}>
-              <div style={LABEL_STYLE}>NUMBER OF CHAPTERS</div>
+            <div style={SECTION_HEADER}>Chapters</div>
+
+            {/* Chapter count */}
+            <div style={{ marginBottom: '18px' }}>
+              <label style={LABEL_STYLE}>Number of Chapters</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <input
                   type="range"
@@ -362,7 +504,7 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
                   max={50}
                   value={chapterCount}
                   onChange={e => setChapterCount(Number(e.target.value))}
-                  style={{ flex: 1, accentColor: 'var(--terminal-text)' }}
+                  style={{ flex: 1, accentColor: DT.COLORS.ui.teal }}
                 />
                 <input
                   type="number"
@@ -375,45 +517,69 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
               </div>
               <div style={HINT_STYLE}>You can add or remove chapters later.</div>
             </div>
+
+            {/* File naming format */}
             <div>
-              <div style={LABEL_STYLE}>FILE NAMING FORMAT</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {([
-                  { value: 'ch-abr' as NamingFormat, preview: `Chapter 01 - ${abr}.txt` },
-                  { value: 'abr-ch' as NamingFormat, preview: `${abr} - Chapter 01.txt` },
-                  { value: 'abr_ch' as NamingFormat, preview: `${abr}_Ch01.txt` },
-                ]).map(opt => (
+              <label style={LABEL_STYLE}>File Naming Format</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                {namingOptions.map(opt => (
                   <button
                     key={opt.value}
-                    onClick={() => setNamingFormat(opt.value)}
-                    style={{
-                      ...OPTION_BTN(namingFormat === opt.value),
-                      textAlign: 'left',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                    }}
+                    onClick={() => { setNamingFormat(opt.value); setUseCustomLabel(false); }}
+                    style={NAMING_ROW(!useCustomLabel && namingFormat === opt.value)}
                   >
-                    <span style={{ width: '16px' }}>{namingFormat === opt.value ? '●' : '○'}</span>
+                    <span style={{ width: '14px', flexShrink: 0 }}>
+                      {!useCustomLabel && namingFormat === opt.value ? '●' : '○'}
+                    </span>
                     <span>{opt.preview}</span>
                   </button>
                 ))}
+
+                {/* 4th option: Custom label */}
+                <button
+                  onClick={() => setUseCustomLabel(true)}
+                  style={NAMING_ROW(useCustomLabel)}
+                >
+                  <span style={{ width: '14px', flexShrink: 0 }}>{useCustomLabel ? '●' : '○'}</span>
+                  <span>Custom…</span>
+                </button>
               </div>
-              <div style={HINT_STYLE}>Choose how chapter files are named. Can be changed later.</div>
+
+              {/* Custom label input */}
+              {useCustomLabel && (
+                <div style={{ marginTop: '10px' }}>
+                  <input
+                    ref={customLabelRef}
+                    type="text"
+                    value={chapterLabel === 'Chapter' ? '' : chapterLabel}
+                    onChange={e => setChapterLabel(e.target.value || 'Chapter')}
+                    placeholder="e.g. Scene, Part, Act, Episode…"
+                    style={INPUT_STYLE}
+                  />
+                  <div style={HINT_STYLE}>
+                    Your custom chapter name. Files will be named:{' '}
+                    <span style={{ color: '#c8c8c8' }}>
+                      {label} 01 - {abr}.txt
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div style={{ ...HINT_STYLE, marginTop: '8px' }}>
+                Choose how chapter files are named. Can be changed later.
+              </div>
             </div>
           </div>
 
-          {/* ── Genre / Template ── */}
+          {/* ── Project Type ──────────────────────────────────────────── */}
           <div style={SECTION_STYLE}>
-            <div style={{ fontSize: '12px', fontWeight: '700', marginBottom: '16px', borderBottom: '1px solid var(--terminal-border)', paddingBottom: '10px', fontFamily: uiFont, opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Project Type
-            </div>
+            <div style={SECTION_HEADER}>Project Type</div>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
               {([
-                { value: 'novel' as GenrePreset, label: '📖 Novel' },
-                { value: 'screenplay' as GenrePreset, label: '🎬 Screenplay' },
+                { value: 'novel'         as GenrePreset, label: '📖 Novel' },
+                { value: 'screenplay'    as GenrePreset, label: '🎬 Screenplay' },
                 { value: 'short-stories' as GenrePreset, label: '📝 Short Stories' },
-                { value: 'custom' as GenrePreset, label: '⚙ Custom' },
+                { value: 'custom'        as GenrePreset, label: '⚙ Custom' },
               ]).map(g => (
                 <button key={g.value} onClick={() => setGenre(g.value)} style={OPTION_BTN(genre === g.value)}>
                   {g.label}
@@ -422,36 +588,33 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
             </div>
             <div style={HINT_STYLE}>Presets configure the folder structure. Select "Custom" to pick your own.</div>
 
-            {/* Folder toggles */}
             <div style={{ marginTop: '16px' }}>
-              <div style={LABEL_STYLE}>INCLUDED FOLDERS</div>
+              <label style={LABEL_STYLE}>Included Folders</label>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <button style={TOGGLE_STYLE(includeBible)} onClick={() => { setGenre('custom'); setIncludeBible(!includeBible); }}>
+                <button style={TOGGLE_STYLE(includeBible)}         onClick={() => { setGenre('custom'); setIncludeBible(!includeBible); }}>
                   {includeBible ? '☑' : '☐'} Bible
                 </button>
-                <button style={TOGGLE_STYLE(includeNotes)} onClick={() => { setGenre('custom'); setIncludeNotes(!includeNotes); }}>
+                <button style={TOGGLE_STYLE(includeNotes)}         onClick={() => { setGenre('custom'); setIncludeNotes(!includeNotes); }}>
                   {includeNotes ? '☑' : '☐'} Notes
                 </button>
-                <button style={TOGGLE_STYLE(includeResearch)} onClick={() => { setGenre('custom'); setIncludeResearch(!includeResearch); }}>
+                <button style={TOGGLE_STYLE(includeResearch)}      onClick={() => { setGenre('custom'); setIncludeResearch(!includeResearch); }}>
                   {includeResearch ? '☑' : '☐'} Research
                 </button>
                 <button style={TOGGLE_STYLE(includeWorldbuilding)} onClick={() => { setGenre('custom'); setIncludeWorldbuilding(!includeWorldbuilding); }}>
                   {includeWorldbuilding ? '☑' : '☐'} Worldbuilding
                 </button>
-                <button style={TOGGLE_STYLE(includeFrontMatter)} onClick={() => { setGenre('custom'); setIncludeFrontMatter(!includeFrontMatter); }}>
+                <button style={TOGGLE_STYLE(includeFrontMatter)}   onClick={() => { setGenre('custom'); setIncludeFrontMatter(!includeFrontMatter); }}>
                   {includeFrontMatter ? '☑' : '☐'} Front Matter
                 </button>
               </div>
             </div>
           </div>
 
-          {/* ── Writing Goals & Style ── */}
+          {/* ── Writing Goals & Style ─────────────────────────────────── */}
           <div style={SECTION_STYLE}>
-            <div style={{ fontSize: '12px', fontWeight: '700', marginBottom: '16px', borderBottom: '1px solid var(--terminal-border)', paddingBottom: '10px', fontFamily: uiFont, opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Writing Goals &amp; Style
-            </div>
+            <div style={SECTION_HEADER}>Writing Goals &amp; Style</div>
             <div style={{ marginBottom: '16px' }}>
-              <div style={LABEL_STYLE}>TARGET WORD COUNT</div>
+              <label style={LABEL_STYLE}>Target Word Count</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <input
                   type="number"
@@ -462,8 +625,8 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
                   onChange={e => setTargetWordCount(Number(e.target.value))}
                   style={{ ...INPUT_STYLE, width: '120px', textAlign: 'center' }}
                 />
-                <span style={{ fontSize: '13px' }}>words</span>
-                <span style={{ fontSize: '11px', marginLeft: '8px' }}>
+                <span style={{ fontSize: '13px', color: '#c8c8c8' }}>words</span>
+                <span style={{ fontSize: '11px', color: DT.COLORS.text.muted, marginLeft: '8px' }}>
                   (~{Math.round(targetWordCount / chapterCount).toLocaleString()} per chapter)
                 </span>
               </div>
@@ -472,16 +635,16 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
                   <button
                     key={wc}
                     onClick={() => setTargetWordCount(wc)}
-                    style={{ ...OPTION_BTN(targetWordCount === wc), fontSize: '11px', padding: '4px 8px' }}
+                    style={{ ...OPTION_BTN(targetWordCount === wc), fontSize: '11px', padding: '4px 10px' }}
                   >
-                    {(wc / 1000)}k
+                    {wc / 1000}k
                   </button>
                 ))}
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
               <div>
-                <div style={LABEL_STYLE}>POINT OF VIEW</div>
+                <label style={LABEL_STYLE}>Point of View</label>
                 <input
                   type="text"
                   value={pov}
@@ -491,7 +654,7 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
                 />
               </div>
               <div>
-                <div style={LABEL_STYLE}>TENSE</div>
+                <label style={LABEL_STYLE}>Tense</label>
                 <input
                   type="text"
                   value={tense}
@@ -502,129 +665,126 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
               </div>
             </div>
             <div>
-              <div style={LABEL_STYLE}>STYLE NOTES</div>
+              <label style={LABEL_STYLE}>Style Notes</label>
               <textarea
                 value={styleNotes}
                 onChange={e => setStyleNotes(e.target.value)}
                 placeholder="Tone, voice, influences, rules to follow..."
                 rows={3}
-                style={{ ...INPUT_STYLE, resize: 'vertical' }}
+                style={{ ...INPUT_STYLE, resize: 'vertical' as const }}
               />
               <div style={HINT_STYLE}>Stored in your Bible folder for reference while writing.</div>
             </div>
           </div>
 
-          {/* ── Storage Location ── */}
+          {/* ── Storage Location ──────────────────────────────────────── */}
           <div style={SECTION_STYLE}>
-            <div style={{ fontSize: '12px', fontWeight: '700', marginBottom: '16px', borderBottom: '1px solid var(--terminal-border)', paddingBottom: '10px', fontFamily: uiFont, opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Storage Location
-            </div>
+            <div style={SECTION_HEADER}>Storage Location</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {([
-                { value: 'local' as StorageLocation, label: '💾 Local Storage', desc: 'Files saved in your browser. No account needed.', linked: true },
-                { value: 'google-drive' as StorageLocation, label: '☁ Google Drive', desc: 'Sync to your Google Drive account.', linked: isGoogleConnected },
+                {
+                  value: 'local' as StorageLocation,
+                  label: '💾 Local Storage',
+                  desc: 'Files saved in your browser. No account needed.',
+                  linked: true,
+                },
+                {
+                  value: 'google-drive' as StorageLocation,
+                  label: '☁ Google Drive',
+                  desc: 'Sync to your Google Drive account.',
+                  linked: isGoogleConnected,
+                },
               ]).map(opt => (
                 <button
                   key={opt.value}
                   onClick={() => setStorageLocation(opt.value)}
                   style={{
-                    ...OPTION_BTN(storageLocation === opt.value),
-                    textAlign: 'left',
-                    display: 'flex',
+                    ...NAMING_ROW(storageLocation === opt.value),
                     flexDirection: 'column',
-                    alignItems: 'flex-start',
-                    gap: '2px',
-                    padding: '10px 16px',
+                    alignItems:    'flex-start',
+                    gap:           '2px',
+                    padding:       '10px 16px',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
-                    <span style={{ width: '16px' }}>{storageLocation === opt.value ? '●' : '○'}</span>
-                    <span style={{ fontWeight: 'bold' }}>{opt.label}</span>
+                    <span style={{ width: '14px' }}>{storageLocation === opt.value ? '●' : '○'}</span>
+                    <span style={{ fontWeight: 600, color: storageLocation === opt.value ? DT.COLORS.ui.teal : '#c8c8c8' }}>{opt.label}</span>
                     {opt.value !== 'local' && (
-                      <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 'bold', color: opt.linked ? 'inherit' : (storageLocation === opt.value ? 'var(--terminal-bg)' : '#ff5555') }}>
+                      <span style={{
+                        marginLeft: 'auto',
+                        fontSize:   '11px',
+                        fontWeight: 600,
+                        color:      opt.linked
+                          ? DT.COLORS.ui.teal
+                          : '#e05c5c',
+                      }}>
                         {opt.linked ? '✓ LINKED' : 'NOT LINKED'}
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: '11px', paddingLeft: '26px' }}>{opt.desc}</div>
+                  <div style={{ fontSize: '11px', paddingLeft: '24px', color: '#888' }}>{opt.desc}</div>
                 </button>
               ))}
             </div>
 
-            {/* Cloud sync mode - only show for cloud storage */}
             {storageLocation !== 'local' && (
               <div style={{ marginTop: '16px' }}>
-                <div style={LABEL_STYLE}>CLOUD SYNC MODE</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <button
-                    onClick={() => setCloudSyncMode('direct')}
-                    style={{
-                      ...OPTION_BTN(cloudSyncMode === 'direct'),
-                      textAlign: 'left',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'flex-start',
-                      gap: '2px',
-                      padding: '10px 16px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ width: '16px' }}>{cloudSyncMode === 'direct' ? '●' : '○'}</span>
-                      <span style={{ fontWeight: 'bold' }}>📡 Work Directly in Cloud</span>
-                    </div>
-                    <div style={{ fontSize: '11px', paddingLeft: '26px' }}>
-                      Files are read from and saved directly to your cloud drive. Requires active internet connection.
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setCloudSyncMode('periodic')}
-                    style={{
-                      ...OPTION_BTN(cloudSyncMode === 'periodic'),
-                      textAlign: 'left',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'flex-start',
-                      gap: '2px',
-                      padding: '10px 16px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ width: '16px' }}>{cloudSyncMode === 'periodic' ? '●' : '○'}</span>
-                      <span style={{ fontWeight: 'bold' }}>🔄 Sync Periodically</span>
-                    </div>
-                    <div style={{ fontSize: '11px', paddingLeft: '26px' }}>
-                      Work locally and sync changes to cloud on a regular schedule. Works offline, syncs when connected.
-                    </div>
-                  </button>
-                </div>
-                <div style={HINT_STYLE}>
-                  {cloudSyncMode === 'direct'
-                    ? 'All changes save instantly to the cloud. Best for always-online workflows.'
-                    : 'Changes are stored locally first, then synced. Best for writing on-the-go.'}
+                <label style={LABEL_STYLE}>Cloud Sync Mode</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  {([
+                    {
+                      value: 'direct' as CloudSyncMode,
+                      label: '📡 Work Directly in Cloud',
+                      desc:  'Files are read from and saved directly to your cloud drive. Requires internet.',
+                    },
+                    {
+                      value: 'periodic' as CloudSyncMode,
+                      label: '🔄 Sync Periodically',
+                      desc:  'Work locally and sync changes to cloud on a regular schedule. Works offline.',
+                    },
+                  ]).map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setCloudSyncMode(opt.value)}
+                      style={{
+                        ...NAMING_ROW(cloudSyncMode === opt.value),
+                        flexDirection: 'column',
+                        alignItems:    'flex-start',
+                        gap:           '2px',
+                        padding:       '10px 14px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ width: '14px' }}>{cloudSyncMode === opt.value ? '●' : '○'}</span>
+                        <span style={{ fontWeight: 600 }}>{opt.label}</span>
+                      </div>
+                      <div style={{ fontSize: '11px', paddingLeft: '24px', color: '#888' }}>{opt.desc}</div>
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
 
             {storageLocation === 'google-drive' && (
               isGoogleConnected ? (
-                <div style={{ marginTop: '12px', padding: '12px', border: '1px solid var(--terminal-text)' }}>
-                  <div style={{ fontSize: '13px' }}>
+                <div style={{ marginTop: '12px', padding: '12px', border: DT.BORDERS.active }}>
+                  <div style={{ fontSize: '13px', color: DT.COLORS.ui.teal }}>
                     ✓ Your Google Drive account is connected and ready.
                   </div>
                 </div>
               ) : (
-                <div style={{ marginTop: '12px', padding: '12px', border: '1px solid var(--terminal-text)' }}>
-                  <div style={{ fontSize: '13px', marginBottom: '8px' }}>
+                <div style={{ marginTop: '12px', padding: '12px', border: DT.BORDERS.default }}>
+                  <div style={{ fontSize: '13px', marginBottom: '8px', color: '#e05c5c' }}>
                     ⚠ You need to link your Google Drive account to use cloud storage.
                   </div>
-                  <div style={{ fontSize: '11px', marginBottom: '8px', opacity: 0.7 }}>
+                  <div style={{ fontSize: '11px', marginBottom: '8px', color: '#888' }}>
                     You can link accounts in Settings → Storage at any time.
                   </div>
                   <button
                     onClick={() => onLinkStorage(storageLocation)}
-                    style={{ ...OPTION_BTN(true), fontSize: '13px' }}
+                    style={{ ...OPTION_BTN(true), fontSize: '12px' }}
                   >
-                    LINK ACCOUNT →
+                    Link Account →
                   </button>
                 </div>
               )
@@ -632,64 +792,133 @@ export default function NovelProjectWizard({ visible, onClose, onCreate, onLinkS
             <div style={HINT_STYLE}>Storage location and sync mode can be changed later in settings.</div>
           </div>
 
-          {/* ── Note ── */}
+          {/* ── Footer note ───────────────────────────────────────────── */}
           <div style={{
-            padding: '14px 18px',
-            border: '1px solid var(--terminal-border)',
-            borderRadius: '10px',
+            padding:      '14px 18px',
+            border:       DT.BORDERS.subtle,
+            borderRadius: 0,
             marginBottom: '20px',
-            fontSize: '13px',
-            lineHeight: 1.6,
-            fontFamily: uiFont,
-            background: 'var(--terminal-surface)',
-            opacity: 0.75,
+            fontSize:     '13px',
+            lineHeight:   1.6,
+            fontFamily:   DT.TYPOGRAPHY.ui.fontFamily,
+            color:        DT.COLORS.text.muted,
           }}>
-            <strong>All settings can be changed after creation.</strong> Add/remove chapters, rename files, and update style notes at any time.
+            <strong style={{ color: '#c8c8c8' }}>All settings can be changed after creation.</strong>
+            {' '}Add/remove chapters, rename files, and update style notes at any time.
           </div>
         </div>
 
-        {/* Right: Live Preview */}
-        <div style={{ width: '320px', flexShrink: 0, position: 'sticky', top: '0', alignSelf: 'flex-start' }}>
-          <div style={{ border: '1px solid var(--terminal-border)', borderRadius: '12px', padding: '16px', background: 'var(--terminal-surface)' }}>
-            <div style={{ fontSize: '11px', fontWeight: '700', marginBottom: '12px', borderBottom: '1px solid var(--terminal-border)', paddingBottom: '10px', fontFamily: uiFont, opacity: 0.55, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        {/* ── Right: Live Preview ───────────────────────────────────── */}
+        <div style={{ width: '300px', flexShrink: 0, position: 'sticky', top: 0, alignSelf: 'flex-start' }}>
+          <div style={{
+            border:       DT.BORDERS.default,
+            borderRadius: 0,
+            padding:      '0',
+            background:   DT.COLORS.background.panel,
+            boxShadow:    'none',
+          }}>
+            {/* Preview header */}
+            <div style={{
+              ...SECTION_HEADER,
+              margin:        0,
+              padding:       '12px 14px',
+              borderBottom:  DT.BORDERS.default,
+              paddingBottom: '12px',
+            }}>
               Project Preview
             </div>
-            <pre style={{ fontFamily: "'Courier Prime', 'Courier New', monospace", fontSize: '12px', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, opacity: 0.85 }}>
-              {treePreview}
-            </pre>
-            <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--terminal-border)', fontSize: '12px', lineHeight: 1.8, fontFamily: uiFont, opacity: 0.65 }}>
-              <div>📝 {chapterCount} chapters</div>
-              <div>🎯 {targetWordCount.toLocaleString()} word target</div>
-              {pov && <div>👁 POV: {pov}</div>}
-              {tense && <div>⏱ Tense: {tense}</div>}
-              <div>💾 {storageLocation === 'local' ? 'Local' : 'Google Drive'}</div>
+
+            {/* Tree */}
+            <div style={{ padding: '8px 0' }}>
+              {treeNodes.map((node, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display:    'flex',
+                    alignItems: 'center',
+                    gap:        '5px',
+                    padding:    `2px 8px 2px ${8 + node.depth * 16}px`,
+                    fontSize:   '12px',
+                    fontFamily: DT.TYPOGRAPHY.body.fontFamily,
+                    color:      node.muted ? '#444' : '#c8c8c8',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  <span style={{ fontSize: '12px', lineHeight: 1, flexShrink: 0 }}>
+                    {node.kind === 'bin' ? '🗑️' : node.kind === 'folder' ? '📚' : '🗒️'}
+                  </span>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {node.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Stats */}
+            <div style={{
+              borderTop:  DT.BORDERS.subtle,
+              padding:    '12px 14px',
+              fontFamily: DT.TYPOGRAPHY.ui.fontFamily,
+            }}>
+              {[
+                { label: 'CHAPTERS',     value: String(chapterCount) },
+                { label: 'WORD TARGET',  value: targetWordCount.toLocaleString() },
+                { label: 'SYNC',         value: storageLocation === 'local' ? 'Local' : 'Google Drive' },
+                ...(pov   ? [{ label: 'POV',   value: pov }]   : []),
+                ...(tense ? [{ label: 'TENSE', value: tense }] : []),
+              ].map(({ label: l, value }) => (
+                <div key={l} style={{
+                  display:        'flex',
+                  justifyContent: 'space-between',
+                  alignItems:     'baseline',
+                  gap:            '8px',
+                  lineHeight:     2,
+                }}>
+                  <span style={{ ...DT.TYPOGRAPHY.sectionHeader, fontSize: '9px' }}>{l}</span>
+                  <span style={{ fontSize: '11px', color: '#c8c8c8' }}>{value}</span>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
+          {/* Action buttons */}
+          <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
             <button
               onClick={handleCreate}
               disabled={!canCreate}
               style={{
-                flex: 1, padding: '13px',
-                borderRadius: '10px',
-                background: canCreate ? 'var(--terminal-accent)' : 'var(--terminal-surface)',
-                color: canCreate ? 'var(--terminal-bg)' : 'var(--terminal-text)',
-                border: canCreate ? '1.5px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
-                cursor: canCreate ? 'pointer' : 'not-allowed',
-                fontFamily: uiFont, fontSize: '14px', fontWeight: '700',
-                opacity: canCreate ? 1 : 0.5, transition: 'all 0.15s',
+                flex:         1,
+                padding:      '12px',
+                borderRadius: 0,
+                background:   canCreate ? DT.COLORS.ui.teal : 'rgba(0, 223, 160, 0.12)',
+                color:        canCreate ? DT.COLORS.background.primary : DT.COLORS.text.muted,
+                border:       canCreate ? DT.BORDERS.active : DT.BORDERS.default,
+                cursor:       canCreate ? 'pointer' : 'not-allowed',
+                fontFamily:   DT.TYPOGRAPHY.ui.fontFamily,
+                fontSize:     '12px',
+                fontWeight:   600,
+                letterSpacing:'0.08em',
+                textTransform:'uppercase' as const,
+                boxShadow:    'none',
+                transition:   'all 0.15s',
               }}
             >
-              Create Project
+              {primaryLabel}
             </button>
             <button
               onClick={onClose}
               style={{
-                padding: '13px 18px', borderRadius: '10px',
-                background: 'transparent', color: 'var(--terminal-text)',
-                border: '1px solid var(--terminal-border)',
-                cursor: 'pointer', fontFamily: uiFont, fontSize: '13px', opacity: 0.65,
+                padding:      '12px 16px',
+                borderRadius: 0,
+                background:   'transparent',
+                color:        '#888',
+                border:       '1px solid #444',
+                cursor:       'pointer',
+                fontFamily:   DT.TYPOGRAPHY.ui.fontFamily,
+                fontSize:     '12px',
+                letterSpacing:'0.08em',
+                textTransform:'uppercase' as const,
+                boxShadow:    'none',
               }}
             >
               Cancel

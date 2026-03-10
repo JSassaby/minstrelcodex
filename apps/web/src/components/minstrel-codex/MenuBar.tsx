@@ -4,7 +4,8 @@ import {
   FilePlus, BookOpen, FolderOpen, Clock, Save, FileOutput,
   Printer, PanelLeftOpen, Undo2, Redo2, Copy, ClipboardPaste,
   Wifi, Cloud, Settings, Camera, FileText, Music,
-  HelpCircle, ChevronDown, LayoutDashboard, User, Upload
+  HelpCircle, ChevronDown, LayoutDashboard, User, Upload,
+  SlidersHorizontal,
 } from 'lucide-react';
 import minstrelLogo from '@/assets/minstrel-logo.svg';
 import { t } from '@/lib/languages';
@@ -44,7 +45,8 @@ function getSubmenuItems(menu: string, language: string): MenuItem[] {
     case 'file':
       return [
         { action: 'new',           label: t(language, 'file.new'),             shortcut: 'Ctrl+N',       icon: <FilePlus size={14} color={ICON_ACCENT.green} strokeWidth={1.6} /> },
-        { action: 'newnovel',      label: 'New Novel Project',                  shortcut: '',             icon: <BookOpen size={14} color={ICON_ACCENT.amber} strokeWidth={1.6} /> },
+        { action: 'newnovel',        label: 'New Novel Wizard',                   shortcut: '',             icon: <BookOpen          size={14} color={ICON_ACCENT.amber} strokeWidth={1.6} /> },
+        { action: 'projectsettings', label: 'Project Settings',                   shortcut: '',             icon: <SlidersHorizontal size={14} color={ICON_ACCENT.muted} strokeWidth={1.6} /> },
         { action: 'separator',     label: '' },
         { action: 'open',          label: t(language, 'file.open'),             shortcut: 'Ctrl+O',       icon: <FolderOpen size={14} color={ICON_ACCENT.amber} strokeWidth={1.6} /> },
         { action: 'recent',        label: t(language, 'file.recent'),           shortcut: '',             icon: <Clock size={14} color={ICON_ACCENT.muted} strokeWidth={1.6} /> },

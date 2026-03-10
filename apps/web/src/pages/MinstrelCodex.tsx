@@ -143,6 +143,7 @@ export default function MinstrelCodex() {
   // Novel project wizard
   const [novelTitle, setNovelTitle] = useState('');
   const [novelWizardOpen, setNovelWizardOpen] = useState(false);
+  const [projectSettingsOpen, setProjectSettingsOpen] = useState(false);
 
   // Save version
 
@@ -948,6 +949,9 @@ export default function MinstrelCodex() {
         break;
       case 'newnovel':
         setNovelWizardOpen(true);
+        break;
+      case 'projectsettings':
+        setProjectSettingsOpen(true);
         break;
       case 'saveversion': {
         const novels = fileStructure.getNovelProjects();
@@ -2386,6 +2390,19 @@ export default function MinstrelCodex() {
         }}
       />
 
+      {/* Project Settings */}
+      <NovelProjectWizard
+        visible={projectSettingsOpen}
+        mode="settings"
+        onClose={() => setProjectSettingsOpen(false)}
+        onCreate={() => {}}
+        onLinkStorage={(location) => {
+          if (location === 'google-drive') {
+            setProjectSettingsOpen(false);
+            setActiveModal('gdrive');
+          }
+        }}
+      />
 
       {/* Manuscript Stats Modal */}
       <ManuscriptStatsModal
