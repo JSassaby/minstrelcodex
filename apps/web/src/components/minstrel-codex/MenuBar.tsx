@@ -4,7 +4,7 @@ import {
   FilePlus, BookOpen, FolderOpen, Clock, Save, FileOutput,
   Printer, PanelLeftOpen, Undo2, Redo2, Copy, ClipboardPaste,
   Wifi, Cloud, Settings, Camera, FileText, Music,
-  HelpCircle, ChevronDown, LayoutDashboard, User, Upload,
+  HelpCircle, ChevronDown, LayoutDashboard, Upload,
   SlidersHorizontal,
 } from 'lucide-react';
 import minstrelLogo from '@/assets/minstrel-logo.svg';
@@ -23,9 +23,7 @@ interface MenuBarProps {
   onMenuStateChange?: (open: boolean, menuIdx: number, subOpen: boolean, subIdx: number) => void;
   // Auth
   user?: { email?: string | null; user_metadata?: Record<string, string> } | null;
-  onSignIn?: () => void;
-  onSignOut?: () => void;
-  onSyncNow?: () => void;
+  onOpenProfile?: () => void;
 }
 
 const MENUS = ['file', 'edit', 'network', 'music', 'settings'] as const;
@@ -102,28 +100,14 @@ function nameToColor(str: string): string {
 export default function MenuBar({
   language, visible, menuIndex, submenuOpen, submenuIndex,
   filename, onAction, onMenuStateChange,
-  user, onSignIn, onSignOut, onSyncNow,
+  user, onOpenProfile,
 }: MenuBarProps) {
   const [hoverMenuIdx, setHoverMenuIdx] = useState<number | null>(null);
   const [hoverSubIdx, setHoverSubIdx] = useState<number | null>(null);
   const [mouseActive, setMouseActive] = useState(false);
-  const [profileDropOpen, setProfileDropOpen] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const profileDropRef = useRef<HTMLDivElement>(null);
   const menuItemRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  // Close profile dropdown on outside click
-  useEffect(() => {
-    if (!profileDropOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (profileDropRef.current && !profileDropRef.current.contains(e.target as Node)) {
-        setProfileDropOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [profileDropOpen]);
 
   useEffect(() => {
     if (!mouseActive) return;
@@ -167,7 +151,7 @@ export default function MenuBar({
       // Solid opaque background
       background: '#080e1e',
       border: '1px solid rgba(0, 212, 200, 0.12)',
-      boxShadow: '0 12px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 212, 200, 0.06)',
+      boxShadow: 'none',
     };
   }, [mouseActive, hoverMenuIdx, visible, menuIndex]);
 
@@ -282,68 +266,40 @@ export default function MenuBar({
 
       {/* Right — auth + help + logo + name */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-        {/* Auth area */}
+        {/* Auth area — opens ProfilePage */}
         {user ? (
-          // Signed-in: user name + initials avatar + dropdown
-          <div ref={profileDropRef} style={{ position: 'relative' }}>
-            <button
-              onClick={(e) => { e.stopPropagation(); setProfileDropOpen(p => !p); }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '7px',
-                background: 'transparent', border: '1px solid #333', borderRadius: 0,
-                cursor: 'pointer', padding: '4px 10px', color: '#c8c8c8',
-                fontFamily: uiFont, fontSize: '12px',
-              }}
-            >
-              {(() => {
-                const name = user.user_metadata?.full_name || user.user_metadata?.display_name || user.email || '?';
-                const initials = name.split(/\s+/).map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
-                const label = name.length > 16 ? name.slice(0, 16) + '…' : name;
-                return (
-                  <>
-                    <span style={{
-                      width: '20px', height: '20px', borderRadius: '50%',
-                      background: nameToColor(name), display: 'flex',
-                      alignItems: 'center', justifyContent: 'center',
-                      fontSize: '10px', fontWeight: 600, color: '#fff', flexShrink: 0,
-                    }}>{initials}</span>
-                    <span style={{ opacity: 0.75 }}>{label}</span>
-                  </>
-                );
-              })()}
-            </button>
-            {profileDropOpen && createPortal(
-              <div style={{
-                position: 'fixed',
-                top: '50px', right: '12px',
-                zIndex: 9999,
-                background: '#0d1117', border: '1px solid #1a2540',
-                borderRadius: 0, minWidth: '200px',
-                fontFamily: uiFont, padding: '4px 0',
-              }}>
-                <div style={{ padding: '8px 14px', fontSize: '11px', color: '#555', borderBottom: '1px solid #1a2540' }}>
-                  Signed in as {user.email}
-                </div>
-                <button
-                  onClick={() => { setProfileDropOpen(false); onSyncNow?.(); }}
-                  style={{ display: 'block', width: '100%', padding: '8px 14px', background: 'transparent', border: 'none', borderRadius: 0, color: '#c8c8c8', fontFamily: uiFont, fontSize: '12px', textAlign: 'left', cursor: 'pointer' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#1a2540'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-                >Sync Now</button>
-                <button
-                  onClick={() => { setProfileDropOpen(false); onSignOut?.(); }}
-                  style={{ display: 'block', width: '100%', padding: '8px 14px', background: 'transparent', border: 'none', borderRadius: 0, color: '#e05c5c', fontFamily: uiFont, fontSize: '12px', textAlign: 'left', cursor: 'pointer' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#1a2540'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-                >Sign Out</button>
-              </div>,
-              document.body
-            )}
-          </div>
+          // Signed-in: initials avatar button
+          <button
+            onClick={(e) => { e.stopPropagation(); onOpenProfile?.(); }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '7px',
+              background: 'transparent', border: '1px solid #333', borderRadius: 0,
+              cursor: 'pointer', padding: '4px 10px', color: '#c8c8c8',
+              fontFamily: uiFont, fontSize: '12px',
+            }}
+            title="Open Profile"
+          >
+            {(() => {
+              const name = user.user_metadata?.full_name || user.user_metadata?.display_name || user.email || '?';
+              const initials = name.split(/\s+/).map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
+              const label = name.length > 16 ? name.slice(0, 16) + '…' : name;
+              return (
+                <>
+                  <span style={{
+                    width: '20px', height: '20px', borderRadius: '50%',
+                    background: nameToColor(name), display: 'flex',
+                    alignItems: 'center', justifyContent: 'center',
+                    fontSize: '10px', fontWeight: 600, color: '#fff', flexShrink: 0,
+                  }}>{initials}</span>
+                  <span style={{ opacity: 0.75 }}>{label}</span>
+                </>
+              );
+            })()}
+          </button>
         ) : (
           // Not signed in: subtle "Sign In" button
           <button
-            onClick={(e) => { e.stopPropagation(); onSignIn?.(); }}
+            onClick={(e) => { e.stopPropagation(); onOpenProfile?.(); }}
             style={{
               background: 'transparent', border: '1px solid #444', borderRadius: 0,
               color: '#888', fontFamily: uiFont, fontSize: '12px',

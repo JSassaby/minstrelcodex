@@ -98,6 +98,7 @@ export async function pushSettings(userId: string): Promise<void> {
     });
     if (error) throw error;
     localStorage.removeItem('minstrel-sync-pending');
+    localStorage.setItem('minstrel-last-synced', new Date().toISOString());
   } catch {
     localStorage.setItem('minstrel-sync-pending', 'true');
   }

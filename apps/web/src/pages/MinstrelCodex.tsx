@@ -28,6 +28,7 @@ import { useGoogleToken } from '@/hooks/useGoogleToken';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import AuthModal from '@/components/minstrel-codex/AuthModal';
+import ProfilePage from '@/components/minstrel-codex/ProfilePage';
 import { signOut as authSignOut } from '@/lib/auth';
 import { pullSettings, pushSettings, syncOnChange, flushPendingSync } from '@/lib/settingsSync';
 import { useSyncEngine, GoogleDriveAdapter, db, useWriterProfile, useStreakEngine, useSessionTracker, useXPEngine, getLevelForXP, useChronicleEngine, useNarrativeEngine } from '@minstrelcodex/core';
@@ -219,6 +220,7 @@ export default function MinstrelCodex() {
   const { googleToken, isConnected: googleConnected, clearToken: clearGoogleToken, refreshToken } = useGoogleToken();
   const auth = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [profilePageOpen, setProfilePageOpen] = useState(false);
   const getSupabaseToken = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     return session?.access_token ?? null;
@@ -1671,18 +1673,7 @@ export default function MinstrelCodex() {
           setSubmenuOpen(false);
         }}
         user={auth.user}
-        onSignIn={() => setShowAuthModal(true)}
-        onSignOut={async () => {
-          await authSignOut();
-          localStorage.removeItem('minstrel-active-project');
-          showToast('Signed out');
-        }}
-        onSyncNow={async () => {
-          if (auth.user?.id) {
-            await pushSettings(auth.user.id);
-            showToast('Synced ✓');
-          }
-        }}
+        onOpenProfile={() => setProfilePageOpen(true)}
       />
 
       {/* Storage menu removed — Google Drive accessible via File → Google Drive */}
@@ -2311,13 +2302,37 @@ export default function MinstrelCodex() {
         onClose={closeModal}
       />
 
-      {/* Auth Modal */}
+      {/* Auth Modal (legacy — kept for direct deeplinks) */}
       <AuthModal
         visible={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         onAuthSuccess={(label) => {
           setShowAuthModal(false);
           showToast(`Signed in as ${label}`);
+        }}
+      />
+
+      {/* Profile Page */}
+      <ProfilePage
+        visible={profilePageOpen}
+        user={auth.user}
+        onClose={() => setProfilePageOpen(false)}
+        onOpenSecuritySettings={() => {
+          setProfilePageOpen(false);
+          setSettingsPanelOpen(true);
+        }}
+        onOpenStorageSettings={() => {
+          setProfilePageOpen(false);
+          setSettingsPanelOpen(true);
+        }}
+        onAuthSuccess={(label) => {
+          showToast(`Signed in as ${label}`);
+        }}
+        onSignOut={async () => {
+          await authSignOut();
+          localStorage.removeItem('minstrel-active-project');
+          setProfilePageOpen(false);
+          showToast('Signed out');
         }}
       />
 

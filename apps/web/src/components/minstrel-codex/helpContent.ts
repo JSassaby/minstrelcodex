@@ -859,6 +859,63 @@ Contains: The Bard's Legend (lifetime stats) · Chronicles grid · This Week cha
       },
     ],
   },
+  {
+    id: 'profile-sync',
+    title: 'Your Profile & Sync',
+    children: [
+      {
+        id: 'creating-a-profile',
+        title: 'Creating a Profile',
+        content: `
+<h2>Your Profile &amp; Account</h2>
+<p>Minstrel Codex is fully functional without an account. Your documents, settings, and preferences are always saved locally on your device. An account is entirely optional — it adds cross-device sync and nothing else.</p>
+
+<h3>Opening Your Profile</h3>
+<p>Your profile is accessible from the <strong>profile button in the top right of the menu bar</strong>. When you are not signed in, this appears as a "Sign In" button. When signed in, it shows your name and initials. Clicking either opens the Profile page.</p>
+
+<h3>Creating an Account</h3>
+<p>To create an account, open your profile from the top right and choose one of the following:</p>
+<ul>
+<li><strong>Continue with Google</strong> — One-click sign-in using your existing Google account. No new password needed.</li>
+<li><strong>Email &amp; Password</strong> — Create an account with a display name, email address, and password (minimum 8 characters). Check your email to confirm before signing in.</li>
+</ul>
+
+<h3>What Syncs</h3>
+<p>When signed in, the following data syncs automatically across devices:</p>
+<ul>
+<li>Theme, font, font size, language, accessibility settings</li>
+<li>File structure and all documents</li>
+<li>Project settings, renown &amp; level, streaks, chronicles</li>
+<li>Music preferences and writing goal</li>
+</ul>
+<p>Sync is additive — signing in on a new device <strong>merges</strong> cloud and local data. Nothing is ever deleted from your local device.</p>
+
+<h3>Privacy</h3>
+<p>Your writing is stored on your device first. When sync is enabled, documents are encrypted in transit and stored securely on Supabase infrastructure. You can sign out or delete your account at any time from the Profile page.</p>
+`,
+      },
+      {
+        id: 'sync-settings',
+        title: 'Sync &amp; Cross-Device',
+        content: `
+<h2>Cross-Device Sync</h2>
+<p>When you are signed in, Minstrel Codex automatically syncs your settings and documents in the background. Changes are pushed within two seconds of being made.</p>
+
+<h3>Offline Behaviour</h3>
+<p>If you go offline, all changes are saved locally and queued for sync. When your connection returns, any pending changes are pushed automatically. You will never lose work due to connectivity issues.</p>
+
+<h3>Conflict Resolution</h3>
+<p>When you sign in on a new device, cloud and local data are <strong>merged</strong> — not replaced. For documents, the most recently modified version wins. For file structure, the union of both devices is used. Nothing is ever deleted from your local storage.</p>
+
+<h3>Manual Sync</h3>
+<p>Open your profile from the top right and navigate to the <strong>Sync</strong> tab. Click <strong>Sync Now</strong> to trigger an immediate push of all local data to the cloud.</p>
+
+<h3>Google Drive</h3>
+<p>Google Drive sync is a separate feature for file backup, configured in <strong>Settings → Storage</strong>. It works independently of your Minstrel account sync.</p>
+`,
+      },
+    ],
+  },
 ];
 
 // ── Flat lookup helper ──────────────────────────────────────────────
