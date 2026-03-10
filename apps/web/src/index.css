@@ -212,6 +212,10 @@ body.theme-typewriter {
   opacity: 0.7 !important;
   cursor: grabbing;
 }
+.file-browser-row:hover .fb-row-actions,
+.file-browser-row:focus-within .fb-row-actions {
+  opacity: 1 !important;
+}
 /* Folder drop-target highlight ring */
 .file-browser-row[data-drop-target="true"] {
   outline: 2px solid var(--terminal-accent);

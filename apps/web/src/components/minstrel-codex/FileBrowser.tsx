@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronRight, ChevronDown, Book, BookOpen } from 'lucide-react';
+import { ChevronRight, ChevronDown, Book, BookOpen, FilePlus, MoreHorizontal } from 'lucide-react';
 import { DESIGN_TOKENS as DT } from '@minstrelcodex/core';
 import type { FileNode, DocumentData } from '@minstrelcodex/core';
 
@@ -150,6 +150,7 @@ export default function FileBrowser({
   currentContent,
   onClose,
   onOpenFile,
+  onNewFile,
   onCreateFile,
   onNewFolder,
   onCreateFolder,
@@ -185,6 +186,7 @@ export default function FileBrowser({
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; item: FlatItem } | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ type: 'empty-bin' | 'delete-permanently'; item: FlatItem } | null>(null);
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
+  const [contextMenuFocusIdx, setContextMenuFocusIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -223,6 +225,61 @@ export default function FileBrowser({
     setStatusMessage(msg);
     setTimeout(() => setStatusMessage(''), 2000);
   }, []);
+
+  type ContextMenuItem =
+    | { separator: true }
+    | { separator?: false; label: string; action: () => void; danger?: boolean };
+
+  const buildContextMenuItems = useCallback((item: FlatItem): ContextMenuItem[] => {
+    const isRcBin = item.name === 'Recycle Bin' && item.type === 'folder';
+    const isInBin = !isRcBin && item.path.includes('Recycle Bin');
+    const isProjectFolder = item.type === 'folder' && item.depth === 0 && !isRcBin;
+    const isSubfolder = item.type === 'folder' && item.depth > 0 && !isRcBin && !isInBin;
+    const out: ContextMenuItem[] = [];
+
+    if (isRcBin) {
+      if ((item.childCount ?? 0) > 0) {
+        out.push({ label: 'Empty Bin', danger: true, action: () => setConfirmAction({ type: 'empty-bin', item }) });
+      }
+      return out;
+    }
+
+    if (isInBin) {
+      out.push({ label: 'Restore', action: () => { onRestoreFromDeleted(item.path); showStatus('Restored'); setSelectedIndex(prev => Math.max(0, prev - 1)); } });
+      out.push({ label: 'Delete Permanently', danger: true, action: () => setConfirmAction({ type: 'delete-permanently', item }) });
+      return out;
+    }
+
+    if (isProjectFolder) {
+      out.push({ label: item.collapsed ? 'Expand' : 'Collapse', action: () => onToggleFolder(item.path) });
+      out.push({ label: 'New File', action: () => { setInputMode('new-file'); setInputValue(''); } });
+      out.push({ label: 'New Subfolder', action: () => { setInputMode('new-folder'); setInputValue(''); } });
+      if (onOpenProjectSettings) {
+        out.push({ separator: true });
+        out.push({ label: 'Project Settings', action: () => onOpenProjectSettings!(item.name) });
+      }
+      out.push({ separator: true });
+      out.push({ label: 'Delete Project', danger: true, action: () => { onDeleteFolder(item.path); showStatus('Project moved to Recycle Bin'); setSelectedIndex(prev => Math.max(0, prev - 1)); } });
+      return out;
+    }
+
+    if (isSubfolder) {
+      out.push({ label: item.collapsed ? 'Expand' : 'Collapse', action: () => onToggleFolder(item.path) });
+      out.push({ label: 'New File Here', action: () => { setInputMode('new-file'); setInputValue(''); } });
+      out.push({ label: 'New Subfolder', action: () => { setInputMode('new-folder'); setInputValue(''); } });
+      out.push({ separator: true });
+      out.push({ label: 'Delete', danger: true, action: () => { onDeleteFolder(item.path); showStatus('Folder moved to Recycle Bin'); setSelectedIndex(prev => Math.max(0, prev - 1)); } });
+      return out;
+    }
+
+    // Regular file
+    out.push({ label: 'Open', action: () => onOpenFile(item.docKey || item.name) });
+    out.push({ label: 'Rename', action: () => { setInputMode('rename'); setInputValue(item.name); } });
+    out.push({ label: 'Move', action: () => { setInputMode('move'); setMoveTargetIdx(0); } });
+    out.push({ separator: true });
+    out.push({ label: 'Delete', danger: true, action: () => { onDeleteFile(item.name, item.path); showStatus('Moved to Recycle Bin'); setSelectedIndex(prev => Math.max(0, prev - 1)); } });
+    return out;
+  }, [onToggleFolder, onOpenFile, onDeleteFile, onDeleteFolder, onRestoreFromDeleted, onOpenProjectSettings, showStatus]);
 
   // Dismiss context menu on outside click
   useEffect(() => {
@@ -264,6 +321,27 @@ export default function FileBrowser({
       // Don't capture keys when the editor (ProseMirror) is focused
       const target = e.target as HTMLElement;
       if (target?.closest?.('.ProseMirror')) return;
+
+      // Context menu keyboard nav (highest priority)
+      if (contextMenu) {
+        const menuItems = buildContextMenuItems(contextMenu.item).filter((m): m is { label: string; action: () => void; danger?: boolean } => !m.separator);
+        if (e.key === 'ArrowDown') {
+          setContextMenuFocusIdx(prev => Math.min(prev + 1, menuItems.length - 1));
+          e.preventDefault();
+        } else if (e.key === 'ArrowUp') {
+          setContextMenuFocusIdx(prev => Math.max(prev - 1, 0));
+          e.preventDefault();
+        } else if (e.key === 'Enter') {
+          menuItems[contextMenuFocusIdx]?.action();
+          setContextMenu(null);
+          e.preventDefault();
+        } else if (e.key === 'Escape') {
+          setContextMenu(null);
+          e.preventDefault();
+        }
+        return;
+      }
+
       // Input mode handling
       if (inputMode === 'search') {
         if (e.key === 'Escape') {
@@ -338,7 +416,6 @@ export default function FileBrowser({
 
       // Global keys
       if (e.key === 'Escape') {
-        if (contextMenu) { setContextMenu(null); e.preventDefault(); return; }
         if (confirmAction) { setConfirmAction(null); e.preventDefault(); return; }
         onClose(); e.preventDefault(); return;
       }
@@ -353,6 +430,31 @@ export default function FileBrowser({
       } else if (e.key === 'ArrowUp') {
         setSelectedIndex(prev => Math.max(prev - 1, 0));
         e.preventDefault();
+      } else if (e.key === 'ArrowRight') {
+        const item = filteredItems[selectedIndex];
+        if (item?.type === 'folder') {
+          if (item.collapsed) {
+            onToggleFolder(item.path);
+          } else {
+            const next = selectedIndex + 1;
+            if (next < filteredItems.length && filteredItems[next].depth > item.depth) {
+              setSelectedIndex(next);
+            }
+          }
+        }
+        e.preventDefault();
+      } else if (e.key === 'ArrowLeft') {
+        const item = filteredItems[selectedIndex];
+        if (item?.type === 'folder' && !item.collapsed) {
+          onToggleFolder(item.path);
+        } else {
+          const parentPath = item?.path.slice(0, -1) ?? [];
+          if (parentPath.length > 0) {
+            const parentIdx = filteredItems.findIndex(f => f.path.join('/') === parentPath.join('/'));
+            if (parentIdx !== -1) setSelectedIndex(parentIdx);
+          }
+        }
+        e.preventDefault();
       } else if (e.key === 'Enter') {
         const item = filteredItems[selectedIndex];
         if (item) {
@@ -365,20 +467,26 @@ export default function FileBrowser({
         e.preventDefault();
       } else if (e.key === ' ') {
         const item = filteredItems[selectedIndex];
-        if (item?.type === 'folder') onToggleFolder(item.path);
+        if (item) {
+          const el = listRef.current?.querySelector(`.file-browser-row[data-idx="${selectedIndex}"]`) as HTMLElement | null;
+          if (el) {
+            const rect = el.getBoundingClientRect();
+            setContextMenuFocusIdx(0);
+            setContextMenu({ x: rect.right + 4, y: rect.top, item });
+          }
+        }
         e.preventDefault();
-      } else if (e.key === 'd' || e.key === 'D') {
+      } else if (e.key === 'Delete' || e.key === 'd' || e.key === 'D') {
         const item = filteredItems[selectedIndex];
         if (item) {
-          const isRecycleBin = item.name === 'Recycle Bin' && item.type === 'folder';
-          const isInRecycleBin = !isRecycleBin && item.path.includes('Recycle Bin');
-          if (isInRecycleBin) {
-            // Permanently delete items already in Recycle Bin
+          const isRcBin = item.name === 'Recycle Bin' && item.type === 'folder';
+          const isInRcBin = !isRcBin && item.path.includes('Recycle Bin');
+          if (isInRcBin) {
             const binPath = item.path.slice(0, item.path.lastIndexOf('Recycle Bin') + 1);
             const itemKey = item.path[item.path.lastIndexOf('Recycle Bin') + 1];
             onPermanentlyDeleteItem(itemKey, binPath);
             showStatus('Permanently deleted');
-          } else if (!isRecycleBin) {
+          } else if (!isRcBin) {
             if (item.type === 'file') {
               onDeleteFile(item.name, item.path);
               showStatus('Moved to Recycle Bin');
@@ -390,7 +498,7 @@ export default function FileBrowser({
           setSelectedIndex(prev => Math.max(0, prev - 1));
         }
         e.preventDefault();
-      } else if (e.key === 'r' || e.key === 'R') {
+      } else if (e.key === 'F2' || e.key === 'r' || e.key === 'R') {
         const item = filteredItems[selectedIndex];
         if (item?.type === 'file') {
           setInputMode('rename');
@@ -427,8 +535,9 @@ export default function FileBrowser({
   }, [visible, focused, selectedIndex, inputMode, inputValue, searchQuery,
     moveTargetIdx, filteredItems, onClose, onOpenFile, onDeleteFile, onDeleteFolder,
     onRenameFile, onMoveFile, onToggleFolder, onRestoreFromDeleted, onEmptyDeleted,
-    onCreateFolder, onCreateFile, getFolders, showStatus, getSelectedFolderPath,
-    contextMenu, confirmAction]);
+    onPermanentlyDeleteItem, onCreateFolder, onCreateFile, getFolders, showStatus,
+    getSelectedFolderPath, contextMenu, contextMenuFocusIdx, confirmAction,
+    buildContextMenuItems]);
 
   if (!visible) return null;
 
@@ -472,6 +581,8 @@ export default function FileBrowser({
             className="fb-actions-btn"
             onClick={(e) => { e.stopPropagation(); setActionsMenuOpen(prev => !prev); }}
             title="Actions"
+            aria-haspopup="menu"
+            aria-expanded={actionsMenuOpen}
             style={{
               background: 'transparent',
               border: actionsMenuOpen ? '1px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
@@ -752,6 +863,8 @@ export default function FileBrowser({
       {/* Unified file tree */}
       <div
         ref={listRef}
+        role="tree"
+        aria-label="File browser"
         onDragOver={(e) => {
           // Root-level drop zone — only activate when not hovering a row
           e.preventDefault();
@@ -955,14 +1068,15 @@ export default function FileBrowser({
                   }
                 }}
                 onContextMenu={(e) => {
-                  const rcBin = item.name === 'Recycle Bin' && item.type === 'folder';
-                  const inBin = !rcBin && item.path.includes('Recycle Bin');
-                  const topLevel = item.type === 'folder' && item.depth === 0 && item.name !== 'Recycle Bin';
-                  if (!rcBin && !inBin && !topLevel) return;
                   e.preventDefault();
                   setSelectedIndex(i);
+                  setContextMenuFocusIdx(0);
                   setContextMenu({ x: e.clientX, y: e.clientY, item });
                 }}
+                role="treeitem"
+                aria-expanded={isFolder ? !item.collapsed : undefined}
+                aria-selected={isFocused}
+                aria-level={item.depth + 1}
                 className="file-browser-row"
                 style={{
                   padding: '6px 10px',
@@ -1051,6 +1165,44 @@ export default function FileBrowser({
                     {words}w
                   </span>
                 )}
+                {/* Inline hover action buttons */}
+                <div
+                  className="fb-row-actions"
+                  style={{ display: 'flex', gap: '1px', flexShrink: 0, alignItems: 'center', opacity: 0, transition: 'opacity 0.15s' }}
+                >
+                  {isFolder && !isRecycleBin && (
+                    <button
+                      title="New file here"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedIndex(i);
+                        setInputMode('new-file');
+                        setInputValue('');
+                      }}
+                      style={{ background: 'transparent', border: 'none', padding: '1px 3px', cursor: 'pointer', color: 'var(--terminal-text)', display: 'flex', alignItems: 'center', opacity: 0.55, lineHeight: 1 }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.55'; }}
+                    >
+                      <FilePlus size={11} />
+                    </button>
+                  )}
+                  <button
+                    title="More actions"
+                    aria-haspopup="menu"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedIndex(i);
+                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                      setContextMenuFocusIdx(0);
+                      setContextMenu({ x: rect.left, y: rect.bottom + 2, item });
+                    }}
+                    style={{ background: 'transparent', border: 'none', padding: '1px 3px', cursor: 'pointer', color: 'var(--terminal-text)', display: 'flex', alignItems: 'center', opacity: 0.55, lineHeight: 1 }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.55'; }}
+                  >
+                    <MoreHorizontal size={11} />
+                  </button>
+                </div>
               </div>
                 {/* Drop indicator line — after */}
                 {showDropAfter && (
@@ -1066,84 +1218,66 @@ export default function FileBrowser({
       </div>
 
       {/* Context menu */}
-      {contextMenu && (
-        <div
-          className="fb-context-menu"
-          style={{
-            position: 'fixed',
-            left: contextMenu.x,
-            top: contextMenu.y,
-            zIndex: 9999,
-            background: 'var(--terminal-bg)',
-            border: '1px solid var(--terminal-border)',
-            minWidth: '148px',
-            fontFamily: uiFont,
-          }}
-        >
-          {/* Project Settings — top-level non-Recycle Bin folders */}
-          {contextMenu.item.type === 'folder' && contextMenu.item.depth === 0 && contextMenu.item.name !== 'Recycle Bin' && (
-            <button
-              style={{
-                display: 'block',
-                width: '100%',
-                padding: '9px 14px',
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--terminal-text)',
-                fontFamily: uiFont,
-                fontSize: '11px',
-                fontWeight: 500,
-                letterSpacing: '0.07em',
-                textTransform: 'uppercase',
-                textAlign: 'left',
-                cursor: 'pointer',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = DT.COLORS.background.cardHover; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-              onClick={() => {
-                onOpenProjectSettings?.(contextMenu.item.name);
-                setContextMenu(null);
-              }}
-            >
-              Project Settings
-            </button>
-          )}
-          {/* Empty Bin / Delete Permanently — Recycle Bin folder or items inside it */}
-          {(contextMenu.item.name === 'Recycle Bin' || contextMenu.item.path.includes('Recycle Bin')) && (
-            <button
-              style={{
-                display: 'block',
-                width: '100%',
-                padding: '9px 14px',
-                background: 'transparent',
-                border: 'none',
-                color: '#e05c5c',
-                fontFamily: uiFont,
-                fontSize: '11px',
-                fontWeight: 600,
-                letterSpacing: '0.07em',
-                textTransform: 'uppercase',
-                textAlign: 'left',
-                cursor: 'pointer',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(224,92,92,0.12)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-              onClick={() => {
-                const isRcBin = contextMenu.item.name === 'Recycle Bin' && contextMenu.item.type === 'folder';
-                setConfirmAction({
-                  type: isRcBin ? 'empty-bin' : 'delete-permanently',
-                  item: contextMenu.item,
-                });
-                setContextMenu(null);
-              }}
-            >
-              {contextMenu.item.name === 'Recycle Bin' && contextMenu.item.type === 'folder'
-                ? 'Empty Bin'
-                : 'Delete Permanently'}
-            </button>
-          )}
-        </div>
-      )}
+      {contextMenu && (() => {
+        const allMenuItems = buildContextMenuItems(contextMenu.item);
+        const actionMenuItems = allMenuItems.filter((m): m is { label: string; action: () => void; danger?: boolean } => !m.separator);
+        if (allMenuItems.length === 0) return null;
+        return (
+          <div
+            className="fb-context-menu"
+            role="menu"
+            style={{
+              position: 'fixed',
+              left: contextMenu.x,
+              top: contextMenu.y,
+              zIndex: 9999,
+              background: '#0d1117',
+              border: '1px solid #1a2540',
+              borderRadius: 0,
+              minWidth: '160px',
+              fontFamily: uiFont,
+              padding: '4px 0',
+            }}
+          >
+            {allMenuItems.map((menuItem, mIdx) => {
+              if (menuItem.separator) {
+                return <div key={mIdx} style={{ height: '1px', background: '#1a2540', margin: '3px 0' }} />;
+              }
+              const actionIdx = actionMenuItems.indexOf(menuItem as { label: string; action: () => void; danger?: boolean });
+              const isMenuFocused = actionIdx === contextMenuFocusIdx;
+              return (
+                <button
+                  key={mIdx}
+                  role="menuitem"
+                  onMouseEnter={() => setContextMenuFocusIdx(actionIdx)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    (menuItem as { action: () => void }).action();
+                    setContextMenu(null);
+                  }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    padding: '8px 14px',
+                    background: isMenuFocused ? '#1a2540' : 'transparent',
+                    border: 'none',
+                    borderRadius: 0,
+                    color: (menuItem as { danger?: boolean }).danger ? '#e05c5c' : 'var(--terminal-text)',
+                    fontFamily: uiFont,
+                    fontSize: '11px',
+                    fontWeight: (menuItem as { danger?: boolean }).danger ? 600 : 400,
+                    letterSpacing: '0.04em',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {(menuItem as { label: string }).label}
+                </button>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* Confirmation strip */}
       {confirmAction && (
@@ -1241,7 +1375,17 @@ export default function FileBrowser({
         letterSpacing: '0.04em',
         background: 'rgba(0,0,0,0.02)',
       }}>
-        ↑↓ navigate · Enter open · Esc close
+        {(() => {
+          if (contextMenu) return '↑↓ navigate · Enter select · Esc cancel';
+          const sel = filteredItems[selectedIndex];
+          if (!sel) return '↑↓ navigate · Esc close';
+          const isRcBin = sel.name === 'Recycle Bin' && sel.type === 'folder';
+          const isInBin = !isRcBin && sel.path.includes('Recycle Bin');
+          if (isRcBin) return 'E empty · Space menu · Esc close';
+          if (isInBin) return 'U restore · Del delete · Space menu · Esc close';
+          if (sel.type === 'folder') return '→ expand · ← collapse · N new file · Space menu';
+          return 'Enter open · F2 rename · M move · Del delete · Space menu';
+        })()}
       </div>
     </div>
   );
