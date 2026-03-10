@@ -21,6 +21,11 @@ interface MenuBarProps {
   filename: string;
   onAction: (action: string) => void;
   onMenuStateChange?: (open: boolean, menuIdx: number, subOpen: boolean, subIdx: number) => void;
+  // Auth
+  user?: { email?: string | null; user_metadata?: Record<string, string> } | null;
+  onSignIn?: () => void;
+  onSignOut?: () => void;
+  onSyncNow?: () => void;
 }
 
 const MENUS = ['file', 'edit', 'network', 'music', 'settings'] as const;
@@ -86,16 +91,39 @@ function getSubmenuItems(menu: string, language: string): MenuItem[] {
   }
 }
 
+/** Derive a stable background colour from a string (for initials avatar) */
+function nameToColor(str: string): string {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+  const hue = h % 360;
+  return `hsl(${hue}, 55%, 38%)`;
+}
+
 export default function MenuBar({
   language, visible, menuIndex, submenuOpen, submenuIndex,
   filename, onAction, onMenuStateChange,
+  user, onSignIn, onSignOut, onSyncNow,
 }: MenuBarProps) {
   const [hoverMenuIdx, setHoverMenuIdx] = useState<number | null>(null);
   const [hoverSubIdx, setHoverSubIdx] = useState<number | null>(null);
   const [mouseActive, setMouseActive] = useState(false);
+  const [profileDropOpen, setProfileDropOpen] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const profileDropRef = useRef<HTMLDivElement>(null);
   const menuItemRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Close profile dropdown on outside click
+  useEffect(() => {
+    if (!profileDropOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (profileDropRef.current && !profileDropRef.current.contains(e.target as Node)) {
+        setProfileDropOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [profileDropOpen]);
 
   useEffect(() => {
     if (!mouseActive) return;
@@ -252,32 +280,80 @@ export default function MenuBar({
         {shortName}
       </div>
 
-      {/* Right — dashboard + help + logo + name */}
+      {/* Right — auth + help + logo + name */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-        <div
-          onClick={(e) => { e.stopPropagation(); onAction('opendashboard'); }}
-          aria-label="Writer Dashboard"
-          title="Writer Dashboard"
-          style={{
-            cursor: 'pointer',
-            opacity: 0.4,
-            padding: '5px',
-            display: 'flex',
-            alignItems: 'center',
-            transition: 'all 0.2s',
-            background: 'transparent',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.opacity = '0.9';
-            e.currentTarget.style.background = 'rgba(0, 212, 200, 0.08)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.opacity = '0.4';
-            e.currentTarget.style.background = 'transparent';
-          }}
-        >
-          <User size={15} strokeWidth={1.6} />
-        </div>
+        {/* Auth area */}
+        {user ? (
+          // Signed-in: user name + initials avatar + dropdown
+          <div ref={profileDropRef} style={{ position: 'relative' }}>
+            <button
+              onClick={(e) => { e.stopPropagation(); setProfileDropOpen(p => !p); }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '7px',
+                background: 'transparent', border: '1px solid #333', borderRadius: 0,
+                cursor: 'pointer', padding: '4px 10px', color: '#c8c8c8',
+                fontFamily: uiFont, fontSize: '12px',
+              }}
+            >
+              {(() => {
+                const name = user.user_metadata?.full_name || user.user_metadata?.display_name || user.email || '?';
+                const initials = name.split(/\s+/).map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
+                const label = name.length > 16 ? name.slice(0, 16) + '…' : name;
+                return (
+                  <>
+                    <span style={{
+                      width: '20px', height: '20px', borderRadius: '50%',
+                      background: nameToColor(name), display: 'flex',
+                      alignItems: 'center', justifyContent: 'center',
+                      fontSize: '10px', fontWeight: 600, color: '#fff', flexShrink: 0,
+                    }}>{initials}</span>
+                    <span style={{ opacity: 0.75 }}>{label}</span>
+                  </>
+                );
+              })()}
+            </button>
+            {profileDropOpen && createPortal(
+              <div style={{
+                position: 'fixed',
+                top: '50px', right: '12px',
+                zIndex: 9999,
+                background: '#0d1117', border: '1px solid #1a2540',
+                borderRadius: 0, minWidth: '200px',
+                fontFamily: uiFont, padding: '4px 0',
+              }}>
+                <div style={{ padding: '8px 14px', fontSize: '11px', color: '#555', borderBottom: '1px solid #1a2540' }}>
+                  Signed in as {user.email}
+                </div>
+                <button
+                  onClick={() => { setProfileDropOpen(false); onSyncNow?.(); }}
+                  style={{ display: 'block', width: '100%', padding: '8px 14px', background: 'transparent', border: 'none', borderRadius: 0, color: '#c8c8c8', fontFamily: uiFont, fontSize: '12px', textAlign: 'left', cursor: 'pointer' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#1a2540'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                >Sync Now</button>
+                <button
+                  onClick={() => { setProfileDropOpen(false); onSignOut?.(); }}
+                  style={{ display: 'block', width: '100%', padding: '8px 14px', background: 'transparent', border: 'none', borderRadius: 0, color: '#e05c5c', fontFamily: uiFont, fontSize: '12px', textAlign: 'left', cursor: 'pointer' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#1a2540'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                >Sign Out</button>
+              </div>,
+              document.body
+            )}
+          </div>
+        ) : (
+          // Not signed in: subtle "Sign In" button
+          <button
+            onClick={(e) => { e.stopPropagation(); onSignIn?.(); }}
+            style={{
+              background: 'transparent', border: '1px solid #444', borderRadius: 0,
+              color: '#888', fontFamily: uiFont, fontSize: '12px',
+              padding: '4px 10px', cursor: 'pointer',
+              letterSpacing: '0.03em',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--terminal-accent)'; (e.currentTarget as HTMLElement).style.color = 'var(--terminal-accent)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#444'; (e.currentTarget as HTMLElement).style.color = '#888'; }}
+          >Sign In</button>
+        )}
         <div
           onClick={(e) => { e.stopPropagation(); onAction('openhelp'); }}
           style={{

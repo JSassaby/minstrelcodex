@@ -28,6 +28,8 @@ import { useGoogleToken } from '@/hooks/useGoogleToken';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import AuthModal from '@/components/minstrel-codex/AuthModal';
+import { signOut as authSignOut } from '@/lib/auth';
+import { pullSettings, pushSettings, syncOnChange, flushPendingSync } from '@/lib/settingsSync';
 import { useSyncEngine, GoogleDriveAdapter, db, useWriterProfile, useStreakEngine, useSessionTracker, useXPEngine, getLevelForXP, useChronicleEngine, useNarrativeEngine } from '@minstrelcodex/core';
 import type { SessionXPBreakdown, ChronicleDefinition } from '@minstrelcodex/core';
 import NarrativeBeatToast from '@/components/minstrel-codex/NarrativeBeatToast';
@@ -776,6 +778,37 @@ export default function MinstrelCodex() {
   useEffect(() => {
     document.documentElement.style.setProperty('--base-font-size', `${theme.fontSize}px`);
   }, [theme.fontSize]);
+
+  // ── Settings sync (always optional, always additive) ─────────────────────
+  // On mount: pull remote settings if signed in, then flush any pending push.
+  useEffect(() => {
+    const userId = auth.user?.id ?? null;
+    if (!userId) return;
+    (async () => {
+      try { await pullSettings(userId); } catch {}
+      await flushPendingSync(userId);
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run once on mount
+
+  // On auth state change: pull settings when user signs in.
+  useEffect(() => {
+    const userId = auth.user?.id ?? null;
+    if (!userId) return;
+    (async () => {
+      try { await pullSettings(userId); } catch {}
+      await flushPendingSync(userId);
+    })();
+  }, [auth.user?.id]);
+
+  // Debounced sync after settings-relevant state changes.
+  useEffect(() => {
+    syncOnChange(auth.user?.id ?? null);
+  }, [theme.themeMode, theme.fontSize, fontFamily, auth.user?.id]);
+
+  useEffect(() => {
+    syncOnChange(auth.user?.id ?? null);
+  }, [fileStructure.structure, auth.user?.id]);
 
   // Apply color filter
   useEffect(() => {
@@ -1637,6 +1670,19 @@ export default function MinstrelCodex() {
           setMenuOpen(false);
           setSubmenuOpen(false);
         }}
+        user={auth.user}
+        onSignIn={() => setShowAuthModal(true)}
+        onSignOut={async () => {
+          await authSignOut();
+          localStorage.removeItem('minstrel-active-project');
+          showToast('Signed out');
+        }}
+        onSyncNow={async () => {
+          if (auth.user?.id) {
+            await pushSettings(auth.user.id);
+            showToast('Synced ✓');
+          }
+        }}
       />
 
       {/* Storage menu removed — Google Drive accessible via File → Google Drive */}
@@ -1774,7 +1820,7 @@ export default function MinstrelCodex() {
         />
 
         {/* Welcome Intro — first-boot overlay */}
-        <WelcomeIntro />
+        <WelcomeIntro isSignedIn={auth.isLoggedIn} />
 
         <ImportModal
           isOpen={importModalOpen}
@@ -2265,17 +2311,13 @@ export default function MinstrelCodex() {
         onClose={closeModal}
       />
 
-      {/* Email/Password Auth Modal */}
+      {/* Auth Modal */}
       <AuthModal
         visible={showAuthModal}
         onClose={() => setShowAuthModal(false)}
-        onSignIn={async (email, password) => {
-          const { error } = await auth.signIn(email, password);
-          return { error: error ? { message: error.message } : null };
-        }}
-        onSignUp={async (email, password) => {
-          const { error } = await auth.signUp(email, password);
-          return { error: error ? { message: error.message } : null };
+        onAuthSuccess={(label) => {
+          setShowAuthModal(false);
+          showToast(`Signed in as ${label}`);
         }}
       />
 

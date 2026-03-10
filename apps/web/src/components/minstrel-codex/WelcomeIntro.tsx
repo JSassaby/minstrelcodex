@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { DESIGN_TOKENS as DT } from '@minstrelcodex/core';
 import minstrelLogo from '../../assets/minstrel-logo.svg';
 
-export default function WelcomeIntro() {
+interface WelcomeIntroProps {
+  isSignedIn?: boolean;
+}
+
+export default function WelcomeIntro({ isSignedIn = false }: WelcomeIntroProps) {
   const [visible] = useState(() =>
     localStorage.getItem('minstrel-welcome-seen') !== 'true' &&
     localStorage.getItem('minstrel-wizard-complete') !== 'true'
@@ -95,51 +99,64 @@ export default function WelcomeIntro() {
 
         {/* Footer */}
         <div style={{
-          padding:        '16px 44px 28px',
-          flexShrink:     0,
-          borderTop:      DT.BORDERS.subtle,
-          display:        'flex',
-          justifyContent: 'flex-end',
-          gap:            '10px',
+          padding:     '16px 44px 28px',
+          flexShrink:  0,
+          borderTop:   DT.BORDERS.subtle,
         }}>
-          <button
-            onClick={handleSkip}
-            style={{
-              padding:       DT.SPACING.buttonPadding,
-              background:    'transparent',
-              border:        '1px solid #444',
-              borderRadius:  0,
-              color:         '#888',
-              fontFamily:    DT.TYPOGRAPHY.ui.fontFamily,
-              fontSize:      '11px',
-              fontWeight:    500,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              cursor:        'pointer',
-              boxShadow:     'none',
-            }}
-          >
-            Skip for now
-          </button>
-          <button
-            onClick={handleBegin}
-            style={{
-              padding:       DT.SPACING.buttonPadding,
-              background:    DT.COLORS.ui.teal,
-              border:        DT.BORDERS.active,
-              borderRadius:  0,
-              color:         DT.COLORS.background.primary,
-              fontFamily:    DT.TYPOGRAPHY.ui.fontFamily,
-              fontSize:      '11px',
-              fontWeight:    600,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              cursor:        'pointer',
-              boxShadow:     'none',
-            }}
-          >
-            Begin Writing
-          </button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: isSignedIn ? 0 : '14px' }}>
+            <button
+              onClick={handleSkip}
+              style={{
+                padding:       DT.SPACING.buttonPadding,
+                background:    'transparent',
+                border:        '1px solid #444',
+                borderRadius:  0,
+                color:         '#888',
+                fontFamily:    DT.TYPOGRAPHY.ui.fontFamily,
+                fontSize:      '11px',
+                fontWeight:    500,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                cursor:        'pointer',
+                boxShadow:     'none',
+              }}
+            >
+              Skip for now
+            </button>
+            <button
+              onClick={handleBegin}
+              style={{
+                padding:       DT.SPACING.buttonPadding,
+                background:    DT.COLORS.ui.teal,
+                border:        DT.BORDERS.active,
+                borderRadius:  0,
+                color:         DT.COLORS.background.primary,
+                fontFamily:    DT.TYPOGRAPHY.ui.fontFamily,
+                fontSize:      '11px',
+                fontWeight:    600,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                cursor:        'pointer',
+                boxShadow:     'none',
+              }}
+            >
+              Begin Writing
+            </button>
+          </div>
+          {/* One-time sync notice for unauthenticated users */}
+          {!isSignedIn && (
+            <div style={{
+              padding:     '9px 12px',
+              borderLeft:  '3px solid var(--terminal-accent)',
+              background:  'rgba(0,223,160,0.04)',
+              fontSize:    '12px',
+              color:       '#888',
+              fontFamily:  DT.TYPOGRAPHY.ui.fontFamily,
+              lineHeight:  1.5,
+            }}>
+              💡 Your work is saved on this device. To keep your settings and files in sync across devices, you can sign in anytime from the top right.
+            </div>
+          )}
         </div>
       </div>
     </div>
