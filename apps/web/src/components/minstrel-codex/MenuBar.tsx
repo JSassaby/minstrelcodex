@@ -81,6 +81,7 @@ function getSubmenuItems(menu: string, language: string): MenuItem[] {
       ];
     case 'music':
       return [
+        { action: 'opendashboard', label: 'Writer Dashboard', shortcut: 'Ctrl+Shift+U', icon: <LayoutDashboard size={14} color={ICON_ACCENT.blue} strokeWidth={1.6} /> },
         { action: 'openmusic', label: 'Open Music Player…', icon: <Music size={14} color={ICON_ACCENT.blue} strokeWidth={1.6} /> },
       ];
     case 'settings':
@@ -213,7 +214,6 @@ export default function MenuBar({
               }}
               onClick={(e) => {
                 e.stopPropagation();
-                if (menu === 'music') { onAction('openmusic'); return; }
                 if (menu === 'settings') { onAction('opensettings'); return; }
                 if (mouseActive && hoverMenuIdx === i) {
                   setHoverMenuIdx(null);
@@ -226,7 +226,7 @@ export default function MenuBar({
               }}
             >
               {t(language, `menu.${menu}`)}
-              {menu !== 'music' && menu !== 'settings' && (
+              {menu !== 'settings' && (
                 <ChevronDown
                   size={10}
                   strokeWidth={2}
@@ -389,7 +389,7 @@ export default function MenuBar({
       {/* Portal dropdown */}
       {activeSubOpen && activeMenuIdx !== null && (() => {
         const menu = MENUS[activeMenuIdx];
-        if (menu === 'music' || menu === 'settings') return null;
+        if (menu === 'settings') return null;
         const items = getSubmenuItems(menu, language);
         const dropStyle = getDropdownStyle();
         return createPortal(
