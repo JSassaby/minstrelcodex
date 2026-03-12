@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useLocalStorageBoolean } from '@/hooks/useLocalStorageBoolean';
 import { createPortal } from 'react-dom';
 import {
   FilePlus, BookOpen, FolderOpen, Clock, Save, FileOutput,
@@ -24,6 +25,8 @@ interface MenuBarProps {
   // Auth
   user?: { email?: string | null; user_metadata?: Record<string, string> } | null;
   onOpenProfile?: () => void;
+  // Editor panel
+  onEditorClick?: () => void;
 }
 
 const MENUS = ['file', 'edit', 'network', 'music', 'settings'] as const;
@@ -100,8 +103,9 @@ function nameToColor(str: string): string {
 export default function MenuBar({
   language, visible, menuIndex, submenuOpen, submenuIndex,
   filename, onAction, onMenuStateChange,
-  user, onOpenProfile,
+  user, onOpenProfile, onEditorClick,
 }: MenuBarProps) {
+  const [editorEnabled] = useLocalStorageBoolean('minstrel-editor-enabled', false);
   const [hoverMenuIdx, setHoverMenuIdx] = useState<number | null>(null);
   const [hoverSubIdx, setHoverSubIdx] = useState<number | null>(null);
   const [mouseActive, setMouseActive] = useState(false);
@@ -266,6 +270,23 @@ export default function MenuBar({
 
       {/* Right — auth + help + logo + name */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+        {/* ✦ EDITOR indicator — only when Editor Module is enabled */}
+        {editorEnabled && (
+          <span
+            onClick={(e) => { e.stopPropagation(); onEditorClick?.(); }}
+            title="Open Editor Panel (Ctrl+Shift+E)"
+            style={{
+              cursor: 'pointer', color: '#4ecdc4', opacity: 0.7,
+              fontSize: '10px', fontFamily: uiFont, fontWeight: 600,
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              userSelect: 'none',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.7'; }}
+          >
+            ✦ EDITOR
+          </span>
+        )}
         {/* Auth area — opens ProfilePage */}
         {user ? (
           // Signed-in: initials avatar button

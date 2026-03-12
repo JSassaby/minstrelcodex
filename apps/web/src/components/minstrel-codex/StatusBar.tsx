@@ -180,17 +180,6 @@ export default function StatusBar({
           <span style={{ width: '1px', height: '10px', background: 'var(--terminal-border)', opacity: 0.5 }} />
         )}
 
-        {editorModuleEnabled && (
-          <span
-            onClick={onEditorClick}
-            title="Open Editor Panel (Ctrl+Shift+E)"
-            style={{ cursor: 'pointer', color: '#4ecdc4', opacity: 0.7, letterSpacing: '0.1em', fontSize: '10px' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.7'; }}
-          >
-            ✦ EDITOR
-          </span>
-        )}
         {onStatsClick && (
           <span
             onClick={onStatsClick}

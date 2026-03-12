@@ -55,7 +55,7 @@ export const HELP_TREE: HelpFolder[] = [
 <li><strong>Menu Bar</strong> (top) — Access all commands, settings, and tools.</li>
 <li><strong>Sidebar</strong> (left) — File browser, help, notes, and chapter overview panels live here. Only one sidebar can be open at a time.</li>
 <li><strong>Editor</strong> (centre) — Your writing canvas. Supports rich text formatting, headings, and scene breaks.</li>
-<li><strong>Status Bar</strong> (bottom) — Shows word count, save status, battery, Wi-Fi, and your current writing session stats. When the Editor Module is enabled, a <strong>✦ EDITOR</strong> indicator appears here — click it to open the Editor Panel.</li>
+<li><strong>Status Bar</strong> (bottom) — Shows word count, save status, battery, Wi-Fi, and your current writing session stats.</li>
 <li><strong>Editor Panel</strong> (right) — Optional AI editorial feedback panel. Opens alongside the editor when you request feedback. Enable it in Settings → System.</li>
 </ul>
 `,
@@ -620,7 +620,7 @@ export const HELP_TREE: HelpFolder[] = [
 </ol>
 
 <h3>Status Bar Indicator</h3>
-<p>When the Editor Module is enabled, a subtle <strong>✦ EDITOR</strong> indicator appears in the status bar (teal, right side). Clicking it opens the Editor Panel for a full document review.</p>
+<p>When the Editor Module is enabled, a subtle <strong>✦ EDITOR</strong> indicator appears in the top navigation bar (teal, to the left of your profile avatar). Clicking it opens the Editor Panel for a full document review.</p>
 
 <h3>The Context Panel</h3>
 <p>Before requesting feedback you can optionally provide context to guide the editor:</p>

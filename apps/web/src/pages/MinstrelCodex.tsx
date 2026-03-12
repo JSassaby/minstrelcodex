@@ -1724,6 +1724,11 @@ export default function MinstrelCodex() {
         }}
         user={auth.user}
         onOpenProfile={() => setProfilePageOpen(true)}
+        onEditorClick={() => {
+          setEditorPanelText(editorContent);
+          setEditorPanelScope('document');
+          setEditorPanelOpen(true);
+        }}
       />
 
       {/* Storage menu removed — Google Drive accessible via File → Google Drive */}
