@@ -620,7 +620,7 @@ export const HELP_TREE: HelpFolder[] = [
 </ol>
 
 <h3>Status Bar Indicator</h3>
-<p>When the Editor Module is enabled, a subtle <strong>✦ EDITOR</strong> indicator appears in the top navigation bar (teal, to the left of your profile avatar). Clicking it opens the Editor Panel for a full document review.</p>
+<p>When the Editor Module is enabled, a <strong>✦ AI EDITOR</strong> button appears in the top navigation bar (teal, boxed, to the left of your profile avatar). Clicking it opens the Editor Panel for a full document review. The button disappears automatically if you disable the Editor Module in Settings.</p>
 
 <h3>The Context Panel</h3>
 <p>Before requesting feedback you can optionally provide context to guide the editor:</p>

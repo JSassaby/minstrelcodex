@@ -270,7 +270,7 @@ export default function MenuBar({
 
       {/* Right — auth + help + logo + name */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-        {/* ✦ EDITOR indicator — only when Editor Module is enabled */}
+        {/* ✦ AI EDITOR indicator — only when Editor Module is enabled */}
         {editorEnabled && (
           <span
             onClick={(e) => { e.stopPropagation(); onEditorClick?.(); }}
@@ -280,11 +280,13 @@ export default function MenuBar({
               fontSize: '10px', fontFamily: uiFont, fontWeight: 600,
               letterSpacing: '0.1em', textTransform: 'uppercase',
               userSelect: 'none',
+              border: '1px solid #4ecdc4',
+              padding: '2px 8px',
             }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.7'; }}
           >
-            ✦ EDITOR
+            ✦ AI EDITOR
           </span>
         )}
         {/* Auth area — opens ProfilePage */}
