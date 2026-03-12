@@ -678,6 +678,9 @@ export const HELP_TREE: HelpFolder[] = [
 <p>Go to <strong>Profile → Providers</strong>. For each cloud provider, paste your API key into the input field and click Save. For Ollama, enter the base URL and the model name you have pulled (e.g. <code>mistral</code>, <code>llama3</code>).</p>
 <p>When you save the first key, that provider is automatically set as the active provider. You don't need to click "Set as active" unless you want to switch to a different provider.</p>
 
+<h3>Automatic Fallback</h3>
+<p>If you have keys saved for more than one provider, the Editor Module will automatically try the next available provider if the active one fails — whether due to an expired key, quota limit, or network issue. It tries your active provider first, then the others in order, silently. You'll only see an error if every saved provider has been tried and all failed.</p>
+
 <h3>Switching Providers</h3>
 <p>You can add keys for multiple providers and switch between them at any time using the "Set as active" button in Profile → Providers. The active provider is shown with a teal dot and "Active" label, and is also shown in the Editor Panel footer.</p>
 

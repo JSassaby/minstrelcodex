@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export type ProviderId = 'claude' | 'openai' | 'gemini' | 'ollama';
+export type ProviderId = 'claude' | 'openai' | 'gemini' | 'mistral' | 'ollama';
 
 export interface ProviderConfig {
   label: string;
@@ -30,6 +30,13 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     models: ['gemini-1.5-pro', 'gemini-1.5-flash'],
     keyPlaceholder: 'AIza...',
     keyUrl: 'https://aistudio.google.com/app/apikey',
+    isLocal: false,
+  },
+  mistral: {
+    label: 'Mistral',
+    models: ['mistral-small-latest', 'mistral-medium-latest'],
+    keyPlaceholder: '...',
+    keyUrl: 'https://console.mistral.ai',
     isLocal: false,
   },
   ollama: {
@@ -143,6 +150,23 @@ export function setActiveModel(provider: ProviderId, model: string): void {
   localStorage.setItem(`${ACTIVE_MODEL_KEY}-${provider}`, model);
 }
 
+/** Canonical fallback order — active provider is always tried first at call time. */
+const FALLBACK_ORDER: ProviderId[] = ['claude', 'openai', 'gemini', 'mistral', 'ollama'];
+
+/** Returns every provider that has a usable key/model saved in localStorage. */
+export function getProvidersWithKeys(): ProviderId[] {
+  const store = readKeyStore();
+  return FALLBACK_ORDER.filter(id => {
+    if (id === 'ollama') return !!getOllamaModel();
+    return !!store[id];
+  });
+}
+
+/** True if at least one provider has a saved key — used to gate the feedback button. */
+export function hasAnyProviderKey(): boolean {
+  return getProvidersWithKeys().length > 0;
+}
+
 export interface EditorialContext {
   genre?: string;
   audience?: string;
@@ -165,26 +189,21 @@ export interface EditorialFeedback {
   rewrite: string | null;
 }
 
-export async function consultEditor(params: {
+type ConsultParams = {
   text: string;
   context?: EditorialContext;
   includeRewrite: boolean;
   scope: 'selection' | 'scene' | 'document';
-}): Promise<EditorialFeedback> {
-  if (!hasActiveProvider()) {
-    throw new Error(
-      "No active provider set. Go to Profile → Providers and click 'Set as active'."
-    );
-  }
-  const provider = getActiveProvider();
+};
+
+async function callProviderOnce(
+  provider: ProviderId,
+  params: ConsultParams,
+  authToken: string,
+): Promise<EditorialFeedback> {
   const model = provider === 'ollama' ? getOllamaModel() : getActiveModel(provider);
   const apiKey = provider === 'ollama' ? undefined : getProviderKey(provider);
   const ollamaBaseUrl = provider === 'ollama' ? getOllamaUrl() : undefined;
-
-  const { data: { session } } = await supabase.auth.getSession();
-  // Use session token when signed in; fall back to anon key for anonymous users.
-  // Without a valid JWT, Supabase's gateway rejects the request with 401 before the function runs.
-  const authToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
   const resp = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/editor-counsel`,
@@ -210,4 +229,37 @@ export async function consultEditor(params: {
   const json = await resp.json();
   if (json.error) throw new Error(json.error);
   return json as EditorialFeedback;
+}
+
+export async function consultEditor(params: ConsultParams): Promise<EditorialFeedback> {
+  const withKeys = getProvidersWithKeys();
+  if (withKeys.length === 0) {
+    throw new Error("No provider keys saved. Go to Profile → Providers to add one.");
+  }
+
+  // Active provider first, then the rest in FALLBACK_ORDER, deduped.
+  const active = getActiveProvider();
+  const sequence = [active, ...FALLBACK_ORDER.filter(id => id !== active)]
+    .filter(id => withKeys.includes(id));
+
+  const { data: { session } } = await supabase.auth.getSession();
+  // Use session token when signed in; fall back to anon key for anonymous users.
+  const authToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+  const errors: string[] = [];
+  for (let i = 0; i < sequence.length; i++) {
+    const provider = sequence[i];
+    try {
+      return await callProviderOnce(provider, params, authToken);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.push(`${provider}: ${msg}`);
+      const next = sequence[i + 1];
+      if (next) console.log(`Editor: ${provider} failed, trying ${next}...`);
+    }
+  }
+
+  throw new Error(
+    `All providers failed. Check your API keys in Profile → Providers.\n${errors.join('\n')}`
+  );
 }

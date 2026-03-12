@@ -44,7 +44,7 @@ ${text}`;
 }
 
 interface RequestBody {
-  provider: 'claude' | 'openai' | 'gemini' | 'ollama';
+  provider: 'claude' | 'openai' | 'gemini' | 'mistral' | 'ollama';
   model: string;
   apiKey?: string;
   ollamaBaseUrl?: string;
@@ -129,6 +129,29 @@ async function callGemini(body: RequestBody): Promise<string> {
   return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 }
 
+async function callMistral(body: RequestBody): Promise<string> {
+  const resp = await fetch('https://api.mistral.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${body.apiKey ?? ''}`,
+    },
+    body: JSON.stringify({
+      model: body.model,
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: buildUserPrompt(body) },
+      ],
+    }),
+  });
+  if (!resp.ok) {
+    const err = await resp.text();
+    throw new Error(`Mistral API error ${resp.status}: ${err}`);
+  }
+  const data = await resp.json();
+  return data.choices?.[0]?.message?.content ?? '';
+}
+
 async function callOllama(body: RequestBody): Promise<string> {
   const base = (body.ollamaBaseUrl ?? 'http://localhost:11434').replace(/\/$/, '');
   const resp = await fetch(`${base}/api/chat`, {
@@ -174,10 +197,11 @@ serve(async (req) => {
   let raw = '';
   try {
     switch (body.provider) {
-      case 'claude':  raw = await callClaude(body); break;
-      case 'openai':  raw = await callOpenAI(body); break;
-      case 'gemini':  raw = await callGemini(body); break;
-      case 'ollama':  raw = await callOllama(body); break;
+      case 'claude':   raw = await callClaude(body); break;
+      case 'openai':   raw = await callOpenAI(body); break;
+      case 'gemini':   raw = await callGemini(body); break;
+      case 'mistral':  raw = await callMistral(body); break;
+      case 'ollama':   raw = await callOllama(body); break;
       default:
         return new Response(JSON.stringify({ error: `Unknown provider: ${body.provider}` }), {
           status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },

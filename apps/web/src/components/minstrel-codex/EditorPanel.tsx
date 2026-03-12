@@ -3,9 +3,9 @@ import { DESIGN_TOKENS as DT } from '@minstrelcodex/core';
 import {
   consultEditor,
   getActiveProvider,
-  getProviderKey,
   getActiveModel,
   getOllamaModel,
+  hasAnyProviderKey,
   PROVIDERS,
 } from '@/lib/editorProviders';
 import type { EditorialFeedback, EditorialContext } from '@/lib/editorProviders';
@@ -92,9 +92,7 @@ function Bullets({ items }: { items: string[] }) {
 }
 
 function hasProviderKey(): boolean {
-  const provider = getActiveProvider();
-  if (provider === 'ollama') return !!getOllamaModel();
-  return !!getProviderKey(provider);
+  return hasAnyProviderKey();
 }
 
 export default function EditorPanel({ visible, text, scope, onClose, onOpenProviders }: EditorPanelProps) {
