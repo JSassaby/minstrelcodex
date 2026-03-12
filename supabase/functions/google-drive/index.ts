@@ -7,7 +7,7 @@ const corsHeaders = {
 
 const DRIVE_API = 'https://www.googleapis.com/drive/v3';
 const UPLOAD_API = 'https://www.googleapis.com/upload/drive/v3';
-const FETCH_TIMEOUT = 30_000;
+const FETCH_TIMEOUT = 25_000; // 25s — Supabase function limit is 60s, keep well under
 
 // Validate Google Drive IDs (alphanumeric, hyphens, underscores, or 'root')
 function isValidDriveId(id: string | undefined | null): boolean {
@@ -24,7 +24,10 @@ function isValidName(name: string | undefined | null): boolean {
 async function refreshAccessToken(refreshToken: string): Promise<string | null> {
   const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
   const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET');
-  if (!clientId || !clientSecret) return null;
+  if (!clientId || !clientSecret) {
+    console.log('[google-drive] token refresh skipped — GOOGLE_CLIENT_ID/SECRET not set');
+    return null;
+  }
   try {
     const res = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -37,10 +40,14 @@ async function refreshAccessToken(refreshToken: string): Promise<string | null> 
       }),
       signal: AbortSignal.timeout(15_000),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.log('[google-drive] token refresh failed, status:', res.status);
+      return null;
+    }
     const data = await res.json();
     return (data.access_token as string) ?? null;
-  } catch {
+  } catch (e) {
+    console.log('[google-drive] token refresh error:', e instanceof Error ? e.message : e);
     return null;
   }
 }
@@ -51,12 +58,18 @@ serve(async (req) => {
   }
 
   try {
+    const body = await req.json();
     const {
       action, accessToken, refreshToken,
       fileId, folderId, fileName, folderName, content, mimeType, parentId,
-    } = await req.json();
+    } = body;
+
+    // Diagnostic logging — visible in Supabase function logs
+    console.log('[google-drive] invoked, action:', action);
+    console.log('[google-drive] accessToken present:', !!accessToken);
 
     if (!accessToken) {
+      console.log('[google-drive] rejected — no accessToken in request body');
       return new Response(JSON.stringify({ error: 'Google access token required' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -101,13 +114,16 @@ serve(async (req) => {
         });
 
       let res = await doFetch(currentToken);
+      console.log('[google-drive] fetch', url.split('?')[0], '→', res.status);
 
       if (res.status === 401 && refreshToken) {
+        console.log('[google-drive] 401 received, attempting token refresh');
         const fresh = await refreshAccessToken(refreshToken as string);
         if (fresh) {
           currentToken = fresh;
           newAccessToken = fresh;
           res = await doFetch(currentToken);
+          console.log('[google-drive] retry after refresh →', res.status);
         }
       }
 
@@ -125,6 +141,7 @@ serve(async (req) => {
     }
 
     function jsonErr(message: string, status: number): Response {
+      console.log('[google-drive] error response:', status, message);
       return new Response(JSON.stringify({ error: message }), {
         status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -133,13 +150,24 @@ serve(async (req) => {
 
     switch (action) {
       case 'list': {
-        const parent = folderId || 'root';
-        const q = encodeURIComponent(`'${parent}' in parents and trashed = false`);
+        // Under drive.file scope, only list within known app-created folders.
+        // Never fall back to 'root' — that query can hang under restricted scopes.
+        if (!folderId || folderId === 'root') {
+          return jsonErr('folderId required for list (drive.file scope)', 400);
+        }
+        const q = encodeURIComponent(`'${folderId}' in parents and trashed = false`);
         const fields = encodeURIComponent('nextPageToken,files(id,name,mimeType,modifiedTime,size,parents)');
         const allFiles: unknown[] = [];
         let pageToken: string | undefined;
+        let pageCount = 0;
         do {
-          let url = `${DRIVE_API}/files?q=${q}&fields=${fields}&orderBy=folder,name&pageSize=1000`;
+          pageCount++;
+          if (pageCount > 20) {
+            // Safety guard — should never have more than 20k files
+            console.log('[google-drive] list: too many pages, stopping at', pageCount);
+            break;
+          }
+          let url = `${DRIVE_API}/files?q=${q}&fields=${fields}&orderBy=folder,name&pageSize=1000&spaces=drive`;
           if (pageToken) url += `&pageToken=${encodeURIComponent(pageToken)}`;
           const res = await driveRequest(url);
           const data = await res.json();
@@ -154,22 +182,36 @@ serve(async (req) => {
 
       case 'find-or-create-folder': {
         if (!folderName) return jsonErr('folderName required', 400);
-        const parent = parentId || 'root';
+
+        // Under drive.file scope:
+        // - If parentId is a known app-created folder (non-root), include it in the search
+        //   to avoid matching identically named folders in different sub-paths.
+        // - If parentId is absent or 'root', search by name only — drive.file already
+        //   filters results to app-created files so we won't get false positives, and
+        //   querying 'root' in parents can stall under the restricted scope.
+        const knownParent = parentId && parentId !== 'root' ? parentId as string : null;
+
+        const nameClause = `name = '${folderName.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
         const searchQ = encodeURIComponent(
-          `'${parent}' in parents and name = '${folderName.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`
+          knownParent ? `'${knownParent}' in parents and ${nameClause}` : nameClause
         );
         const searchRes = await driveRequest(
-          `${DRIVE_API}/files?q=${searchQ}&fields=${encodeURIComponent('files(id,name)')}&pageSize=1`
+          `${DRIVE_API}/files?q=${searchQ}&fields=${encodeURIComponent('files(id,name)')}&pageSize=1&spaces=drive`
         );
         const searchData = await searchRes.json();
         if (searchRes.ok && searchData.files?.length > 0) {
+          console.log('[google-drive] find-or-create-folder: found existing', searchData.files[0].id);
           return jsonOk({ folder: searchData.files[0] });
         }
+
+        // Create the folder. Under drive.file scope, omit parents for the app root folder
+        // (let Google place it in My Drive). For sub-folders use the known parent ID.
         const metadata: Record<string, unknown> = {
           name: folderName,
           mimeType: 'application/vnd.google-apps.folder',
-          parents: [parent],
         };
+        if (knownParent) metadata.parents = [knownParent];
+
         const res = await driveRequest(`${DRIVE_API}/files`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -177,6 +219,7 @@ serve(async (req) => {
         });
         const data = await res.json();
         if (!res.ok) return jsonErr(data.error?.message || 'Failed to create folder', res.status);
+        console.log('[google-drive] find-or-create-folder: created', data.id);
         return jsonOk({ folder: data });
       }
 
@@ -186,7 +229,7 @@ serve(async (req) => {
           name: folderName,
           mimeType: 'application/vnd.google-apps.folder',
         };
-        if (parentId) metadata.parents = [parentId];
+        if (parentId && parentId !== 'root') metadata.parents = [parentId];
         const res = await driveRequest(`${DRIVE_API}/files`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -226,11 +269,11 @@ serve(async (req) => {
 
         const metadata: Record<string, unknown> = {
           name: fileName,
-          mimeType: mimeType || 'text/html',
+          mimeType: mimeType || 'text/plain',
         };
-        if (parentId) metadata.parents = [parentId];
+        if (parentId && parentId !== 'root') metadata.parents = [parentId];
 
-        const multipartBody = `--boundary\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(metadata)}\r\n--boundary\r\nContent-Type: ${mimeType || 'text/html'}\r\n\r\n${content}\r\n--boundary--`;
+        const multipartBody = `--boundary\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(metadata)}\r\n--boundary\r\nContent-Type: ${mimeType || 'text/plain'}\r\n\r\n${content}\r\n--boundary--`;
 
         if (fileId) {
           const res = await driveRequest(`${UPLOAD_API}/files/${fileId}?uploadType=multipart`, {
@@ -272,8 +315,8 @@ serve(async (req) => {
     }
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Google Drive error:', msg);
-    const isTimeout = msg.includes('timed out') || msg.includes('AbortError');
+    console.error('[google-drive] unhandled error:', msg);
+    const isTimeout = msg.includes('timed out') || msg.includes('AbortError') || msg.includes('abort');
     return new Response(
       JSON.stringify({ error: isTimeout ? 'Request timed out' : 'Internal server error' }),
       {
