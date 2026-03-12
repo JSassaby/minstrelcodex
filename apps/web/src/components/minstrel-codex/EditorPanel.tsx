@@ -213,6 +213,12 @@ export default function EditorPanel({ visible, text, scope, onClose, onOpenProvi
 
   if (!visible) return null;
 
+  // Safety guard: phase can be 'feedback' with a null/malformed feedback object via HMR
+  // state preservation. Reset visually by rendering nothing — the useEffect will fix state
+  // on next open.
+  console.log('EditorPanel feedback state:', JSON.stringify(feedback));
+  if (phase === 'feedback' && !feedback) return null;
+
   const provider = getActiveProvider();
   const providerLabel = PROVIDERS[provider].label;
   const model = provider === 'ollama' ? getOllamaModel() : getActiveModel(provider);
