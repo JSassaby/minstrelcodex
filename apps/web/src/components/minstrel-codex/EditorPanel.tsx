@@ -170,36 +170,36 @@ export default function EditorPanel({ visible, text, scope, onClose, onOpenProvi
     lines.push('EDITORIAL FEEDBACK');
     lines.push('');
     lines.push('STRENGTHS');
-    feedback.strengths.forEach(s => lines.push('• ' + s));
+    (feedback.strengths ?? []).forEach(s => lines.push('• ' + s));
     lines.push('');
     lines.push('CLARITY & LANGUAGE');
-    lines.push(feedback.clarity.observation);
-    feedback.clarity.suggestions.forEach(s => lines.push('• ' + s));
+    lines.push(feedback.clarity?.observation ?? '');
+    (feedback.clarity?.suggestions ?? []).forEach(s => lines.push('• ' + s));
     lines.push('');
     lines.push('PACING & TENSION');
-    lines.push(feedback.pacing.observation);
-    feedback.pacing.suggestions.forEach(s => lines.push('• ' + s));
+    lines.push(feedback.pacing?.observation ?? '');
+    (feedback.pacing?.suggestions ?? []).forEach(s => lines.push('• ' + s));
     if (feedback.dialogue) {
       lines.push('');
       lines.push('DIALOGUE');
-      lines.push(feedback.dialogue.observation);
-      feedback.dialogue.suggestions.forEach(s => lines.push('• ' + s));
+      lines.push(feedback.dialogue?.observation ?? '');
+      (feedback.dialogue?.suggestions ?? []).forEach(s => lines.push('• ' + s));
     }
     lines.push('');
     lines.push('CHARACTER & CONSISTENCY');
-    lines.push(feedback.character.observation);
-    feedback.character.suggestions.forEach(s => lines.push('• ' + s));
+    lines.push(feedback.character?.observation ?? '');
+    (feedback.character?.suggestions ?? []).forEach(s => lines.push('• ' + s));
     lines.push('');
     lines.push('EMOTIONAL IMPACT');
-    lines.push(feedback.emotionalImpact.observation);
-    feedback.emotionalImpact.suggestions.forEach(s => lines.push('• ' + s));
+    lines.push(feedback.emotionalImpact?.observation ?? '');
+    (feedback.emotionalImpact?.suggestions ?? []).forEach(s => lines.push('• ' + s));
     lines.push('');
     lines.push('NARRATIVE PURPOSE');
-    lines.push(feedback.narrativePurpose.observation);
-    feedback.narrativePurpose.suggestions.forEach(s => lines.push('• ' + s));
+    lines.push(feedback.narrativePurpose?.observation ?? '');
+    (feedback.narrativePurpose?.suggestions ?? []).forEach(s => lines.push('• ' + s));
     lines.push('');
     lines.push('TOP SUGGESTIONS');
-    feedback.topSuggestions.forEach((s, i) => lines.push(`${i + 1}. ${s}`));
+    (feedback.topSuggestions ?? []).forEach((s, i) => lines.push(`${i + 1}. ${s}`));
     if (feedback.rewrite) {
       lines.push('');
       lines.push('EXAMPLE REWRITE');
@@ -395,44 +395,54 @@ export default function EditorPanel({ visible, text, scope, onClose, onOpenProvi
           {phase === 'feedback' && feedback && (
             <>
               <CollapsibleSection title="Strengths" icon="✦">
-                <Bullets items={feedback.strengths} />
+                <Bullets items={feedback.strengths ?? []} />
               </CollapsibleSection>
 
-              <CollapsibleSection title="Clarity & Language">
-                <Prose>{feedback.clarity.observation}</Prose>
-                <Bullets items={feedback.clarity.suggestions} />
-              </CollapsibleSection>
+              {feedback.clarity && (
+                <CollapsibleSection title="Clarity & Language">
+                  <Prose>{feedback.clarity.observation}</Prose>
+                  <Bullets items={feedback.clarity.suggestions ?? []} />
+                </CollapsibleSection>
+              )}
 
-              <CollapsibleSection title="Pacing & Tension">
-                <Prose>{feedback.pacing.observation}</Prose>
-                <Bullets items={feedback.pacing.suggestions} />
-              </CollapsibleSection>
+              {feedback.pacing && (
+                <CollapsibleSection title="Pacing & Tension">
+                  <Prose>{feedback.pacing.observation}</Prose>
+                  <Bullets items={feedback.pacing.suggestions ?? []} />
+                </CollapsibleSection>
+              )}
 
               {feedback.dialogue && (
                 <CollapsibleSection title="Dialogue">
                   <Prose>{feedback.dialogue.observation}</Prose>
-                  <Bullets items={feedback.dialogue.suggestions} />
+                  <Bullets items={feedback.dialogue.suggestions ?? []} />
                 </CollapsibleSection>
               )}
 
-              <CollapsibleSection title="Character & Consistency">
-                <Prose>{feedback.character.observation}</Prose>
-                <Bullets items={feedback.character.suggestions} />
-              </CollapsibleSection>
+              {feedback.character && (
+                <CollapsibleSection title="Character & Consistency">
+                  <Prose>{feedback.character.observation}</Prose>
+                  <Bullets items={feedback.character.suggestions ?? []} />
+                </CollapsibleSection>
+              )}
 
-              <CollapsibleSection title="Emotional Impact">
-                <Prose>{feedback.emotionalImpact.observation}</Prose>
-                <Bullets items={feedback.emotionalImpact.suggestions} />
-              </CollapsibleSection>
+              {feedback.emotionalImpact && (
+                <CollapsibleSection title="Emotional Impact">
+                  <Prose>{feedback.emotionalImpact.observation}</Prose>
+                  <Bullets items={feedback.emotionalImpact.suggestions ?? []} />
+                </CollapsibleSection>
+              )}
 
-              <CollapsibleSection title="Narrative Purpose">
-                <Prose>{feedback.narrativePurpose.observation}</Prose>
-                <Bullets items={feedback.narrativePurpose.suggestions} />
-              </CollapsibleSection>
+              {feedback.narrativePurpose && (
+                <CollapsibleSection title="Narrative Purpose">
+                  <Prose>{feedback.narrativePurpose.observation}</Prose>
+                  <Bullets items={feedback.narrativePurpose.suggestions ?? []} />
+                </CollapsibleSection>
+              )}
 
               <CollapsibleSection title="Top Suggestions" icon="✦">
                 <ol style={{ margin: 0, paddingLeft: '20px' }}>
-                  {feedback.topSuggestions.map((s, i) => (
+                  {(feedback.topSuggestions ?? []).map((s, i) => (
                     <li key={i} style={{ fontSize: '14px', fontFamily: uiFont, color: '#d8d8d8', lineHeight: 1.65, marginBottom: '6px' }}>
                       {s}
                     </li>
