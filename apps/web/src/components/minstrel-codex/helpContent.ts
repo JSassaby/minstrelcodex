@@ -38,7 +38,7 @@ export const HELP_TREE: HelpFolder[] = [
 <ol>
 <li><strong>Start typing</strong> — Click anywhere in the editor area and begin writing. There's no signup required, no cloud dependency. Your words are yours.</li>
 <li><strong>Auto-save is always on</strong> — Every 30 seconds, your work is silently saved to your device's local storage. You'll see the save indicator in the status bar.</li>
-<li><strong>Explore the menu bar</strong> — The top menu (FILE, EDIT, SETTINGS, MUSIC, HELP) gives you access to every feature. Press <kbd>ESC</kbd> to open it with your keyboard.</li>
+<li><strong>Explore the menu bar</strong> — The top menu (FILE, ENTERTAINMENT, SETTINGS, HELP) gives you access to every feature. Press <kbd>ESC</kbd> to open it with your keyboard.</li>
 </ol>
 
 <h3>Philosophy</h3>
@@ -56,7 +56,7 @@ export const HELP_TREE: HelpFolder[] = [
 <li><strong>Sidebar</strong> (left) — File browser, help, notes, and chapter overview panels live here. Only one sidebar can be open at a time.</li>
 <li><strong>Editor</strong> (centre) — Your writing canvas. Supports rich text formatting, headings, and scene breaks.</li>
 <li><strong>Status Bar</strong> (bottom) — Shows word count, save status, battery, Wi-Fi, and your current writing session stats.</li>
-<li><strong>Editor Panel</strong> (right) — Optional AI editorial feedback panel. Opens alongside the editor when you request feedback. Enable it in Settings → System.</li>
+<li><strong>Editor Panel</strong> (right) — Optional AI editorial feedback panel. Opens alongside the editor when you request feedback. Enable it in Settings → Language.</li>
 </ul>
 `,
       },
@@ -71,9 +71,8 @@ export const HELP_TREE: HelpFolder[] = [
 <p>The menu bar sits at the very top of the screen. It contains these menus:</p>
 <ul>
 <li><strong>FILE</strong> — Create, open, save, export, and manage your documents and novel projects. Access the file browser, Google Drive sync, and version snapshots.</li>
-<li><strong>EDIT</strong> — Undo, redo, find and replace, insert scene breaks, and access formatting tools.</li>
+<li><strong>ENTERTAINMENT</strong> — Opens the Writer Dashboard, ambient music player, or Typing Challenge. On Raspberry Pi devices a NETWORK menu also appears.</li>
 <li><strong>SETTINGS</strong> — Opens the settings panel where you can customise themes, fonts, language, accessibility, security, and storage options.</li>
-<li><strong>MUSIC</strong> — Opens the ambient music player sidebar for background writing music.</li>
 <li><strong>HELP</strong> — Opens this help panel.</li>
 </ul>
 
@@ -144,7 +143,7 @@ export const HELP_TREE: HelpFolder[] = [
 <table>
 <tr><td><kbd>ESC</kbd></td><td>Open or close the menu bar</td></tr>
 <tr><td><kbd>Ctrl + Shift + B</kbd></td><td>Toggle the file browser sidebar</td></tr>
-<tr><td><kbd>Ctrl + Shift + U</kbd></td><td>Open the Writer Dashboard (also accessible from the MUSIC menu)</td></tr>
+<tr><td><kbd>Ctrl + Shift + U</kbd></td><td>Open the Writer Dashboard (also accessible from the ENTERTAINMENT menu)</td></tr>
 <tr><td><kbd>F11</kbd></td><td>Toggle Focus mode — hides all interface chrome for distraction-free writing. Press <kbd>Esc</kbd> to exit.</td></tr>
 <tr><td><kbd>Ctrl + P</kbd></td><td>Print current document</td></tr>
 </table>
@@ -550,7 +549,7 @@ export const HELP_TREE: HelpFolder[] = [
         title: 'Ambient Music Player',
         content: `
 <h2>Ambient Music Player</h2>
-<p>The built-in music player provides ambient background music to help you focus while writing. Click MUSIC in the menu bar to open the player sidebar.</p>
+<p>The built-in music player provides ambient background music to help you focus while writing. Click <strong>ENTERTAINMENT</strong> in the menu bar and choose "Open Music Player…" to open the player sidebar.</p>
 
 <h3>Controls</h3>
 <ul>
@@ -642,7 +641,7 @@ export const HELP_TREE: HelpFolder[] = [
 <p>The editor speaks directly but kindly — like a professional human editor, not a bot. It won't rewrite your work. It won't correct grammar pedantically. The goal is insight, not interference. Context fields (genre, audience, scene purpose) actively shape the feedback — a thriller and a literary novel should get different observations on the same passage.</p>
 
 <h3>Spellcheck</h3>
-<p>The editor includes browser-native spellcheck, which underlines misspelled words as you type using your system's built-in dictionary. It is enabled by default and can be toggled off in <strong>Settings → System → Spellcheck</strong>. Right-clicking an underlined word shows spelling suggestions from your browser.</p>
+<p>The editor includes browser-native spellcheck, which underlines misspelled words as you type using your system's built-in dictionary. It is enabled by default and can be toggled off in <strong>Settings → Language → Spellcheck</strong>. Right-clicking an underlined word shows spelling suggestions from your browser.</p>
 `,
       },
       {

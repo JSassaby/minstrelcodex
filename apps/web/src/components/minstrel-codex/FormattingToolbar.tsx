@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Editor } from '@tiptap/react';
+import { Undo2, Redo2 } from 'lucide-react';
 import { getAllFonts, addCustomFont, removeCustomFont, preloadBuiltInFonts, type FontOption } from '@/lib/fonts';
 
 const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
@@ -188,6 +189,27 @@ export default function FormattingToolbar({
         </>
       )}
 
+      {/* Undo / Redo */}
+      <button
+        onClick={() => editor.chain().focus().undo().run()}
+        title="Undo (Ctrl+Z)"
+        style={pillBtn(false)}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; (e.currentTarget as HTMLElement).style.background = 'var(--terminal-border)'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.75'; (e.currentTarget as HTMLElement).style.background = 'var(--terminal-surface)'; }}
+      >
+        <Undo2 size={13} strokeWidth={1.8} />
+      </button>
+      <button
+        onClick={() => editor.chain().focus().redo().run()}
+        title="Redo (Ctrl+R)"
+        style={pillBtn(false)}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; (e.currentTarget as HTMLElement).style.background = 'var(--terminal-border)'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.75'; (e.currentTarget as HTMLElement).style.background = 'var(--terminal-surface)'; }}
+      >
+        <Redo2 size={13} strokeWidth={1.8} />
+      </button>
+      {divider('sep-undoredo')}
+
       {/* Font family picker */}
       <div style={{ position: 'relative' }}>
         <button
@@ -270,7 +292,7 @@ export default function FormattingToolbar({
                         flex: 1,
                         textAlign: 'left',
                         padding: '6px 10px',
-                        borderRadius: '8px',
+                
                         border: 'none',
                         background: fontFamily === f.value ? 'var(--terminal-accent)' : 'transparent',
                         color: fontFamily === f.value ? 'var(--terminal-bg)' : 'var(--terminal-text)',

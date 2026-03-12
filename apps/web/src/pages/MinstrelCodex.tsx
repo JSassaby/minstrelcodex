@@ -972,6 +972,7 @@ export default function MinstrelCodex() {
       case 'fullscreen':
         toggleFullscreen();
         break;
+      case 'opentypingchallenge':
       case 'typingchallenge':
         setTypingPhase('start');
         setTypingDifficulty('easy');

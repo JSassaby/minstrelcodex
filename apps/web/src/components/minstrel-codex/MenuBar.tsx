@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import {
   FilePlus, BookOpen, FolderOpen, Clock, Save, FileOutput,
   Printer, PanelLeftOpen, Undo2, Redo2, Copy, ClipboardPaste,
-  Wifi, Cloud, Settings, Camera, FileText, Music,
+  Wifi, Cloud, Settings, Camera, FileText, Music, Keyboard,
   HelpCircle, ChevronDown, LayoutDashboard, Upload,
   SlidersHorizontal,
 } from 'lucide-react';
@@ -29,7 +29,8 @@ interface MenuBarProps {
   onEditorClick?: () => void;
 }
 
-const MENUS = ['file', 'edit', 'network', 'music', 'settings'] as const;
+export const MENUS = ['file', 'network', 'music', 'settings'] as const;
+type MenuKey = typeof MENUS[number];
 
 const ICON_ACCENT = {
   green:  'var(--terminal-accent)',
@@ -83,6 +84,7 @@ function getSubmenuItems(menu: string, language: string): MenuItem[] {
       return [
         { action: 'opendashboard', label: 'Writer Dashboard', shortcut: 'Ctrl+Shift+U', icon: <LayoutDashboard size={14} color={ICON_ACCENT.blue} strokeWidth={1.6} /> },
         { action: 'openmusic', label: 'Open Music Player…', icon: <Music size={14} color={ICON_ACCENT.blue} strokeWidth={1.6} /> },
+        { action: 'opentypingchallenge', label: 'Typing Challenge', icon: <Keyboard size={14} color={ICON_ACCENT.muted} strokeWidth={1.6} /> },
       ];
     case 'settings':
       return [
@@ -107,6 +109,8 @@ export default function MenuBar({
   user, onOpenProfile, onEditorClick,
 }: MenuBarProps) {
   const [editorEnabled] = useLocalStorageBoolean('minstrel-editor-enabled', false);
+  const isRaspberryPi = localStorage.getItem('minstrel-device-type') === 'raspberry-pi';
+  const visibleMenus = MENUS.filter((m): m is MenuKey => m !== 'network' || isRaspberryPi);
   const [hoverMenuIdx, setHoverMenuIdx] = useState<number | null>(null);
   const [hoverSubIdx, setHoverSubIdx] = useState<number | null>(null);
   const [mouseActive, setMouseActive] = useState(false);
@@ -183,7 +187,7 @@ export default function MenuBar({
     >
       {/* Left — menu items */}
       <div style={{ display: 'flex', gap: '1px', alignItems: 'center' }}>
-        {MENUS.map((menu, i) => {
+        {visibleMenus.map((menu, i) => {
           const isFocused = i === activeMenuIdx;
 
           return (
@@ -388,7 +392,7 @@ export default function MenuBar({
 
       {/* Portal dropdown */}
       {activeSubOpen && activeMenuIdx !== null && (() => {
-        const menu = MENUS[activeMenuIdx];
+        const menu = visibleMenus[activeMenuIdx];
         if (menu === 'settings') return null;
         const items = getSubmenuItems(menu, language);
         const dropStyle = getDropdownStyle();
@@ -476,4 +480,4 @@ export default function MenuBar({
   );
 }
 
-export { MENUS, getSubmenuItems };
+export { getSubmenuItems };

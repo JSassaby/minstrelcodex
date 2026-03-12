@@ -5,7 +5,7 @@ import type { AppColors, Language, PinConfig } from '@minstrelcodex/core';
 import { DESIGN_TOKENS as DT } from '@minstrelcodex/core';
 import AccessibilitySection from './AccessibilitySection';
 import type { AccessibilitySettings } from '@/hooks/useAccessibility';
-import { ChevronDown, Check, Shield, HardDrive, Keyboard, SpellCheck } from 'lucide-react';
+import { ChevronDown, Check, Shield, HardDrive, SpellCheck } from 'lucide-react';
 
 // Color presets
 const TEXT_PRESETS = ['#33ff33','#00ff00','#ffffff','#4db8ff','#00e5e5','#ffff00','#ffb000','#ff6b9d','#ff5555','#e6e6e6'];
@@ -72,7 +72,7 @@ type SettingsTab = 'appearance' | 'colors' | 'accessibility' | 'language' | 'sec
 const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'appearance',    label: 'Theme' },
   { id: 'colors',        label: 'Colours' },
-  { id: 'accessibility', label: 'Access' },
+  { id: 'accessibility', label: 'Accessibility' },
   { id: 'language',      label: 'Language' },
   { id: 'security',      label: 'Security' },
   { id: 'storage',       label: 'Storage' },
@@ -243,8 +243,8 @@ export default function SettingsPanel({
   visible, language, colors, wifiOn, bluetoothOn, pinConfig, themeMode,
   a11ySettings, onA11yUpdate, onA11yReset,
   onClose, onAction, onUpdateColors, onResetColors, onSetLanguage,
-  onOpenPinSetup, onOpenTypingChallenge, onConnectGoogle, onConnectApple,
-  onSwitchTheme, onOpenFirstBootWizard,
+  onOpenPinSetup, onConnectGoogle, onConnectApple,
+  onSwitchTheme,
 }: SettingsPanelProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
   const [focusedItemIdx, setFocusedItemIdx] = useState(0);
@@ -288,10 +288,10 @@ export default function SettingsPanel({
     switch (activeTab) {
       case 'appearance': return 3;
       case 'colors': return TEXT_PRESETS.length + BG_PRESETS.length + COLOR_COMBOS.length + 2;
-      case 'language': return 3;
+      case 'language': return 4;
       case 'security': return 1;
       case 'storage': return 5;
-      case 'system': return 4;
+      case 'system': return 0;
       default: return 0;
     }
   }, [activeTab]);
@@ -365,12 +365,7 @@ export default function SettingsPanel({
         if (focusedItemIdx < actions.length) onAction(actions[focusedItemIdx]);
         break;
       }
-      case 'system': {
-        if (focusedItemIdx === 0) onOpenTypingChallenge();
-        else if (focusedItemIdx === 1) onAction('update');
-        else if (focusedItemIdx === 2) onAction('shutdown');
-        break;
-      }
+      case 'system': break;
     }
   };
 
@@ -511,25 +506,48 @@ export default function SettingsPanel({
             padding: '12px 0', display: 'flex', flexDirection: 'column',
             background: '#0d1117',
           }}>
-            {TABS.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                style={{
-                  display: 'block', width: '100%', textAlign: 'left',
-                  padding: '9px 16px', background: 'transparent', border: 'none',
-                  borderLeft: activeTab === tab.id ? '2px solid var(--terminal-accent)' : '2px solid transparent',
-                  color: activeTab === tab.id ? 'var(--terminal-accent)' : '#666',
-                  fontFamily: uiFont, fontSize: '12px', fontWeight: activeTab === tab.id ? 600 : 400,
-                  cursor: 'pointer', letterSpacing: '0.02em',
-                  transition: 'color 0.1s, border-color 0.1s',
-                }}
-                onMouseEnter={e => { if (activeTab !== tab.id) (e.currentTarget as HTMLElement).style.color = '#c8c8c8'; }}
-                onMouseLeave={e => { if (activeTab !== tab.id) (e.currentTarget as HTMLElement).style.color = '#666'; }}
-              >
-                {tab.label}
-              </button>
-            ))}
+            {TABS.map(tab => {
+              if (tab.id === 'system') {
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => onAction('shutdown')}
+                    style={{
+                      display: 'block', width: '100%', textAlign: 'left',
+                      padding: '9px 16px', background: 'transparent', border: 'none',
+                      borderLeft: '2px solid transparent',
+                      color: '#888',
+                      fontFamily: uiFont, fontSize: '12px', fontWeight: 400,
+                      cursor: 'pointer', letterSpacing: '0.02em',
+                      transition: 'color 0.1s',
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#c8c8c8'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#888'; }}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              }
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    padding: '9px 16px', background: 'transparent', border: 'none',
+                    borderLeft: activeTab === tab.id ? '2px solid var(--terminal-accent)' : '2px solid transparent',
+                    color: activeTab === tab.id ? 'var(--terminal-accent)' : '#666',
+                    fontFamily: uiFont, fontSize: '12px', fontWeight: activeTab === tab.id ? 600 : 400,
+                    cursor: 'pointer', letterSpacing: '0.02em',
+                    transition: 'color 0.1s, border-color 0.1s',
+                  }}
+                  onMouseEnter={e => { if (activeTab !== tab.id) (e.currentTarget as HTMLElement).style.color = '#c8c8c8'; }}
+                  onMouseLeave={e => { if (activeTab !== tab.id) (e.currentTarget as HTMLElement).style.color = '#666'; }}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
             <div style={{ marginTop: 'auto', padding: '12px 16px', fontSize: '9px', color: '#333', fontFamily: uiFont, letterSpacing: '0.06em', lineHeight: 1.6 }}>
               Tab — switch<br />↑↓ navigate<br />Enter select<br />Esc close
             </div>
@@ -904,6 +922,9 @@ export default function SettingsPanel({
                 }}>
                   Language affects spell check and UI labels.
                 </div>
+                <div style={{ height: '1px', background: 'rgba(0, 212, 200, 0.06)', margin: '24px 0' }} />
+                {sectionHeader('Writing')}
+                <SpellcheckToggle />
               </div>
             )}
 
@@ -924,6 +945,19 @@ export default function SettingsPanel({
             {/* STORAGE */}
             {activeTab === 'storage' && (
               <div>
+                <div style={{
+                  display: 'flex', gap: '0', marginBottom: '24px',
+                  border: '1px solid rgba(0, 212, 200, 0.08)',
+                }}>
+                  <div style={{ width: '3px', background: 'var(--terminal-accent)', flexShrink: 0 }} />
+                  <div style={{ padding: '14px 16px', fontSize: '12px', lineHeight: 1.7, fontFamily: uiFont, color: '#888' }}>
+                    Minstrel Codex is <strong style={{ color: '#aaa' }}>local-first</strong> — your writing lives on this device and is never sent anywhere without your permission. Cloud providers are optional and additive; your documents remain accessible offline at all times.{' '}
+                    <span
+                      style={{ color: 'var(--terminal-accent)', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: '3px' }}
+                      onClick={() => { onClose(); onAction('openhelp'); }}
+                    >Learn more in Help</span>
+                  </div>
+                </div>
                 {sectionHeader('Storage Providers')}
                 <GlassCard selected onClick={() => { onAction('local'); setFocusedItemIdx(0); }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -948,38 +982,6 @@ export default function SettingsPanel({
               </div>
             )}
 
-            {/* SYSTEM */}
-            {activeTab === 'system' && (
-              <div>
-                {sectionHeader('Editor')}
-                <SpellcheckToggle />
-
-                <div style={{ height: '8px' }} />
-                {sectionHeader('Tools & Actions')}
-                <GlassCard focused={focusedItemIdx === 0} onClick={() => { onOpenTypingChallenge(); setFocusedItemIdx(0); }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Keyboard size={14} strokeWidth={1.6} style={{ opacity: 0.6 }} />
-                    Typing Challenge
-                  </span>
-                  <ChevronDown size={14} style={{ opacity: 0.3, transform: 'rotate(-90deg)' }} />
-                </GlassCard>
-                {onOpenFirstBootWizard && (
-                  <GlassCard focused={focusedItemIdx === 1} onClick={() => { onOpenFirstBootWizard!(); setFocusedItemIdx(1); }}>
-                    <span>📖 New Novel Project…</span>
-                    <ChevronDown size={14} style={{ opacity: 0.3, transform: 'rotate(-90deg)' }} />
-                  </GlassCard>
-                )}
-
-                <div style={{ height: '16px' }} />
-                {sectionHeader('Maintenance')}
-                <GlassCard focused={focusedItemIdx === 2} onClick={() => { onAction('update'); setFocusedItemIdx(2); }}>
-                  <span>{t(language, 'power.update')}</span>
-                </GlassCard>
-                <GlassCard focused={focusedItemIdx === 3} danger onClick={() => { onAction('shutdown'); setFocusedItemIdx(3); }}>
-                  <span>{t(language, 'power.shutdown')}</span>
-                </GlassCard>
-              </div>
-            )}
 
           </div>
         </div>
