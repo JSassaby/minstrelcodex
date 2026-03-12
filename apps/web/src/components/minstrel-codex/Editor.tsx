@@ -49,27 +49,26 @@ function ExitHint({ onExit }: { onExit?: () => void }) {
   return (
     <div
       style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        textAlign: 'center',
-        padding: '8px',
+        position: 'fixed',
+        bottom: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
         fontSize: '11px',
         fontFamily: "var(--font-ui, 'Space Grotesk', sans-serif)",
-        letterSpacing: '0.12em',
-        color: '#ccc',
-        opacity: visible ? 0.6 : 0,
+        letterSpacing: '0.1em',
+        color: '#555',
+        opacity: visible ? 1 : 0,
         transition: 'opacity 0.4s ease',
         pointerEvents: visible ? 'auto' : 'none',
         cursor: 'pointer',
         zIndex: 10,
         userSelect: 'none',
+        whiteSpace: 'nowrap',
       }}
       onClick={onExit}
       title="Exit focus mode"
     >
-      EXIT FOCUS MODE · F11
+      Press Esc to exit Focus
     </div>
   );
 }

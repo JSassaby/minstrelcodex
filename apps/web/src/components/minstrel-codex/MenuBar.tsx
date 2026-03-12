@@ -369,17 +369,17 @@ export default function MenuBar({
               width: '20px',
               height: '20px',
               objectFit: 'contain',
-              opacity: 0.7,
-              filter: 'drop-shadow(0 0 6px rgba(0, 212, 200, 0.2))',
+              opacity: 1,
             }}
           />
           <span style={{
             fontSize: '10px',
             fontFamily: uiFont,
             fontWeight: '600',
-            opacity: 0.35,
+            opacity: 1,
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
+            color: 'var(--terminal-text)',
           }}>
             Minstrel
           </span>

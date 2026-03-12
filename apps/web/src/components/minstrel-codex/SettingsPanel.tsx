@@ -471,11 +471,10 @@ export default function SettingsPanel({
       {/* Panel */}
       <div
         style={{
-          marginLeft: 'auto',
           width: '720px',
           maxWidth: '100vw',
           background: '#0a0a0a',
-          borderLeft: '1px solid #1a2540',
+          borderRight: '1px solid #1a2540',
           display: 'flex',
           flexDirection: 'column',
           height: '100%',

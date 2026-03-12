@@ -1202,6 +1202,11 @@ export default function MinstrelCodex() {
 
       // Global shortcuts
       if (e.key === 'Escape') {
+        if (focusMode) {
+          toggleFocusMode();
+          e.preventDefault();
+          return;
+        }
         setMenuOpen(true);
         setMenuIndex(0);
         setSubmenuOpen(false);
@@ -1708,28 +1713,30 @@ export default function MinstrelCodex() {
       {a11y.settings.screenReaderHints && (
         <div role="status" aria-live="polite" className="sr-only" id="a11y-announcer" />
       )}
-      <MenuBar
-        language={language}
-        visible={menuOpen}
-        menuIndex={menuIndex}
-        submenuOpen={submenuOpen}
-        submenuIndex={submenuIndex}
-        wifiOn={wifiOn}
-        bluetoothOn={bluetoothOn}
-        filename={docStorage.currentDocument.filename}
-        onAction={(action) => {
-          executeAction(action);
-          setMenuOpen(false);
-          setSubmenuOpen(false);
-        }}
-        user={auth.user}
-        onOpenProfile={() => setProfilePageOpen(true)}
-        onEditorClick={() => {
-          setEditorPanelText(editorContent);
-          setEditorPanelScope('document');
-          setEditorPanelOpen(true);
-        }}
-      />
+      {!focusMode && (
+        <MenuBar
+          language={language}
+          visible={menuOpen}
+          menuIndex={menuIndex}
+          submenuOpen={submenuOpen}
+          submenuIndex={submenuIndex}
+          wifiOn={wifiOn}
+          bluetoothOn={bluetoothOn}
+          filename={docStorage.currentDocument.filename}
+          onAction={(action) => {
+            executeAction(action);
+            setMenuOpen(false);
+            setSubmenuOpen(false);
+          }}
+          user={auth.user}
+          onOpenProfile={() => setProfilePageOpen(true)}
+          onEditorClick={() => {
+            setEditorPanelText(editorContent);
+            setEditorPanelScope('document');
+            setEditorPanelOpen(true);
+          }}
+        />
+      )}
 
       {/* Storage menu removed — Google Drive accessible via File → Google Drive */}
 
@@ -1802,7 +1809,7 @@ export default function MinstrelCodex() {
         />
 
         <FileBrowser
-          visible={fileBrowserOpen}
+          visible={fileBrowserOpen && !focusMode}
           focused={fileBrowserFocused}
           rootNode={fileStructure.structure.root}
           allDocuments={allDocs}
