@@ -182,7 +182,9 @@ export async function consultEditor(params: {
   const ollamaBaseUrl = provider === 'ollama' ? getOllamaUrl() : undefined;
 
   const { data: { session } } = await supabase.auth.getSession();
-  const token = session?.access_token;
+  // Use session token when signed in; fall back to anon key for anonymous users.
+  // Without a valid JWT, Supabase's gateway rejects the request with 401 before the function runs.
+  const authToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
   const resp = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/editor-counsel`,
@@ -190,7 +192,7 @@ export async function consultEditor(params: {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        Authorization: `Bearer ${authToken}`,
       },
       body: JSON.stringify({
         provider,
