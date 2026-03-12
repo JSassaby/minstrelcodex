@@ -43,7 +43,7 @@ export class GoogleDriveAdapter implements CloudAdapter {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...body,
-        googleToken: this.token,
+        accessToken: this.token,
         ...(storedRefresh ? { refreshToken: storedRefresh } : {}),
       }),
       signal: AbortSignal.timeout(60_000),

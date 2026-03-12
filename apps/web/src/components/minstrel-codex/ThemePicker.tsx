@@ -241,7 +241,7 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
           from { filter: drop-shadow(0 0 32px rgba(255,255,255,0.12)) drop-shadow(0 0 80px rgba(255,255,255,0.06)); }
           to   { filter: drop-shadow(0 0 40px rgba(255,255,255,0.18)) drop-shadow(0 0 100px rgba(255,255,255,0.1)); }
         }
-        .colour-swatch { transition: transform 0.15s, box-shadow 0.15s; }
+        .colour-swatch { transition: transform 0.15s; }
         .colour-swatch:hover { transform: scale(1.06); }
       `}</style>
 
@@ -258,7 +258,6 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
             height: '300px',
             marginLeft: '-150px',
             marginTop: '-150px',
-            borderRadius: '50%',
             background: 'radial-gradient(circle, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.08) 40%, transparent 70%)',
           }}
         />
@@ -301,7 +300,7 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
             onClick={() => setSection(tab.id as any)}
             style={{
               display: 'flex', alignItems: 'center', gap: '6px',
-              padding: '6px 16px', borderRadius: '20px',
+              padding: '6px 16px',
               background: section === tab.id ? 'rgba(255,255,255,0.1)' : 'transparent',
               border: section === tab.id ? '1px solid rgba(255,255,255,0.18)' : '1px solid transparent',
               color: section === tab.id ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.3)',
@@ -339,16 +338,13 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
                   maxWidth: '320px',
                   minWidth: '220px',
                   display: 'flex', flexDirection: 'column',
-                  borderRadius: '10px', overflow: 'hidden',
+                  overflow: 'hidden',
                   border: isActive
                     ? `1.5px solid ${theme.colors.accent}`
                     : '1.5px solid rgba(255,255,255,0.07)',
                   cursor: 'pointer',
-                  transition: 'border-color 0.25s, box-shadow 0.25s, transform 0.25s',
+                  transition: 'border-color 0.25s, transform 0.25s',
                   transform: isActive ? 'translateY(-6px)' : 'translateY(0)',
-                  boxShadow: isActive
-                    ? `0 20px 60px ${theme.colors.glow !== 'transparent' ? theme.colors.glow : 'rgba(74,111,165,0.22)'}, 0 0 0 1px ${theme.colors.accent}22`
-                    : '0 4px 20px rgba(0,0,0,0.4)',
                   position: 'relative',
                 }}
               >
@@ -356,7 +352,7 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
                 {isSelected && (
                   <div style={{
                     position: 'absolute', top: '10px', right: '10px',
-                    width: '22px', height: '22px', borderRadius: '50%',
+                    width: '22px', height: '22px',
                     background: theme.colors.accent,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     zIndex: 10,
@@ -434,10 +430,9 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
                     setSelectedIdx(modes.indexOf(combo.mode));
                   }}
                   style={{
-                    borderRadius: '8px', overflow: 'hidden', cursor: 'pointer',
+                    overflow: 'hidden', cursor: 'pointer',
                     border: isActive ? `2px solid ${combo.accent}` : '2px solid rgba(255,255,255,0.08)',
-                    boxShadow: isActive ? `0 0 20px ${combo.accent}44` : 'none',
-                    transition: 'border-color 0.2s, box-shadow 0.2s',
+                    transition: 'border-color 0.2s',
                   }}
                 >
                   {/* Colour preview */}
@@ -450,12 +445,11 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
                         height: '7px',
                         width: `${75 - li * 18}%`,
                         background: combo.text,
-                        borderRadius: '3px',
                         opacity: op,
                       }} />
                     ))}
                     <div style={{
-                      width: '14px', height: '14px', borderRadius: '2px',
+                      width: '14px', height: '14px',
                       background: combo.accent, marginTop: '4px', opacity: 0.9,
                     }} />
                   </div>
@@ -490,13 +484,12 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
           onClick={handleSelect}
           style={{
             display: 'flex', alignItems: 'center', gap: '10px',
-            padding: '13px 36px', borderRadius: '8px',
+            padding: '13px 36px',
             background: activeTheme.colors.accent,
             color: activeTheme.colors.background,
             border: 'none', cursor: 'pointer', fontFamily: uiFont,
             fontSize: '14px', fontWeight: 600, letterSpacing: '0.02em',
-            boxShadow: `0 8px 28px ${activeTheme.colors.glow !== 'transparent' ? activeTheme.colors.glow : 'rgba(74,111,165,0.35)'}`,
-            transition: 'background 0.3s, color 0.3s, box-shadow 0.3s',
+            transition: 'background 0.3s, color 0.3s',
           }}
         >
           Enter {THEMES[modes[selectedIdx]].label}

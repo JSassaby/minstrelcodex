@@ -52,11 +52,11 @@ serve(async (req) => {
 
   try {
     const {
-      action, googleToken, refreshToken,
+      action, accessToken, refreshToken,
       fileId, folderId, fileName, folderName, content, mimeType, parentId,
     } = await req.json();
 
-    if (!googleToken) {
+    if (!accessToken) {
       return new Response(JSON.stringify({ error: 'Google access token required' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -84,7 +84,7 @@ serve(async (req) => {
     }
 
     // Mutable token state for this request — updated if refresh occurs
-    let currentToken = googleToken as string;
+    let currentToken = accessToken as string;
     let newAccessToken: string | undefined;
 
     // Wrapper around fetch that adds Authorization, enforces a timeout,
