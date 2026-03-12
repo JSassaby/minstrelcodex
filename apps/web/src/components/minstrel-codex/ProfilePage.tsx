@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { DESIGN_TOKENS as DT } from '@minstrelcodex/core';
+import { Sparkles } from 'lucide-react';
 import { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { pullSettings, pushSettings } from '@/lib/settingsSync';
@@ -778,12 +779,70 @@ function ProviderRow({
   );
 }
 
+function EditorModuleToggle() {
+  const [enabled, setEnabled] = useState(() =>
+    localStorage.getItem('minstrel-editor-enabled') === 'true'
+  );
+  const hasKey = (() => {
+    try {
+      const store = JSON.parse(localStorage.getItem('minstrel-editor-keys') || '{}');
+      return Object.values(store).some(v => typeof v === 'string' && (v as string).length > 0);
+    } catch { return false; }
+  })();
+
+  const toggle = () => {
+    const next = !enabled;
+    localStorage.setItem('minstrel-editor-enabled', String(next));
+    setEnabled(next);
+    window.dispatchEvent(
+      new StorageEvent('storage', { key: 'minstrel-editor-enabled', newValue: String(next) })
+    );
+  };
+
+  return (
+    <div style={{ padding: '12px 0 12px 12px', borderLeft: '2px solid #4ecdc4', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+        <Sparkles size={16} color="#4ecdc4" style={{ flexShrink: 0 }} />
+        <span style={{ fontSize: '13px', fontFamily: uiFont, fontWeight: 600, color: '#c8c8c8', flex: 1 }}>
+          AI Editorial Feedback
+        </span>
+        <button
+          onClick={toggle}
+          style={{
+            width: '36px', height: '20px',
+            background: enabled ? '#4ecdc4' : '#1a2540',
+            border: 'none', cursor: 'pointer', position: 'relative',
+            transition: 'background 0.2s', flexShrink: 0,
+          }}
+        >
+          <span style={{
+            position: 'absolute', top: '3px',
+            left: enabled ? '18px' : '3px',
+            width: '14px', height: '14px',
+            background: '#fff', transition: 'left 0.2s', display: 'block',
+          }} />
+        </button>
+      </div>
+      <div style={{ fontSize: '11px', fontFamily: uiFont, color: '#888', lineHeight: 1.55 }}>
+        Consult an AI editor for feedback on your writing. Never interrupts your flow — only runs when you ask.
+      </div>
+      {enabled && !hasKey && (
+        <div style={{ fontSize: '11px', fontFamily: uiFont, color: '#888', marginTop: '6px', lineHeight: 1.55 }}>
+          Add your API key below to get started.
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProvidersTab() {
   const [, forceUpdate] = useState(0);
   const refresh = () => forceUpdate(n => n + 1);
 
   return (
     <div>
+      <EditorModuleToggle />
+
       <div style={{ fontSize: '10px', fontFamily: uiFont, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#4ecdc4', marginBottom: '12px' }}>
         AI Editor Providers
       </div>

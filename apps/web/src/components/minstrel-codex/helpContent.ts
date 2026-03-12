@@ -610,7 +610,7 @@ export const HELP_TREE: HelpFolder[] = [
 <p>The Editor Module is an optional AI editorial feedback companion. It gives you the kind of thoughtful, constructive feedback a professional editor would give — not a grammar checker, not autocomplete. It only runs when you ask for it and leaves zero trace in the UI when disabled.</p>
 
 <h3>Enabling the Module</h3>
-<p>Go to <strong>Settings → System → Editor Module</strong> and toggle "AI Editorial Feedback" on. You'll also need to add at least one AI provider key in <strong>Profile → Providers</strong>.</p>
+<p>Open your <strong>Profile → Providers</strong> tab. The "AI Editorial Feedback" toggle is at the top — enable it there. You'll also need to add at least one AI provider key on the same page.</p>
 
 <h3>Three Ways to Request Feedback</h3>
 <ol>

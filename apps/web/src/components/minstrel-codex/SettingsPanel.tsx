@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { t, LANGUAGES_LIST } from '@/lib/languages';
 import { ThemeMode, THEMES } from '@/lib/themes';
 import type { AppColors, Language, PinConfig } from '@minstrelcodex/core';
+import { DESIGN_TOKENS as DT } from '@minstrelcodex/core';
 import AccessibilitySection from './AccessibilitySection';
 import type { AccessibilitySettings } from '@/hooks/useAccessibility';
-import { X, ChevronDown, Check, Palette, Globe, Shield, HardDrive, Cpu, Eye, Keyboard, Sparkles, SpellCheck } from 'lucide-react';
+import { ChevronDown, Check, Shield, HardDrive, Keyboard, SpellCheck } from 'lucide-react';
 
 // Color presets
 const TEXT_PRESETS = ['#33ff33','#00ff00','#ffffff','#4db8ff','#00e5e5','#ffff00','#ffb000','#ff6b9d','#ff5555','#e6e6e6'];
@@ -66,16 +67,16 @@ interface SettingsPanelProps {
   onOpenFirstBootWizard?: () => void;
 }
 
-type SettingsTab = 'appearance' | 'colors' | 'language' | 'accessibility' | 'security' | 'storage' | 'system';
+type SettingsTab = 'appearance' | 'colors' | 'accessibility' | 'language' | 'security' | 'storage' | 'system';
 
-const TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
-  { id: 'appearance',     label: 'Theme',    icon: <Eye size={14} strokeWidth={1.6} /> },
-  { id: 'colors',         label: 'Colours',  icon: <Palette size={14} strokeWidth={1.6} /> },
-  { id: 'accessibility',  label: 'Access',   icon: <Keyboard size={14} strokeWidth={1.6} /> },
-  { id: 'language',       label: 'Language',  icon: <Globe size={14} strokeWidth={1.6} /> },
-  { id: 'security',       label: 'Security',  icon: <Shield size={14} strokeWidth={1.6} /> },
-  { id: 'storage',        label: 'Storage',   icon: <HardDrive size={14} strokeWidth={1.6} /> },
-  { id: 'system',         label: 'System',    icon: <Cpu size={14} strokeWidth={1.6} /> },
+const TABS: { id: SettingsTab; label: string }[] = [
+  { id: 'appearance',    label: 'Theme' },
+  { id: 'colors',        label: 'Colours' },
+  { id: 'accessibility', label: 'Access' },
+  { id: 'language',      label: 'Language' },
+  { id: 'security',      label: 'Security' },
+  { id: 'storage',       label: 'Storage' },
+  { id: 'system',        label: 'System' },
 ];
 
 const uiFont = "var(--font-ui, 'Space Grotesk', sans-serif)";
@@ -146,7 +147,6 @@ function DropdownSelect<T extends string>({
           overflow: 'hidden',
           background: '#080e1e',
           border: '1px solid rgba(0, 212, 200, 0.12)',
-          boxShadow: 'none',
           padding: '4px',
           maxHeight: '240px',
           overflowY: 'auto',
@@ -194,71 +194,6 @@ function DropdownSelect<T extends string>({
   );
 }
 
-// Need useRef for DropdownSelect
-import { useRef } from 'react';
-
-function EditorModuleToggle() {
-  const [enabled, setEnabled] = useState(() =>
-    localStorage.getItem('minstrel-editor-enabled') === 'true'
-  );
-  const hasKey = (() => {
-    try {
-      const store = JSON.parse(localStorage.getItem('minstrel-editor-keys') || '{}');
-      return Object.values(store).some(v => typeof v === 'string' && (v as string).length > 0);
-    } catch { return false; }
-  })();
-
-  const toggle = () => {
-    const next = !enabled;
-    localStorage.setItem('minstrel-editor-enabled', String(next));
-    setEnabled(next);
-    window.dispatchEvent(
-      new StorageEvent('storage', { key: 'minstrel-editor-enabled', newValue: String(next) })
-    );
-  };
-
-  return (
-    <div style={{
-      padding: '12px 0 12px 12px',
-      borderLeft: '2px solid #4ecdc4',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-        <Sparkles size={16} color="#4ecdc4" style={{ flexShrink: 0 }} />
-        <span style={{ fontSize: '13px', fontFamily: uiFont, fontWeight: 600, color: 'var(--terminal-text)', flex: 1 }}>
-          AI Editorial Feedback
-        </span>
-        <button
-          onClick={toggle}
-          style={{
-            width: '36px', height: '20px',
-            background: enabled ? 'var(--terminal-accent)' : '#1a2540',
-            border: 'none', cursor: 'pointer', position: 'relative',
-            transition: 'background 0.2s', flexShrink: 0,
-          }}
-        >
-          <span style={{
-            position: 'absolute', top: '3px',
-            left: enabled ? '18px' : '3px',
-            width: '14px', height: '14px',
-            background: '#fff', transition: 'left 0.2s', display: 'block',
-          }} />
-        </button>
-      </div>
-      <div style={{ fontSize: '11px', fontFamily: uiFont, color: '#888', lineHeight: 1.55 }}>
-        Consult an AI editor for feedback on your writing. Never interrupts your flow — only runs when you ask.
-      </div>
-      {enabled && !hasKey && (
-        <div style={{
-          fontSize: '11px', fontFamily: uiFont, color: '#888',
-          marginTop: '6px', lineHeight: 1.55,
-        }}>
-          Add your AI provider key in Profile → Providers to get started.
-        </div>
-      )}
-    </div>
-  );
-}
-
 function SpellcheckToggle() {
   const [enabled, setEnabled] = useState(() =>
     localStorage.getItem('minstrel-spellcheck') !== 'false'
@@ -274,7 +209,7 @@ function SpellcheckToggle() {
   };
 
   return (
-    <div style={{ padding: '10px 0 10px 12px' }}>
+    <div style={{ marginBottom: '16px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
         <SpellCheck size={14} strokeWidth={1.6} style={{ opacity: 0.6, flexShrink: 0 }} />
         <span style={{ fontSize: '13px', fontFamily: uiFont, flex: 1, color: 'var(--terminal-text)' }}>
@@ -297,7 +232,7 @@ function SpellcheckToggle() {
           }} />
         </button>
       </div>
-      <div style={{ fontSize: '11px', fontFamily: uiFont, color: '#888', lineHeight: 1.55 }}>
+      <div style={{ fontSize: '11px', fontFamily: uiFont, color: '#888', lineHeight: 1.55, paddingLeft: '24px' }}>
         Browser-native spellcheck underlines misspelled words as you type.
       </div>
     </div>
@@ -311,7 +246,7 @@ export default function SettingsPanel({
   onOpenPinSetup, onOpenTypingChallenge, onConnectGoogle, onConnectApple,
   onSwitchTheme, onOpenFirstBootWizard,
 }: SettingsPanelProps) {
-  const [activeTabIdx, setActiveTabIdx] = useState(0);
+  const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
   const [focusedItemIdx, setFocusedItemIdx] = useState(0);
   const [textColorInput, setTextColorInput] = useState(colors.text.toUpperCase());
   const [bgColorInput, setBgColorInput] = useState(colors.background.toUpperCase());
@@ -322,8 +257,6 @@ export default function SettingsPanel({
   const [saveThemeName, setSaveThemeName] = useState('');
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
-
-  const activeTab = TABS[activeTabIdx].id;
 
   const [connectedProviders, setConnectedProviders] = useState(() => ({
     google: !!localStorage.getItem('mc-drive-access-token'),
@@ -338,7 +271,6 @@ export default function SettingsPanel({
     });
   }, [visible]);
 
-  // Listen for Google token changes from useGoogleToken hook
   useEffect(() => {
     const handler = () => {
       setConnectedProviders(prev => ({
@@ -350,7 +282,7 @@ export default function SettingsPanel({
     return () => window.removeEventListener('mc-google-token-changed', handler);
   }, []);
 
-  useEffect(() => { setFocusedItemIdx(0); }, [activeTabIdx]);
+  useEffect(() => { setFocusedItemIdx(0); }, [activeTab]);
 
   const getItemCount = useCallback((): number => {
     switch (activeTab) {
@@ -370,8 +302,9 @@ export default function SettingsPanel({
       if (e.key === 'Escape') { onClose(); e.preventDefault(); return; }
       if (e.key === 'Tab') {
         e.preventDefault();
-        if (e.shiftKey) setActiveTabIdx(prev => (prev - 1 + TABS.length) % TABS.length);
-        else setActiveTabIdx(prev => (prev + 1) % TABS.length);
+        const currentIdx = TABS.findIndex(t => t.id === activeTab);
+        if (e.shiftKey) setActiveTab(TABS[(currentIdx - 1 + TABS.length) % TABS.length].id);
+        else setActiveTab(TABS[(currentIdx + 1) % TABS.length].id);
         return;
       }
       const itemCount = getItemCount();
@@ -388,7 +321,7 @@ export default function SettingsPanel({
     };
     window.addEventListener('keydown', handler, true);
     return () => window.removeEventListener('keydown', handler, true);
-  }, [visible, activeTab, activeTabIdx, focusedItemIdx, textColorInput, bgColorInput, getItemCount]);
+  }, [visible, activeTab, focusedItemIdx, textColorInput, bgColorInput, getItemCount]);
 
   const handleEnter = () => {
     switch (activeTab) {
@@ -449,22 +382,15 @@ export default function SettingsPanel({
 
   if (!visible) return null;
 
-  // ── Section label ─────────────────────────────────────────────
-  const SectionLabel = ({ children }: { children: React.ReactNode }) => (
+  // ── Shared sub-components ──────────────────────────────────────
+  const sectionHeader = (label: string) => (
     <div style={{
-      fontSize: '10px',
-      fontWeight: '700',
-      letterSpacing: '0.1em',
-      textTransform: 'uppercase',
-      opacity: 0.35,
-      marginBottom: '12px',
-      fontFamily: uiFont,
-    }}>
-      {children}
-    </div>
+      fontSize: '10px', fontWeight: 600, letterSpacing: '0.12em',
+      textTransform: 'uppercase', color: 'var(--terminal-accent)',
+      fontFamily: uiFont, marginBottom: '14px', marginTop: '4px',
+    }}>{label}</div>
   );
 
-  // ── Glass card item ──────────────────────────────────────────
   const GlassCard = ({
     focused, selected, danger, onClick, children, style: extraStyle,
   }: {
@@ -481,7 +407,7 @@ export default function SettingsPanel({
           : '1px solid rgba(0, 212, 200, 0.08)',
         cursor: 'pointer',
         background: focused
-          ? 'linear-gradient(135deg, rgba(0, 212, 200, 0.15), rgba(0, 212, 200, 0.06))'
+          ? 'rgba(0, 212, 200, 0.1)'
           : selected
             ? 'rgba(0, 212, 200, 0.06)'
             : 'rgba(0, 212, 200, 0.02)',
@@ -493,7 +419,6 @@ export default function SettingsPanel({
         fontFamily: uiFont,
         fontSize: '13px',
         fontWeight: selected ? '600' : '400',
-        // no backdrop-filter
         ...extraStyle,
       }}
     >
@@ -501,7 +426,6 @@ export default function SettingsPanel({
     </div>
   );
 
-  // ── Glass button ──────────────────────────────────────────────
   const GlassButton = ({
     primary, onClick, children,
   }: {
@@ -513,7 +437,7 @@ export default function SettingsPanel({
         padding: '9px 20px',
         border: primary ? '1px solid var(--terminal-accent)' : '1px solid rgba(0, 212, 200, 0.12)',
         background: primary
-          ? 'linear-gradient(135deg, rgba(0, 212, 200, 0.2), rgba(0, 212, 200, 0.08))'
+          ? 'rgba(0, 212, 200, 0.12)'
           : 'rgba(0, 212, 200, 0.04)',
         color: primary ? 'var(--terminal-accent)' : 'var(--terminal-text)',
         fontFamily: uiFont,
@@ -535,455 +459,142 @@ export default function SettingsPanel({
   return (
     <div
       style={{
-        width: '360px',
-        minWidth: '360px',
-        height: '100%',
-        background: '#060b18',
-        borderRight: '1px solid rgba(0, 212, 200, 0.08)',
-        color: 'var(--terminal-text)',
-        fontFamily: uiFont,
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.65)',
+        zIndex: DT.Z_INDEX.modal - 1,
         display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
+        alignItems: 'stretch',
       }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      {/* ── Header ───────────────────────────────────────────────── */}
-      <div style={{
-        padding: '14px 18px',
-        borderBottom: '1px solid rgba(0, 212, 200, 0.08)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexShrink: 0,
-      }}>
-        <span style={{
-          fontSize: '13px',
-          fontWeight: '700',
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase',
-          fontFamily: uiFont,
-          opacity: 0.7,
+      {/* Panel */}
+      <div
+        style={{
+          marginLeft: 'auto',
+          width: '720px',
+          maxWidth: '100vw',
+          background: '#0a0a0a',
+          borderLeft: '1px solid #1a2540',
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Header */}
+        <div style={{
+          padding: '14px 20px',
+          borderBottom: '1px solid #1a2540',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          flexShrink: 0, background: '#0d1117',
         }}>
-          Settings
-        </span>
-        <button
-          onClick={onClose}
-          title="Esc to close"
-          style={{
-            background: 'rgba(0, 212, 200, 0.06)',
-            border: '1px solid rgba(0, 212, 200, 0.1)',
-            color: 'var(--terminal-text)',
-            opacity: 0.5,
-            cursor: 'pointer',
-            width: '28px',
-            height: '28px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.opacity = '1';
-            e.currentTarget.style.borderColor = 'var(--terminal-accent)';
-            e.currentTarget.style.background = 'rgba(0, 212, 200, 0.12)';
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.opacity = '0.5';
-            e.currentTarget.style.borderColor = 'rgba(0, 212, 200, 0.1)';
-            e.currentTarget.style.background = 'rgba(0, 212, 200, 0.06)';
-          }}
-        >
-          <X size={14} strokeWidth={2} />
-        </button>
-      </div>
+          <span style={{
+            fontSize: '11px', fontWeight: 600, letterSpacing: '0.12em',
+            textTransform: 'uppercase', color: 'var(--terminal-accent)', fontFamily: uiFont,
+          }}>Settings</span>
+          <button
+            onClick={onClose}
+            title="Esc to close"
+            style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: '16px', lineHeight: 1, padding: '4px 6px', fontFamily: uiFont }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#c8c8c8'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#555'; }}
+          >✕</button>
+        </div>
 
-      {/* ── Tab bar ──────────────────────────────────────────────── */}
-      <div style={{
-        display: 'flex',
-        gap: '2px',
-        padding: '8px 10px',
-        borderBottom: '1px solid rgba(0, 212, 200, 0.06)',
-        flexShrink: 0,
-        overflowX: 'auto',
-      }}>
-        {TABS.map((tab, i) => {
-          const active = i === activeTabIdx;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTabIdx(i)}
-              style={{
-                padding: '7px 8px',
-                border: 'none',
-                background: active ? 'rgba(0, 212, 200, 0.12)' : 'transparent',
-                color: active ? 'var(--terminal-accent)' : 'var(--terminal-text)',
-                fontSize: '10px',
-                fontFamily: uiFont,
-                fontWeight: active ? '700' : '500',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.2s',
-                opacity: active ? 1 : 0.45,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '4px',
-                minWidth: '42px',
-                position: 'relative',
-              }}
-              onMouseEnter={e => { if (!active) e.currentTarget.style.opacity = '0.8'; }}
-              onMouseLeave={e => { if (!active) e.currentTarget.style.opacity = '0.45'; }}
-            >
-              {tab.icon}
-              <span style={{ letterSpacing: '0.04em' }}>{tab.label}</span>
-              {active && (
-                <div style={{
-                  position: 'absolute',
-                  bottom: '-8px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: '16px',
-                  height: '2px',
-                  background: 'var(--terminal-accent)',
-                }} />
-              )}
-            </button>
-          );
-        })}
-      </div>
+        {/* Body: left nav + content */}
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
-      {/* ── Content ──────────────────────────────────────────────── */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '20px 18px', width: '100%', boxSizing: 'border-box' }}>
-
-        {/* APPEARANCE */}
-        {activeTab === 'appearance' && (
-          <div>
-            <SectionLabel>Visual Environment</SectionLabel>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {(['terminal', 'modern', 'typewriter'] as ThemeMode[]).map((mode, i) => {
-                const themeDef = THEMES[mode];
-                const isActive = themeMode === mode;
-                const isFocused = focusedItemIdx === i;
-                return (
-                  <div
-                    key={mode}
-                    onClick={() => { onSwitchTheme(mode); setFocusedItemIdx(i); }}
-                    style={{
-                      cursor: 'pointer',
-                      border: isActive
-                        ? '1px solid var(--terminal-accent)'
-                        : '1px solid rgba(0, 212, 200, 0.06)',
-                      overflow: 'hidden',
-                      transition: 'all 0.25s',
-                      background: isActive
-                        ? 'rgba(0, 212, 200, 0.06)'
-                        : 'rgba(0, 212, 200, 0.02)',
-                    }}
-                  >
-                    {/* Preview strip */}
-                    <div style={{
-                      background: themeDef.preview.bg,
-                      color: themeDef.preview.fg,
-                      padding: '16px',
-                      fontFamily: themeDef.fonts.body,
-                      fontSize: '13px',
-                      lineHeight: 1.5,
-                      textShadow: themeDef.effects.textGlow ? `0 0 8px ${themeDef.colors.glow}` : 'none',
-                    }}>
-                      <div style={{ fontWeight: '600', fontSize: '14px' }}>{themeDef.preview.sampleText}</div>
-                      <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '3px' }}>jumps over the lazy dog.</div>
-                    </div>
-                    {/* Label */}
-                    <div style={{
-                      padding: '10px 16px',
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      fontSize: '12px',
-                      fontFamily: uiFont,
-                      fontWeight: '600',
-                      color: isActive ? 'var(--terminal-accent)' : 'var(--terminal-text)',
-                      opacity: isActive ? 1 : 0.7,
-                    }}>
-                      <div>
-                        <div>{themeDef.label}</div>
-                        <div style={{ fontSize: '10px', fontWeight: '400', opacity: 0.5, marginTop: '2px' }}>
-                          {themeDef.description}
-                        </div>
-                      </div>
-                      {isActive && <Check size={14} strokeWidth={2.5} style={{ color: 'var(--terminal-accent)' }} />}
-                    </div>
-                  </div>
-                );
-              })}
+          {/* Left nav */}
+          <div style={{
+            width: '140px', flexShrink: 0,
+            borderRight: '1px solid #1a2540',
+            padding: '12px 0', display: 'flex', flexDirection: 'column',
+            background: '#0d1117',
+          }}>
+            {TABS.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left',
+                  padding: '9px 16px', background: 'transparent', border: 'none',
+                  borderLeft: activeTab === tab.id ? '2px solid var(--terminal-accent)' : '2px solid transparent',
+                  color: activeTab === tab.id ? 'var(--terminal-accent)' : '#666',
+                  fontFamily: uiFont, fontSize: '12px', fontWeight: activeTab === tab.id ? 600 : 400,
+                  cursor: 'pointer', letterSpacing: '0.02em',
+                  transition: 'color 0.1s, border-color 0.1s',
+                }}
+                onMouseEnter={e => { if (activeTab !== tab.id) (e.currentTarget as HTMLElement).style.color = '#c8c8c8'; }}
+                onMouseLeave={e => { if (activeTab !== tab.id) (e.currentTarget as HTMLElement).style.color = '#666'; }}
+              >
+                {tab.label}
+              </button>
+            ))}
+            <div style={{ marginTop: 'auto', padding: '12px 16px', fontSize: '9px', color: '#333', fontFamily: uiFont, letterSpacing: '0.06em', lineHeight: 1.6 }}>
+              Tab — switch<br />↑↓ navigate<br />Enter select<br />Esc close
             </div>
           </div>
-        )}
 
-        {/* COLOURS */}
-        {activeTab === 'colors' && (
-          <div>
-            {/* Save as custom theme */}
-            <div style={{ marginBottom: '20px' }}>
-              {!showSaveInput ? (
-                <GlassButton primary onClick={() => { setShowSaveInput(true); setSaveThemeName(''); setSaveStatus(''); }}>
-                  💾 Save as Custom Theme
-                </GlassButton>
-              ) : (
-                <div style={{
-                  padding: '14px',
-                  border: '1px solid rgba(0, 212, 200, 0.15)',
-                  background: 'rgba(0, 212, 200, 0.04)',
-                  display: 'flex', flexDirection: 'column', gap: '10px',
-                }}>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <div style={{
-                      width: '32px', height: '32px',
-                      background: bgColorInput, border: '1px solid rgba(0, 212, 200, 0.12)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '14px', fontWeight: 'bold', color: textColorInput,
-                      fontFamily: "'JetBrains Mono', monospace", flexShrink: 0,
-                    }}>Aa</div>
-                    <input
-                      value={saveThemeName}
-                      onChange={e => setSaveThemeName(e.target.value)}
-                      placeholder="Theme name…"
-                      autoFocus
-                      maxLength={30}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && saveThemeName.trim()) {
-                          const newTheme: CustomTheme = { name: saveThemeName.trim(), text: textColorInput, bg: bgColorInput };
-                          const updated = [...customThemes, newTheme];
-                          setCustomThemes(updated);
-                          saveCustomThemes(updated);
-                          setSaveStatus('Saved!');
-                          setShowSaveInput(false);
-                          setTimeout(() => setSaveStatus(''), 2000);
-                        } else if (e.key === 'Escape') setShowSaveInput(false);
-                        e.stopPropagation();
-                      }}
-                      style={{
-                        flex: 1, background: 'rgba(0, 0, 0, 0.3)',
-                        border: '1px solid rgba(0, 212, 200, 0.12)',
-                        color: 'var(--terminal-text)', padding: '8px 12px',
-                        fontFamily: uiFont, fontSize: '13px', outline: 'none',
-                      }}
-                      onFocus={e => { e.currentTarget.style.borderColor = 'var(--terminal-accent)'; }}
-                      onBlur={e => { e.currentTarget.style.borderColor = 'rgba(0, 212, 200, 0.12)'; }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <GlassButton primary onClick={() => {
-                      if (!saveThemeName.trim()) return;
-                      const newTheme: CustomTheme = { name: saveThemeName.trim(), text: textColorInput, bg: bgColorInput };
-                      const updated = [...customThemes, newTheme];
-                      setCustomThemes(updated);
-                      saveCustomThemes(updated);
-                      setSaveStatus('Saved!');
-                      setShowSaveInput(false);
-                      setTimeout(() => setSaveStatus(''), 2000);
-                    }}>Save</GlassButton>
-                    <GlassButton onClick={() => setShowSaveInput(false)}>Cancel</GlassButton>
-                  </div>
-                </div>
-              )}
-              {saveStatus && (
-                <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--terminal-accent)', fontFamily: uiFont }}>
-                  ✓ {saveStatus}
-                </div>
-              )}
-            </div>
+          {/* Content area */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px' }}>
 
-            {/* Live Preview */}
-            <div style={{
-              border: '1px solid rgba(0, 212, 200, 0.1)', padding: '20px', marginBottom: '24px',
-              background: bgColorInput, color: textColorInput, textAlign: 'center',
-              fontFamily: "'JetBrains Mono', monospace",
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
-            }}>
-              <div style={{ fontSize: '10px', opacity: 0.4, marginBottom: '8px', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: uiFont }}>Preview</div>
-              <div style={{ fontSize: '22px', fontWeight: 'bold' }}>The quick brown fox</div>
-              <div style={{ fontSize: '13px', marginTop: '4px', opacity: 0.65 }}>jumps over the lazy dog</div>
-            </div>
-
-            {/* Text Color */}
-            <div style={{ marginBottom: '24px' }}>
-              <SectionLabel>Text Colour</SectionLabel>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '12px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '8px', border: '1px solid rgba(0, 212, 200, 0.12)', background: textColorInput, flexShrink: 0 }} />
-                <input
-                  value={textColorInput}
-                  onChange={e => { setTextColorInput(e.target.value.toUpperCase()); setSelectedTextIdx(-1); setSelectedComboIdx(-1); }}
-                  maxLength={7} placeholder="#33FF33" tabIndex={-1}
-                  style={{
-                    flex: 1, maxWidth: '140px', background: 'rgba(0, 0, 0, 0.3)',
-                    border: '1px solid rgba(0, 212, 200, 0.1)',
-                    color: 'var(--terminal-text)', padding: '7px 12px',
-                    fontFamily: "'JetBrains Mono', monospace", fontSize: '12px',
-                    textTransform: 'uppercase', outline: 'none',
-                  }}
-                />
-              </div>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {TEXT_PRESETS.map((color, i) => (
-                  <div
-                    key={color}
-                    onClick={() => { setTextColorInput(color.toUpperCase()); setSelectedTextIdx(i); setSelectedComboIdx(-1); setFocusedItemIdx(i); }}
-                    style={{
-                      width: '28px', height: '28px', borderRadius: '8px', background: color,
-                      border: (isTextSwatchFocused(i) || selectedTextIdx === i) ? '2px solid var(--terminal-accent)' : '1px solid rgba(255,255,255,0.08)',
-                      cursor: 'pointer',
-                      boxShadow: isTextSwatchFocused(i) ? '0 0 12px rgba(0, 212, 200, 0.3)' : 'none',
-                      transition: 'all 0.15s',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}
-                  >
-                    {selectedTextIdx === i && <Check size={12} strokeWidth={3} color={color === '#ffffff' || color === '#ffff00' || color === '#e6e6e6' ? '#000' : '#fff'} />}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* BG Color */}
-            <div style={{ marginBottom: '24px' }}>
-              <SectionLabel>Background Colour</SectionLabel>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '12px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '8px', border: '1px solid rgba(0, 212, 200, 0.12)', background: bgColorInput, flexShrink: 0 }} />
-                <input
-                  value={bgColorInput}
-                  onChange={e => { setBgColorInput(e.target.value.toUpperCase()); setSelectedBgIdx(-1); setSelectedComboIdx(-1); }}
-                  maxLength={7} placeholder="#000000" tabIndex={-1}
-                  style={{
-                    flex: 1, maxWidth: '140px', background: 'rgba(0, 0, 0, 0.3)',
-                    border: '1px solid rgba(0, 212, 200, 0.1)',
-                    color: 'var(--terminal-text)', padding: '7px 12px',
-                    fontFamily: "'JetBrains Mono', monospace", fontSize: '12px',
-                    textTransform: 'uppercase', outline: 'none',
-                  }}
-                />
-              </div>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {BG_PRESETS.map((color, i) => (
-                  <div
-                    key={color}
-                    onClick={() => { setBgColorInput(color.toUpperCase()); setSelectedBgIdx(i); setSelectedComboIdx(-1); setFocusedItemIdx(TEXT_PRESETS.length + i); }}
-                    style={{
-                      width: '28px', height: '28px', borderRadius: '8px', background: color,
-                      border: (isBgSwatchFocused(i) || selectedBgIdx === i) ? '2px solid var(--terminal-accent)' : `1px solid ${color === '#ffffff' || color === '#f5f5f5' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.08)'}`,
-                      cursor: 'pointer',
-                      boxShadow: isBgSwatchFocused(i) ? '0 0 12px rgba(0, 212, 200, 0.3)' : 'none',
-                      transition: 'all 0.15s',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}
-                  >
-                    {selectedBgIdx === i && <Check size={12} strokeWidth={3} color={color === '#000000' || color === '#0a0a0a' || color === '#1a1a1a' || color === '#2c2c2c' ? '#fff' : '#000'} />}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Combos */}
-            <div style={{ paddingTop: '20px', borderTop: '1px solid rgba(0, 212, 200, 0.06)', marginBottom: '20px' }}>
-              <SectionLabel>Colour Combinations</SectionLabel>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                {COLOR_COMBOS.map((combo, i) => {
-                  const focused = isComboFocused(i);
-                  const sel = selectedComboIdx === i;
-                  return (
-                    <div
-                      key={combo.name}
-                      onClick={() => {
-                        setTextColorInput(combo.text.toUpperCase()); setBgColorInput(combo.bg.toUpperCase());
-                        setSelectedComboIdx(i); setSelectedTextIdx(-1); setSelectedBgIdx(-1);
-                        setFocusedItemIdx(TEXT_PRESETS.length + BG_PRESETS.length + i);
-                      }}
-                      style={{
-                        border: (focused || sel) ? '1px solid var(--terminal-accent)' : '1px solid rgba(0, 212, 200, 0.06)',
-                        overflow: 'hidden',
-                        cursor: 'pointer',
-                        boxShadow: focused ? '0 0 16px rgba(0, 212, 200, 0.2)' : 'none',
-                        transition: 'all 0.15s',
-                      }}
-                    >
-                      <div style={{
-                        background: combo.bg, color: combo.text, padding: '10px 8px 6px',
-                        fontWeight: 'bold', fontSize: '18px', textAlign: 'center',
-                        fontFamily: "'JetBrains Mono', monospace",
-                      }}>Aa</div>
-                      <div style={{
-                        padding: '5px 8px', fontSize: '9px', fontFamily: uiFont,
-                        opacity: 0.6, textAlign: 'center',
-                        background: 'rgba(0, 212, 200, 0.03)',
-                        letterSpacing: '0.02em',
-                      }}>{combo.name}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Action buttons */}
-            <div style={{ display: 'flex', gap: '8px', paddingBottom: '8px' }}>
-              <GlassButton primary onClick={handleApplyColors}>Apply Colours</GlassButton>
-              <GlassButton onClick={() => {
-                onResetColors();
-                setTextColorInput('#33FF33'); setBgColorInput('#000000');
-                setSelectedTextIdx(-1); setSelectedBgIdx(-1); setSelectedComboIdx(-1);
-              }}>Reset</GlassButton>
-            </div>
-
-            {/* Custom Themes */}
-            {customThemes.length > 0 && (
-              <div style={{ paddingTop: '20px', borderTop: '1px solid rgba(0, 212, 200, 0.06)', marginBottom: '20px' }}>
-                <SectionLabel>Your Custom Themes</SectionLabel>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                  {customThemes.map((ct, i) => {
-                    const isSelected = textColorInput === ct.text.toUpperCase() && bgColorInput === ct.bg.toUpperCase();
+            {/* APPEARANCE */}
+            {activeTab === 'appearance' && (
+              <div>
+                {sectionHeader('Visual Environment')}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {(['terminal', 'modern', 'typewriter'] as ThemeMode[]).map((mode, i) => {
+                    const themeDef = THEMES[mode];
+                    const isActive = themeMode === mode;
+                    const isFocused = focusedItemIdx === i;
                     return (
                       <div
-                        key={`custom-${i}-${ct.name}`}
+                        key={mode}
+                        onClick={() => { onSwitchTheme(mode); setFocusedItemIdx(i); }}
                         style={{
-                          border: isSelected ? '1px solid var(--terminal-accent)' : '1px solid rgba(0, 212, 200, 0.06)',
-                          overflow: 'hidden',
                           cursor: 'pointer',
-                          transition: 'all 0.15s',
+                          border: isActive
+                            ? '1px solid var(--terminal-accent)'
+                            : '1px solid rgba(0, 212, 200, 0.06)',
+                          overflow: 'hidden',
+                          transition: 'all 0.25s',
+                          background: isActive
+                            ? 'rgba(0, 212, 200, 0.06)'
+                            : 'rgba(0, 212, 200, 0.02)',
+                          outline: isFocused && !isActive ? '1px solid rgba(0, 212, 200, 0.3)' : 'none',
                         }}
                       >
-                        <div
-                          onClick={() => {
-                            setTextColorInput(ct.text.toUpperCase());
-                            setBgColorInput(ct.bg.toUpperCase());
-                            setSelectedComboIdx(-1); setSelectedTextIdx(-1); setSelectedBgIdx(-1);
-                          }}
-                          style={{
-                            background: ct.bg, color: ct.text, padding: '10px 8px 6px',
-                            fontWeight: 'bold', fontSize: '18px', textAlign: 'center',
-                            fontFamily: "'JetBrains Mono', monospace",
-                          }}
-                        >Aa</div>
+                        {/* Preview strip */}
                         <div style={{
-                          padding: '5px 8px', fontSize: '9px', fontFamily: uiFont,
-                          background: 'rgba(0, 212, 200, 0.03)',
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          background: themeDef.preview.bg,
+                          color: themeDef.preview.fg,
+                          padding: '16px',
+                          fontFamily: themeDef.fonts.body,
+                          fontSize: '13px',
+                          lineHeight: 1.5,
+                          textShadow: themeDef.effects.textGlow ? `0 0 8px ${themeDef.colors.glow}` : 'none',
                         }}>
-                          <span
-                            onClick={() => {
-                              setTextColorInput(ct.text.toUpperCase());
-                              setBgColorInput(ct.bg.toUpperCase());
-                              setSelectedComboIdx(-1); setSelectedTextIdx(-1); setSelectedBgIdx(-1);
-                            }}
-                            style={{ opacity: 0.6, flex: 1, cursor: 'pointer' }}
-                          >{ct.name}</span>
-                          <span
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const updated = customThemes.filter((_, idx) => idx !== i);
-                              setCustomThemes(updated);
-                              saveCustomThemes(updated);
-                            }}
-                            title="Delete"
-                            style={{ cursor: 'pointer', opacity: 0.3, fontSize: '11px', transition: 'opacity 0.15s' }}
-                            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.3'; }}
-                          >✕</span>
+                          <div style={{ fontWeight: '600', fontSize: '14px' }}>{themeDef.preview.sampleText}</div>
+                          <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '3px' }}>jumps over the lazy dog.</div>
+                        </div>
+                        {/* Label */}
+                        <div style={{
+                          padding: '10px 16px',
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          fontSize: '12px',
+                          fontFamily: uiFont,
+                          fontWeight: '600',
+                          color: isActive ? 'var(--terminal-accent)' : 'var(--terminal-text)',
+                          opacity: isActive ? 1 : 0.7,
+                        }}>
+                          <div>
+                            <div>{themeDef.label}</div>
+                            <div style={{ fontSize: '10px', fontWeight: '400', opacity: 0.5, marginTop: '2px' }}>
+                              {themeDef.description}
+                            </div>
+                          </div>
+                          {isActive && <Check size={14} strokeWidth={2.5} style={{ color: 'var(--terminal-accent)' }} />}
                         </div>
                       </div>
                     );
@@ -991,130 +602,388 @@ export default function SettingsPanel({
                 </div>
               </div>
             )}
-          </div>
-        )}
 
-        {/* ACCESSIBILITY */}
-        {activeTab === 'accessibility' && (
-          <AccessibilitySection
-            settings={a11ySettings}
-            onUpdate={onA11yUpdate}
-            onReset={onA11yReset}
-          />
-        )}
+            {/* COLOURS */}
+            {activeTab === 'colors' && (
+              <div>
+                {/* Save as custom theme */}
+                <div style={{ marginBottom: '20px' }}>
+                  {!showSaveInput ? (
+                    <GlassButton primary onClick={() => { setShowSaveInput(true); setSaveThemeName(''); setSaveStatus(''); }}>
+                      💾 Save as Custom Theme
+                    </GlassButton>
+                  ) : (
+                    <div style={{
+                      padding: '14px',
+                      border: '1px solid rgba(0, 212, 200, 0.15)',
+                      background: 'rgba(0, 212, 200, 0.04)',
+                      display: 'flex', flexDirection: 'column', gap: '10px',
+                    }}>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <div style={{
+                          width: '32px', height: '32px',
+                          background: bgColorInput, border: '1px solid rgba(0, 212, 200, 0.12)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '14px', fontWeight: 'bold', color: textColorInput,
+                          fontFamily: "'JetBrains Mono', monospace", flexShrink: 0,
+                        }}>Aa</div>
+                        <input
+                          value={saveThemeName}
+                          onChange={e => setSaveThemeName(e.target.value)}
+                          placeholder="Theme name…"
+                          autoFocus
+                          maxLength={30}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' && saveThemeName.trim()) {
+                              const newTheme: CustomTheme = { name: saveThemeName.trim(), text: textColorInput, bg: bgColorInput };
+                              const updated = [...customThemes, newTheme];
+                              setCustomThemes(updated);
+                              saveCustomThemes(updated);
+                              setSaveStatus('Saved!');
+                              setShowSaveInput(false);
+                              setTimeout(() => setSaveStatus(''), 2000);
+                            } else if (e.key === 'Escape') setShowSaveInput(false);
+                            e.stopPropagation();
+                          }}
+                          style={{
+                            flex: 1, background: 'rgba(0, 0, 0, 0.3)',
+                            border: '1px solid rgba(0, 212, 200, 0.12)',
+                            color: 'var(--terminal-text)', padding: '8px 12px',
+                            fontFamily: uiFont, fontSize: '13px', outline: 'none',
+                          }}
+                          onFocus={e => { e.currentTarget.style.borderColor = 'var(--terminal-accent)'; }}
+                          onBlur={e => { e.currentTarget.style.borderColor = 'rgba(0, 212, 200, 0.12)'; }}
+                        />
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <GlassButton primary onClick={() => {
+                          if (!saveThemeName.trim()) return;
+                          const newTheme: CustomTheme = { name: saveThemeName.trim(), text: textColorInput, bg: bgColorInput };
+                          const updated = [...customThemes, newTheme];
+                          setCustomThemes(updated);
+                          saveCustomThemes(updated);
+                          setSaveStatus('Saved!');
+                          setShowSaveInput(false);
+                          setTimeout(() => setSaveStatus(''), 2000);
+                        }}>Save</GlassButton>
+                        <GlassButton onClick={() => setShowSaveInput(false)}>Cancel</GlassButton>
+                      </div>
+                    </div>
+                  )}
+                  {saveStatus && (
+                    <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--terminal-accent)', fontFamily: uiFont }}>
+                      ✓ {saveStatus}
+                    </div>
+                  )}
+                </div>
 
-        {/* LANGUAGE */}
-        {activeTab === 'language' && (
-          <div>
-            <SectionLabel>Interface Language</SectionLabel>
-            <DropdownSelect
-              value={language}
-              options={LANGUAGES_LIST.map(lang => ({
-                value: lang.code as Language,
-                label: lang.name,
-              }))}
-              onChange={(val) => onSetLanguage(val)}
-            />
-            <div style={{
-              marginTop: '20px', padding: '14px 16px',
-              border: '1px solid rgba(0, 212, 200, 0.06)',
-              fontSize: '12px', opacity: 0.4,
-              lineHeight: 1.7, fontFamily: uiFont,
-              background: 'rgba(0, 212, 200, 0.02)',
-            }}>
-              Language affects spell check and UI labels. Additional dictionaries can be installed via Settings &gt; Access.
-            </div>
-          </div>
-        )}
+                {/* Live Preview */}
+                <div style={{
+                  border: '1px solid rgba(0, 212, 200, 0.1)', padding: '20px', marginBottom: '24px',
+                  background: bgColorInput, color: textColorInput, textAlign: 'center',
+                  fontFamily: "'JetBrains Mono', monospace",
+                }}>
+                  <div style={{ fontSize: '10px', opacity: 0.4, marginBottom: '8px', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: uiFont }}>Preview</div>
+                  <div style={{ fontSize: '22px', fontWeight: 'bold' }}>The quick brown fox</div>
+                  <div style={{ fontSize: '13px', marginTop: '4px', opacity: 0.65 }}>jumps over the lazy dog</div>
+                </div>
 
-        {/* SECURITY */}
-        {activeTab === 'security' && (
-          <div>
-            <SectionLabel>PIN Lock</SectionLabel>
-            <GlassCard focused={focusedItemIdx === 0} onClick={onOpenPinSetup}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Shield size={14} strokeWidth={1.6} style={{ opacity: 0.6 }} />
-                {pinConfig.enabled ? `Change PIN (${pinConfig.length}-digit)` : 'Set Up PIN'}
-              </span>
-              <ChevronDown size={14} style={{ opacity: 0.3, transform: 'rotate(-90deg)' }} />
-            </GlassCard>
-          </div>
-        )}
+                {/* Text Color */}
+                <div style={{ marginBottom: '24px' }}>
+                  {sectionHeader('Text Colour')}
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ width: '28px', height: '28px', border: '1px solid rgba(0, 212, 200, 0.12)', background: textColorInput, flexShrink: 0 }} />
+                    <input
+                      value={textColorInput}
+                      onChange={e => { setTextColorInput(e.target.value.toUpperCase()); setSelectedTextIdx(-1); setSelectedComboIdx(-1); }}
+                      maxLength={7} placeholder="#33FF33" tabIndex={-1}
+                      style={{
+                        flex: 1, maxWidth: '140px', background: 'rgba(0, 0, 0, 0.3)',
+                        border: '1px solid rgba(0, 212, 200, 0.1)',
+                        color: 'var(--terminal-text)', padding: '7px 12px',
+                        fontFamily: "'JetBrains Mono', monospace", fontSize: '12px',
+                        textTransform: 'uppercase', outline: 'none',
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {TEXT_PRESETS.map((color, i) => (
+                      <div
+                        key={color}
+                        onClick={() => { setTextColorInput(color.toUpperCase()); setSelectedTextIdx(i); setSelectedComboIdx(-1); setFocusedItemIdx(i); }}
+                        style={{
+                          width: '28px', height: '28px', background: color,
+                          border: (isTextSwatchFocused(i) || selectedTextIdx === i) ? '2px solid var(--terminal-accent)' : '1px solid rgba(255,255,255,0.08)',
+                          cursor: 'pointer',
+                          transition: 'border 0.15s',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}
+                      >
+                        {selectedTextIdx === i && <Check size={12} strokeWidth={3} color={color === '#ffffff' || color === '#ffff00' || color === '#e6e6e6' ? '#000' : '#fff'} />}
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-        {/* STORAGE */}
-        {activeTab === 'storage' && (
-          <div>
-            <SectionLabel>Storage Providers</SectionLabel>
+                {/* BG Color */}
+                <div style={{ marginBottom: '24px' }}>
+                  {sectionHeader('Background Colour')}
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ width: '28px', height: '28px', border: '1px solid rgba(0, 212, 200, 0.12)', background: bgColorInput, flexShrink: 0 }} />
+                    <input
+                      value={bgColorInput}
+                      onChange={e => { setBgColorInput(e.target.value.toUpperCase()); setSelectedBgIdx(-1); setSelectedComboIdx(-1); }}
+                      maxLength={7} placeholder="#000000" tabIndex={-1}
+                      style={{
+                        flex: 1, maxWidth: '140px', background: 'rgba(0, 0, 0, 0.3)',
+                        border: '1px solid rgba(0, 212, 200, 0.1)',
+                        color: 'var(--terminal-text)', padding: '7px 12px',
+                        fontFamily: "'JetBrains Mono', monospace", fontSize: '12px',
+                        textTransform: 'uppercase', outline: 'none',
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {BG_PRESETS.map((color, i) => (
+                      <div
+                        key={color}
+                        onClick={() => { setBgColorInput(color.toUpperCase()); setSelectedBgIdx(i); setSelectedComboIdx(-1); setFocusedItemIdx(TEXT_PRESETS.length + i); }}
+                        style={{
+                          width: '28px', height: '28px', background: color,
+                          border: (isBgSwatchFocused(i) || selectedBgIdx === i) ? '2px solid var(--terminal-accent)' : `1px solid ${color === '#ffffff' || color === '#f5f5f5' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.08)'}`,
+                          cursor: 'pointer',
+                          transition: 'border 0.15s',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}
+                      >
+                        {selectedBgIdx === i && <Check size={12} strokeWidth={3} color={color === '#000000' || color === '#0a0a0a' || color === '#1a1a1a' || color === '#2c2c2c' ? '#fff' : '#000'} />}
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-            <GlassCard selected onClick={() => { onAction('local'); setFocusedItemIdx(0); }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <HardDrive size={14} strokeWidth={1.6} style={{ opacity: 0.6 }} />
-                {t(language, 'storage.local')}
-              </span>
-              <span style={{ fontSize: '10px', color: 'var(--terminal-accent)', fontWeight: '600' }}>✓ Active</span>
-            </GlassCard>
+                {/* Combos */}
+                <div style={{ paddingTop: '20px', borderTop: '1px solid rgba(0, 212, 200, 0.06)', marginBottom: '20px' }}>
+                  {sectionHeader('Colour Combinations')}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                    {COLOR_COMBOS.map((combo, i) => {
+                      const focused = isComboFocused(i);
+                      const sel = selectedComboIdx === i;
+                      return (
+                        <div
+                          key={combo.name}
+                          onClick={() => {
+                            setTextColorInput(combo.text.toUpperCase()); setBgColorInput(combo.bg.toUpperCase());
+                            setSelectedComboIdx(i); setSelectedTextIdx(-1); setSelectedBgIdx(-1);
+                            setFocusedItemIdx(TEXT_PRESETS.length + BG_PRESETS.length + i);
+                          }}
+                          style={{
+                            border: (focused || sel) ? '1px solid var(--terminal-accent)' : '1px solid rgba(0, 212, 200, 0.06)',
+                            overflow: 'hidden',
+                            cursor: 'pointer',
+                            transition: 'border 0.15s',
+                          }}
+                        >
+                          <div style={{
+                            background: combo.bg, color: combo.text, padding: '10px 8px 6px',
+                            fontWeight: 'bold', fontSize: '18px', textAlign: 'center',
+                            fontFamily: "'JetBrains Mono', monospace",
+                          }}>Aa</div>
+                          <div style={{
+                            padding: '5px 8px', fontSize: '9px', fontFamily: uiFont,
+                            opacity: 0.6, textAlign: 'center',
+                            background: 'rgba(0, 212, 200, 0.03)',
+                            letterSpacing: '0.02em',
+                          }}>{combo.name}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
 
-            <div style={{ height: '16px' }} />
-            <SectionLabel>Cloud Providers</SectionLabel>
+                {/* Action buttons */}
+                <div style={{ display: 'flex', gap: '8px', paddingBottom: '8px' }}>
+                  <GlassButton primary onClick={handleApplyColors}>Apply Colours</GlassButton>
+                  <GlassButton onClick={() => {
+                    onResetColors();
+                    setTextColorInput('#33FF33'); setBgColorInput('#000000');
+                    setSelectedTextIdx(-1); setSelectedBgIdx(-1); setSelectedComboIdx(-1);
+                  }}>Reset</GlassButton>
+                </div>
 
-            <GlassCard focused={focusedItemIdx === 1} onClick={() => { onAction('gdrive'); setFocusedItemIdx(1); }}>
-              <span>☁ Google Drive</span>
-              <span style={{
-                fontSize: '10px', fontWeight: '700',
-                color: connectedProviders.google ? 'var(--terminal-accent)' : '#e05c5c',
-              }}>
-                {connectedProviders.google ? '✓ Connected' : '✕ Not linked'}
-              </span>
-            </GlassCard>
-          </div>
-        )}
-
-        {/* SYSTEM */}
-        {activeTab === 'system' && (
-          <div>
-            <SectionLabel>Editor Module</SectionLabel>
-            <EditorModuleToggle />
-            <SpellcheckToggle />
-            <div style={{ height: '16px' }} />
-            <SectionLabel>Tools & Actions</SectionLabel>
-            <GlassCard focused={focusedItemIdx === 0} onClick={() => { onOpenTypingChallenge(); setFocusedItemIdx(0); }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Keyboard size={14} strokeWidth={1.6} style={{ opacity: 0.6 }} />
-                Typing Challenge
-              </span>
-              <ChevronDown size={14} style={{ opacity: 0.3, transform: 'rotate(-90deg)' }} />
-            </GlassCard>
-            {onOpenFirstBootWizard && (
-              <GlassCard focused={focusedItemIdx === 1} onClick={() => { onOpenFirstBootWizard!(); setFocusedItemIdx(1); }}>
-                <span>📖 New Novel Project…</span>
-                <ChevronDown size={14} style={{ opacity: 0.3, transform: 'rotate(-90deg)' }} />
-              </GlassCard>
+                {/* Custom Themes */}
+                {customThemes.length > 0 && (
+                  <div style={{ paddingTop: '20px', borderTop: '1px solid rgba(0, 212, 200, 0.06)', marginBottom: '20px' }}>
+                    {sectionHeader('Your Custom Themes')}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                      {customThemes.map((ct, i) => {
+                        const isSelected = textColorInput === ct.text.toUpperCase() && bgColorInput === ct.bg.toUpperCase();
+                        return (
+                          <div
+                            key={`custom-${i}-${ct.name}`}
+                            style={{
+                              border: isSelected ? '1px solid var(--terminal-accent)' : '1px solid rgba(0, 212, 200, 0.06)',
+                              overflow: 'hidden',
+                              cursor: 'pointer',
+                              transition: 'border 0.15s',
+                            }}
+                          >
+                            <div
+                              onClick={() => {
+                                setTextColorInput(ct.text.toUpperCase());
+                                setBgColorInput(ct.bg.toUpperCase());
+                                setSelectedComboIdx(-1); setSelectedTextIdx(-1); setSelectedBgIdx(-1);
+                              }}
+                              style={{
+                                background: ct.bg, color: ct.text, padding: '10px 8px 6px',
+                                fontWeight: 'bold', fontSize: '18px', textAlign: 'center',
+                                fontFamily: "'JetBrains Mono', monospace",
+                              }}
+                            >Aa</div>
+                            <div style={{
+                              padding: '5px 8px', fontSize: '9px', fontFamily: uiFont,
+                              background: 'rgba(0, 212, 200, 0.03)',
+                              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            }}>
+                              <span
+                                onClick={() => {
+                                  setTextColorInput(ct.text.toUpperCase());
+                                  setBgColorInput(ct.bg.toUpperCase());
+                                  setSelectedComboIdx(-1); setSelectedTextIdx(-1); setSelectedBgIdx(-1);
+                                }}
+                                style={{ opacity: 0.6, flex: 1, cursor: 'pointer' }}
+                              >{ct.name}</span>
+                              <span
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const updated = customThemes.filter((_, idx) => idx !== i);
+                                  setCustomThemes(updated);
+                                  saveCustomThemes(updated);
+                                }}
+                                title="Delete"
+                                style={{ cursor: 'pointer', opacity: 0.3, fontSize: '11px', transition: 'opacity 0.15s' }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.3'; }}
+                              >✕</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
-            <div style={{ height: '16px' }} />
-            <SectionLabel>Maintenance</SectionLabel>
-            <GlassCard focused={focusedItemIdx === 2} onClick={() => { onAction('update'); setFocusedItemIdx(2); }}>
-              <span>{t(language, 'power.update')}</span>
-            </GlassCard>
-            <GlassCard focused={focusedItemIdx === 3} danger onClick={() => { onAction('shutdown'); setFocusedItemIdx(3); }}>
-              <span>{t(language, 'power.shutdown')}</span>
-            </GlassCard>
-          </div>
-        )}
-      </div>
+            {/* ACCESSIBILITY */}
+            {activeTab === 'accessibility' && (
+              <AccessibilitySection
+                settings={a11ySettings}
+                onUpdate={onA11yUpdate}
+                onReset={onA11yReset}
+              />
+            )}
 
-      {/* ── Footer ───────────────────────────────────────────────── */}
-      <div style={{
-        padding: '8px 18px',
-        borderTop: '1px solid rgba(0, 212, 200, 0.06)',
-        fontSize: '9px',
-        opacity: 0.25,
-        textAlign: 'center',
-        flexShrink: 0,
-        fontFamily: uiFont,
-        letterSpacing: '0.06em',
-      }}>
-        Tab — switch · ↑↓ navigate · Enter select · Esc close
+            {/* LANGUAGE */}
+            {activeTab === 'language' && (
+              <div>
+                {sectionHeader('Interface Language')}
+                <DropdownSelect
+                  value={language}
+                  options={LANGUAGES_LIST.map(lang => ({
+                    value: lang.code as Language,
+                    label: lang.name,
+                  }))}
+                  onChange={(val) => onSetLanguage(val)}
+                />
+                <div style={{
+                  marginTop: '20px', padding: '14px 16px',
+                  border: '1px solid rgba(0, 212, 200, 0.06)',
+                  fontSize: '12px', opacity: 0.4,
+                  lineHeight: 1.7, fontFamily: uiFont,
+                  background: 'rgba(0, 212, 200, 0.02)',
+                }}>
+                  Language affects spell check and UI labels.
+                </div>
+              </div>
+            )}
+
+            {/* SECURITY */}
+            {activeTab === 'security' && (
+              <div>
+                {sectionHeader('PIN Lock')}
+                <GlassCard focused={focusedItemIdx === 0} onClick={onOpenPinSetup}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Shield size={14} strokeWidth={1.6} style={{ opacity: 0.6 }} />
+                    {pinConfig.enabled ? `Change PIN (${pinConfig.length}-digit)` : 'Set Up PIN'}
+                  </span>
+                  <ChevronDown size={14} style={{ opacity: 0.3, transform: 'rotate(-90deg)' }} />
+                </GlassCard>
+              </div>
+            )}
+
+            {/* STORAGE */}
+            {activeTab === 'storage' && (
+              <div>
+                {sectionHeader('Storage Providers')}
+                <GlassCard selected onClick={() => { onAction('local'); setFocusedItemIdx(0); }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <HardDrive size={14} strokeWidth={1.6} style={{ opacity: 0.6 }} />
+                    {t(language, 'storage.local')}
+                  </span>
+                  <span style={{ fontSize: '10px', color: 'var(--terminal-accent)', fontWeight: '600' }}>✓ Active</span>
+                </GlassCard>
+
+                <div style={{ height: '16px' }} />
+                {sectionHeader('Cloud Providers')}
+
+                <GlassCard focused={focusedItemIdx === 1} onClick={() => { onAction('gdrive'); setFocusedItemIdx(1); }}>
+                  <span>☁ Google Drive</span>
+                  <span style={{
+                    fontSize: '10px', fontWeight: '700',
+                    color: connectedProviders.google ? 'var(--terminal-accent)' : '#e05c5c',
+                  }}>
+                    {connectedProviders.google ? '✓ Connected' : '✕ Not linked'}
+                  </span>
+                </GlassCard>
+              </div>
+            )}
+
+            {/* SYSTEM */}
+            {activeTab === 'system' && (
+              <div>
+                {sectionHeader('Editor')}
+                <SpellcheckToggle />
+
+                <div style={{ height: '8px' }} />
+                {sectionHeader('Tools & Actions')}
+                <GlassCard focused={focusedItemIdx === 0} onClick={() => { onOpenTypingChallenge(); setFocusedItemIdx(0); }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Keyboard size={14} strokeWidth={1.6} style={{ opacity: 0.6 }} />
+                    Typing Challenge
+                  </span>
+                  <ChevronDown size={14} style={{ opacity: 0.3, transform: 'rotate(-90deg)' }} />
+                </GlassCard>
+                {onOpenFirstBootWizard && (
+                  <GlassCard focused={focusedItemIdx === 1} onClick={() => { onOpenFirstBootWizard!(); setFocusedItemIdx(1); }}>
+                    <span>📖 New Novel Project…</span>
+                    <ChevronDown size={14} style={{ opacity: 0.3, transform: 'rotate(-90deg)' }} />
+                  </GlassCard>
+                )}
+
+                <div style={{ height: '16px' }} />
+                {sectionHeader('Maintenance')}
+                <GlassCard focused={focusedItemIdx === 2} onClick={() => { onAction('update'); setFocusedItemIdx(2); }}>
+                  <span>{t(language, 'power.update')}</span>
+                </GlassCard>
+                <GlassCard focused={focusedItemIdx === 3} danger onClick={() => { onAction('shutdown'); setFocusedItemIdx(3); }}>
+                  <span>{t(language, 'power.shutdown')}</span>
+                </GlassCard>
+              </div>
+            )}
+
+          </div>
+        </div>
       </div>
     </div>
   );
