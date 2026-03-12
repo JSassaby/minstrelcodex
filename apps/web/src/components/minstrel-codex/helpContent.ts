@@ -632,22 +632,19 @@ export const HELP_TREE: HelpFolder[] = [
 </ul>
 <p>Genre, audience, and premise are auto-populated from your novel project settings if available.</p>
 
-<h3>Feedback Sections</h3>
-<p>Editorial feedback is organised into collapsible sections:</p>
+<h3>Scope-Based Feedback</h3>
+<p>The depth and structure of feedback scales with what you're asking it to review:</p>
 <ul>
-<li><strong>✦ Strengths</strong> — 2–4 specific things that are working well</li>
-<li><strong>Clarity & Language</strong> — How clearly ideas are communicated</li>
-<li><strong>Pacing & Tension</strong> — The rhythm and momentum of the prose</li>
-<li><strong>Dialogue</strong> — Only shown when dialogue is present in the text</li>
-<li><strong>Character & Consistency</strong> — Character voice and behaviour</li>
-<li><strong>Emotional Impact</strong> — Whether the scene achieves its emotional intent</li>
-<li><strong>Narrative Purpose</strong> — How well the scene serves the larger story</li>
-<li><strong>✦ Top Suggestions</strong> — The 3 most important actionable changes</li>
-<li><strong>✦ Example Rewrite</strong> — Optional: a rewritten opening paragraph showing suggestions applied (opt-in per request)</li>
+<li><strong>Selection</strong> — A highlighted passage (typically 1–3 paragraphs). Returns 2 focused observations and 2 top suggestions. Fast and targeted.</li>
+<li><strong>Scene</strong> — A scene or page (roughly 300–1,000 words). Returns specific strengths, 3–4 labelled observations (e.g. "Pacing", "Dialogue", "Clarity"), and 3 suggestions.</li>
+<li><strong>Document</strong> — A full chapter or longer. Returns the full editorial review across named dimensions: Strengths, Clarity & Language, Pacing & Tension, Dialogue, Character & Consistency, Emotional Impact, Narrative Purpose, and Top Suggestions.</li>
 </ul>
 
+<h3>Inline Examples</h3>
+<p>Every observation includes a brief inline example — not a rewrite, but a marginal note showing one sentence or phrase from the text handled differently. The aim is to illustrate the principle, not replace your voice.</p>
+
 <h3>Tone</h3>
-<p>The editor speaks directly but kindly — like a professional human editor, not a bot. It won't rewrite your work unless you ask for the example rewrite. It won't correct grammar pedantically. The goal is insight, not interference.</p>
+<p>The editor speaks directly but kindly — like a professional human editor, not a bot. It won't rewrite your work. It won't correct grammar pedantically. The goal is insight, not interference. Context fields (genre, audience, scene purpose) actively shape the feedback — a thriller and a literary novel should get different observations on the same passage.</p>
 `,
       },
       {

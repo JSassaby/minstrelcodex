@@ -6,38 +6,78 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
-const SYSTEM_PROMPT = `You are an experienced book editor — not a grammar checker. Your role is to give a writer the kind of thoughtful, constructive feedback a professional human editor would give. You do not rewrite their work unless asked. You speak directly but kindly. Your feedback is organised, specific, and actionable.`;
+const SYSTEM_PROMPT = `You are an experienced book editor — not a grammar checker. You give writers the kind of focused, honest feedback a professional human editor would give in a manuscript review. You do not rewrite their work. Instead, when you make an observation, you show a brief example of how one specific sentence or phrase could be handled differently — not as a replacement, but as a demonstration of the principle. You speak directly but kindly. You never pad feedback to fill a structure.`;
 
 function buildUserPrompt(body: RequestBody): string {
   const ctx = body.context ?? {};
-  const lines: string[] = [];
-
-  if (ctx.genre) lines.push(`Genre: ${ctx.genre}`);
-  if (ctx.audience) lines.push(`Target audience: ${ctx.audience}`);
-  if (ctx.premise) lines.push(`Premise: ${ctx.premise}`);
-  if (ctx.povCharacter) lines.push(`POV character: ${ctx.povCharacter}`);
-  if (ctx.scenePurpose) lines.push(`Scene purpose: ${ctx.scenePurpose}`);
-  if (ctx.emotionalGoal) lines.push(`Emotional goal: ${ctx.emotionalGoal}`);
-  if (ctx.specificConcerns) lines.push(`Specific concerns: ${ctx.specificConcerns}`);
-
-  const contextBlock = lines.length > 0 ? lines.join('\n') + '\n\n' : '';
+  const contextLines: string[] = [];
+  if (ctx.genre) contextLines.push(`Genre: ${ctx.genre}`);
+  if (ctx.audience) contextLines.push(`Target audience: ${ctx.audience}`);
+  if (ctx.premise) contextLines.push(`Premise: ${ctx.premise}`);
+  if (ctx.povCharacter) contextLines.push(`POV character: ${ctx.povCharacter}`);
+  if (ctx.scenePurpose) contextLines.push(`Scene purpose: ${ctx.scenePurpose}`);
+  if (ctx.emotionalGoal) contextLines.push(`Emotional goal: ${ctx.emotionalGoal}`);
+  if (ctx.specificConcerns) contextLines.push(`Specific concerns: ${ctx.specificConcerns}`);
+  const contextBlock = contextLines.length > 0 ? contextLines.join('\n') + '\n\n' : '';
   const text = body.text.slice(0, 8000);
-  const scopeLabel = body.scope === 'selection' ? 'selection' : body.scope === 'scene' ? 'scene' : 'document';
 
-  return `${contextBlock}Please review the following ${scopeLabel} of writing and provide structured editorial feedback. Return your response as a valid JSON object with exactly these keys:
+  if (body.scope === 'selection') {
+    return `${contextBlock}Review this short passage and return a JSON object with exactly these keys:
+{
+  "observations": [
+    { "point": "string", "example": "string" }
+  ],
+  "topSuggestions": ["string"]
+}
+Rules:
+- observations: exactly 2 items. Each must include a specific point about the writing AND a brief inline example showing one sentence or phrase from the text written differently. Format the example like: "e.g. instead of 'original phrase', try 'alternative' — brief reason why."
+- topSuggestions: exactly 2 actionable items.
+- Use the context above to calibrate your feedback — a thriller and a literary novel need different observations on the same passage.
+- Return only valid JSON, no markdown fences, no preamble.
+
+Writing to review:
+${text}`;
+  }
+
+  if (body.scope === 'scene') {
+    return `${contextBlock}Review this scene and return a JSON object with exactly these keys:
 {
   "strengths": ["string"],
-  "clarity": { "observation": "string", "suggestions": ["string"] },
-  "pacing": { "observation": "string", "suggestions": ["string"] },
-  "dialogue": { "observation": "string", "suggestions": ["string"] } or null,
-  "character": { "observation": "string", "suggestions": ["string"] },
-  "emotionalImpact": { "observation": "string", "suggestions": ["string"] },
-  "narrativePurpose": { "observation": "string", "suggestions": ["string"] },
-  "topSuggestions": ["string"],
-  "rewrite": "string" or null
+  "observations": [
+    { "dimension": "string", "point": "string", "example": "string" }
+  ],
+  "topSuggestions": ["string"]
 }
-Include 2-4 items in strengths. Include 3 items in topSuggestions. Set dialogue to null only if there is no dialogue in the text. Set rewrite to ${body.includeRewrite ? 'a rewritten version of the opening paragraph showing the top suggestions applied' : 'null'}.
-Return only valid JSON, no markdown fences, no preamble.
+Rules:
+- strengths: 1–2 specific items (not generic praise).
+- observations: 3–4 items. Each has a dimension label (e.g. "Pacing", "Dialogue", "Clarity", "Character voice", "Tension"), a specific point, and an inline example — format like: "e.g. instead of 'original phrase', try 'alternative' — brief reason why."
+- topSuggestions: exactly 3 items ordered by impact.
+- Use the context above to calibrate your feedback — genre, audience, and the scene's purpose should shape what you focus on.
+- Return only valid JSON, no markdown fences, no preamble.
+
+Writing to review:
+${text}`;
+  }
+
+  // document scope
+  return `${contextBlock}Review this document and return a JSON object with exactly these keys:
+{
+  "strengths": ["string"],
+  "clarity": { "observation": "string", "example": "string", "suggestions": ["string"] },
+  "pacing": { "observation": "string", "example": "string", "suggestions": ["string"] },
+  "dialogue": { "observation": "string", "example": "string", "suggestions": ["string"] } or null,
+  "character": { "observation": "string", "example": "string", "suggestions": ["string"] },
+  "emotionalImpact": { "observation": "string", "example": "string", "suggestions": ["string"] },
+  "narrativePurpose": { "observation": "string", "example": "string", "suggestions": ["string"] },
+  "topSuggestions": ["string"]
+}
+Rules:
+- strengths: 2–3 specific items.
+- Each dimension: 1 observation, 1 inline example (format: "e.g. instead of 'original', try 'alternative' — brief reason why"), 1–2 suggestions.
+- Set dialogue to null only if there is no dialogue in the text.
+- topSuggestions: 3 items ordered by impact.
+- Use the context above to calibrate your feedback — genre, audience, and premise should shape what matters for this specific work.
+- Return only valid JSON, no markdown fences, no preamble.
 
 Writing to review:
 ${text}`;
@@ -58,7 +98,6 @@ interface RequestBody {
     emotionalGoal?: string;
     specificConcerns?: string;
   };
-  includeRewrite: boolean;
   scope: 'selection' | 'scene' | 'document';
 }
 

@@ -31,18 +31,6 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-function SectionHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{
-      fontSize: '10px', fontFamily: uiFont, fontWeight: 600,
-      letterSpacing: '0.12em', textTransform: 'uppercase',
-      color: '#4ecdc4', marginBottom: '8px', marginTop: '20px',
-    }}>
-      {children}
-    </div>
-  );
-}
-
 function CollapsibleSection({ title, icon = '◈', children, defaultOpen = true }: {
   title: string; icon?: string; children: React.ReactNode; defaultOpen?: boolean;
 }) {
@@ -74,8 +62,23 @@ function Prose({ children }: { children: React.ReactNode }) {
   return (
     <p style={{
       fontSize: '13px', fontFamily: uiFont, color: '#c8c8c8',
-      lineHeight: 1.65, margin: '0 0 8px 0',
+      lineHeight: 1.65, margin: '0 0 6px 0',
     }}>{children}</p>
+  );
+}
+
+function Example({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      borderLeft: '2px solid #2a3550',
+      paddingLeft: '10px',
+      margin: '4px 0 10px 0',
+      fontFamily: 'Georgia, serif',
+      fontSize: '12px',
+      color: '#7a8aaa',
+      fontStyle: 'italic',
+      lineHeight: 1.6,
+    }}>{children}</div>
   );
 }
 
@@ -99,7 +102,6 @@ export default function EditorPanel({ visible, text, scope, onClose, onOpenProvi
   const [phase, setPhase] = useState<Phase>('setup');
   const [feedback, setFeedback] = useState<EditorialFeedback | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
-  const [includeRewrite, setIncludeRewrite] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
   const [context, setContext] = useState<EditorialContext>({});
   const [copied, setCopied] = useState(false);
@@ -110,7 +112,6 @@ export default function EditorPanel({ visible, text, scope, onClose, onOpenProvi
       setPhase('setup');
       setFeedback(null);
       setErrorMsg('');
-      setIncludeRewrite(false);
     }
   }, [visible, text]);
 
@@ -151,7 +152,6 @@ export default function EditorPanel({ visible, text, scope, onClose, onOpenProvi
       const result = await consultEditor({
         text: stripHtml(text),
         context,
-        includeRewrite,
         scope,
       });
       setFeedback(result);
@@ -160,49 +160,56 @@ export default function EditorPanel({ visible, text, scope, onClose, onOpenProvi
       setErrorMsg(err instanceof Error ? err.message : String(err));
       setPhase('error');
     }
-  }, [text, context, includeRewrite, scope, onOpenProviders]);
+  }, [text, context, scope, onOpenProviders]);
 
   const handleCopy = useCallback(() => {
     if (!feedback) return;
     const lines: string[] = [];
     lines.push('EDITORIAL FEEDBACK');
     lines.push('');
-    lines.push('STRENGTHS');
-    (feedback.strengths ?? []).forEach(s => lines.push('• ' + s));
-    lines.push('');
-    lines.push('CLARITY & LANGUAGE');
-    lines.push(feedback.clarity?.observation ?? '');
-    (feedback.clarity?.suggestions ?? []).forEach(s => lines.push('• ' + s));
-    lines.push('');
-    lines.push('PACING & TENSION');
-    lines.push(feedback.pacing?.observation ?? '');
-    (feedback.pacing?.suggestions ?? []).forEach(s => lines.push('• ' + s));
-    if (feedback.dialogue) {
-      lines.push('');
-      lines.push('DIALOGUE');
-      lines.push(feedback.dialogue?.observation ?? '');
-      (feedback.dialogue?.suggestions ?? []).forEach(s => lines.push('• ' + s));
+
+    if (feedback.observations) {
+      // Selection or Scene
+      if (feedback.strengths?.length) {
+        lines.push('STRENGTHS');
+        feedback.strengths.forEach(s => lines.push('• ' + s));
+        lines.push('');
+      }
+      lines.push('OBSERVATIONS');
+      feedback.observations.forEach(obs => {
+        if (obs.dimension) lines.push(`[${obs.dimension}]`);
+        lines.push(obs.point ?? '');
+        if (obs.example) lines.push(obs.example);
+        lines.push('');
+      });
+    } else {
+      // Document
+      if (feedback.strengths?.length) {
+        lines.push('STRENGTHS');
+        (feedback.strengths ?? []).forEach(s => lines.push('• ' + s));
+        lines.push('');
+      }
+      const dims = [
+        { label: 'CLARITY & LANGUAGE', d: feedback.clarity },
+        { label: 'PACING & TENSION', d: feedback.pacing },
+        { label: 'DIALOGUE', d: feedback.dialogue },
+        { label: 'CHARACTER & CONSISTENCY', d: feedback.character },
+        { label: 'EMOTIONAL IMPACT', d: feedback.emotionalImpact },
+        { label: 'NARRATIVE PURPOSE', d: feedback.narrativePurpose },
+      ];
+      dims.forEach(({ label, d }) => {
+        if (!d) return;
+        lines.push(label);
+        lines.push(d.observation ?? '');
+        if (d.example) lines.push(d.example);
+        (d.suggestions ?? []).forEach(s => lines.push('• ' + s));
+        lines.push('');
+      });
     }
-    lines.push('');
-    lines.push('CHARACTER & CONSISTENCY');
-    lines.push(feedback.character?.observation ?? '');
-    (feedback.character?.suggestions ?? []).forEach(s => lines.push('• ' + s));
-    lines.push('');
-    lines.push('EMOTIONAL IMPACT');
-    lines.push(feedback.emotionalImpact?.observation ?? '');
-    (feedback.emotionalImpact?.suggestions ?? []).forEach(s => lines.push('• ' + s));
-    lines.push('');
-    lines.push('NARRATIVE PURPOSE');
-    lines.push(feedback.narrativePurpose?.observation ?? '');
-    (feedback.narrativePurpose?.suggestions ?? []).forEach(s => lines.push('• ' + s));
-    lines.push('');
+
     lines.push('TOP SUGGESTIONS');
     (feedback.topSuggestions ?? []).forEach((s, i) => lines.push(`${i + 1}. ${s}`));
-    if (feedback.rewrite) {
-      lines.push('');
-      lines.push('EXAMPLE REWRITE');
-      lines.push(feedback.rewrite);
-    }
+
     navigator.clipboard.writeText(lines.join('\n')).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -330,36 +337,13 @@ export default function EditorPanel({ visible, text, scope, onClose, onOpenProvi
               </div>
 
               {/* Preview */}
-              <div style={{ border: '1px solid #1a2540', padding: '10px 12px', marginBottom: '16px', background: '#080c14' }}>
+              <div style={{ border: '1px solid #1a2540', padding: '10px 12px', marginBottom: '20px', background: '#080c14' }}>
                 <div style={{ fontSize: '10px', fontFamily: uiFont, color: '#555', marginBottom: '6px', letterSpacing: '0.06em' }}>
                   REVIEWING: {words.toLocaleString()} WORDS
                 </div>
                 <div style={{ fontSize: '12px', fontFamily: 'Georgia, serif', color: '#888', lineHeight: 1.55, fontStyle: 'italic' }}>
                   {preview}
                 </div>
-              </div>
-
-              {/* Include rewrite toggle */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                <button
-                  onClick={() => setIncludeRewrite(p => !p)}
-                  style={{
-                    width: '32px', height: '18px', background: includeRewrite ? '#4ecdc4' : '#1a2540',
-                    border: 'none', cursor: 'pointer', position: 'relative', flexShrink: 0,
-                    transition: 'background 0.2s',
-                  }}
-                >
-                  <span style={{
-                    position: 'absolute', top: '2px',
-                    left: includeRewrite ? '16px' : '2px',
-                    width: '14px', height: '14px',
-                    background: '#fff', transition: 'left 0.2s',
-                    display: 'block',
-                  }} />
-                </button>
-                <span style={{ fontSize: '12px', fontFamily: uiFont, color: '#888' }}>
-                  Include example rewrite
-                </span>
               </div>
 
               {/* Action button */}
@@ -398,78 +382,112 @@ export default function EditorPanel({ visible, text, scope, onClose, onOpenProvi
           {/* ── FEEDBACK PHASE ── */}
           {phase === 'feedback' && feedback && (
             <>
-              <CollapsibleSection title="Strengths" icon="✦">
-                <Bullets items={feedback.strengths ?? []} />
-              </CollapsibleSection>
+              {/* ── SELECTION + SCENE: observations array ── */}
+              {feedback.observations ? (
+                <>
+                  {feedback.strengths && feedback.strengths.length > 0 && (
+                    <CollapsibleSection title="Strengths" icon="✦">
+                      <ul style={{ margin: '6px 0 0 0', paddingLeft: '18px' }}>
+                        {feedback.strengths.map((s, i) => (
+                          <li key={i} style={{ fontSize: '13px', fontFamily: uiFont, color: '#c8c8c8', lineHeight: 1.6, marginBottom: '4px' }}>{s}</li>
+                        ))}
+                      </ul>
+                    </CollapsibleSection>
+                  )}
 
-              {feedback.clarity && (
-                <CollapsibleSection title="Clarity & Language">
-                  <Prose>{feedback.clarity?.observation ?? ''}</Prose>
-                  <Bullets items={feedback.clarity?.suggestions ?? []} />
-                </CollapsibleSection>
-              )}
+                  <CollapsibleSection title="Observations">
+                    {(feedback.observations ?? []).map((obs, i) => (
+                      <div key={i} style={{ marginBottom: '14px' }}>
+                        {obs.dimension && (
+                          <div style={{
+                            fontSize: '10px', fontFamily: uiFont, fontWeight: 600,
+                            letterSpacing: '0.1em', textTransform: 'uppercase',
+                            color: '#4ecdc4', marginBottom: '4px',
+                          }}>{obs.dimension}</div>
+                        )}
+                        <Prose>{obs.point ?? ''}</Prose>
+                        {obs.example && <Example>{obs.example}</Example>}
+                      </div>
+                    ))}
+                  </CollapsibleSection>
 
-              {feedback.pacing && (
-                <CollapsibleSection title="Pacing & Tension">
-                  <Prose>{feedback.pacing?.observation ?? ''}</Prose>
-                  <Bullets items={feedback.pacing?.suggestions ?? []} />
-                </CollapsibleSection>
-              )}
+                  <CollapsibleSection title="Top Suggestions" icon="✦">
+                    <ol style={{ margin: 0, paddingLeft: '20px' }}>
+                      {(feedback.topSuggestions ?? []).map((s, i) => (
+                        <li key={i} style={{ fontSize: '14px', fontFamily: uiFont, color: '#d8d8d8', lineHeight: 1.65, marginBottom: '6px' }}>{s}</li>
+                      ))}
+                    </ol>
+                  </CollapsibleSection>
+                </>
+              ) : (
+                /* ── DOCUMENT: named dimensions ── */
+                <>
+                  {feedback.strengths && feedback.strengths.length > 0 && (
+                    <CollapsibleSection title="Strengths" icon="✦">
+                      <ul style={{ margin: '6px 0 0 0', paddingLeft: '18px' }}>
+                        {feedback.strengths.map((s, i) => (
+                          <li key={i} style={{ fontSize: '13px', fontFamily: uiFont, color: '#c8c8c8', lineHeight: 1.6, marginBottom: '4px' }}>{s}</li>
+                        ))}
+                      </ul>
+                    </CollapsibleSection>
+                  )}
 
-              {feedback.dialogue && (
-                <CollapsibleSection title="Dialogue">
-                  <Prose>{feedback.dialogue?.observation ?? ''}</Prose>
-                  <Bullets items={feedback.dialogue?.suggestions ?? []} />
-                </CollapsibleSection>
-              )}
+                  {feedback.clarity && (
+                    <CollapsibleSection title="Clarity & Language">
+                      <Prose>{feedback.clarity?.observation ?? ''}</Prose>
+                      {feedback.clarity?.example && <Example>{feedback.clarity.example}</Example>}
+                      <Bullets items={feedback.clarity?.suggestions ?? []} />
+                    </CollapsibleSection>
+                  )}
 
-              {feedback.character && (
-                <CollapsibleSection title="Character & Consistency">
-                  <Prose>{feedback.character?.observation ?? ''}</Prose>
-                  <Bullets items={feedback.character?.suggestions ?? []} />
-                </CollapsibleSection>
-              )}
+                  {feedback.pacing && (
+                    <CollapsibleSection title="Pacing & Tension">
+                      <Prose>{feedback.pacing?.observation ?? ''}</Prose>
+                      {feedback.pacing?.example && <Example>{feedback.pacing.example}</Example>}
+                      <Bullets items={feedback.pacing?.suggestions ?? []} />
+                    </CollapsibleSection>
+                  )}
 
-              {feedback.emotionalImpact && (
-                <CollapsibleSection title="Emotional Impact">
-                  <Prose>{feedback.emotionalImpact?.observation ?? ''}</Prose>
-                  <Bullets items={feedback.emotionalImpact?.suggestions ?? []} />
-                </CollapsibleSection>
-              )}
+                  {feedback.dialogue && (
+                    <CollapsibleSection title="Dialogue">
+                      <Prose>{feedback.dialogue?.observation ?? ''}</Prose>
+                      {feedback.dialogue?.example && <Example>{feedback.dialogue.example}</Example>}
+                      <Bullets items={feedback.dialogue?.suggestions ?? []} />
+                    </CollapsibleSection>
+                  )}
 
-              {feedback.narrativePurpose && (
-                <CollapsibleSection title="Narrative Purpose">
-                  <Prose>{feedback.narrativePurpose?.observation ?? ''}</Prose>
-                  <Bullets items={feedback.narrativePurpose?.suggestions ?? []} />
-                </CollapsibleSection>
-              )}
+                  {feedback.character && (
+                    <CollapsibleSection title="Character & Consistency">
+                      <Prose>{feedback.character?.observation ?? ''}</Prose>
+                      {feedback.character?.example && <Example>{feedback.character.example}</Example>}
+                      <Bullets items={feedback.character?.suggestions ?? []} />
+                    </CollapsibleSection>
+                  )}
 
-              <CollapsibleSection title="Top Suggestions" icon="✦">
-                <ol style={{ margin: 0, paddingLeft: '20px' }}>
-                  {(feedback.topSuggestions ?? []).map((s, i) => (
-                    <li key={i} style={{ fontSize: '14px', fontFamily: uiFont, color: '#d8d8d8', lineHeight: 1.65, marginBottom: '6px' }}>
-                      {s}
-                    </li>
-                  ))}
-                </ol>
-              </CollapsibleSection>
+                  {feedback.emotionalImpact && (
+                    <CollapsibleSection title="Emotional Impact">
+                      <Prose>{feedback.emotionalImpact?.observation ?? ''}</Prose>
+                      {feedback.emotionalImpact?.example && <Example>{feedback.emotionalImpact.example}</Example>}
+                      <Bullets items={feedback.emotionalImpact?.suggestions ?? []} />
+                    </CollapsibleSection>
+                  )}
 
-              {feedback.rewrite && (
-                <CollapsibleSection title="Example Rewrite" icon="✦">
-                  <Prose>Showing how the top suggestions might look applied to your opening paragraph.</Prose>
-                  <div style={{
-                    border: '1px solid #1a2540',
-                    background: '#0d1117',
-                    padding: '12px 14px',
-                    fontFamily: 'Georgia, serif',
-                    fontSize: '13px',
-                    color: '#c8a84b',
-                    fontStyle: 'italic',
-                    lineHeight: 1.7,
-                  }}>
-                    {feedback.rewrite}
-                  </div>
-                </CollapsibleSection>
+                  {feedback.narrativePurpose && (
+                    <CollapsibleSection title="Narrative Purpose">
+                      <Prose>{feedback.narrativePurpose?.observation ?? ''}</Prose>
+                      {feedback.narrativePurpose?.example && <Example>{feedback.narrativePurpose.example}</Example>}
+                      <Bullets items={feedback.narrativePurpose?.suggestions ?? []} />
+                    </CollapsibleSection>
+                  )}
+
+                  <CollapsibleSection title="Top Suggestions" icon="✦">
+                    <ol style={{ margin: 0, paddingLeft: '20px' }}>
+                      {(feedback.topSuggestions ?? []).map((s, i) => (
+                        <li key={i} style={{ fontSize: '14px', fontFamily: uiFont, color: '#d8d8d8', lineHeight: 1.65, marginBottom: '6px' }}>{s}</li>
+                      ))}
+                    </ol>
+                  </CollapsibleSection>
+                </>
               )}
             </>
           )}

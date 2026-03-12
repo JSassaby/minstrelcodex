@@ -177,22 +177,42 @@ export interface EditorialContext {
   specificConcerns?: string;
 }
 
+/** An inline example note, as in marginal editor annotations. */
+export interface Observation {
+  dimension?: string; // present for scene scope
+  point: string;
+  example: string;
+}
+
+/** A named feedback dimension used in document-scope responses. */
+export interface DimensionFeedback {
+  observation: string;
+  example: string;
+  suggestions: string[];
+}
+
+/**
+ * Unified response type covering all three scopes.
+ *
+ * Selection:  observations (no dimension), topSuggestions
+ * Scene:      strengths, observations (with dimension), topSuggestions
+ * Document:   strengths, clarity/pacing/dialogue/character/emotionalImpact/narrativePurpose, topSuggestions
+ */
 export interface EditorialFeedback {
-  strengths: string[];
-  clarity: { observation: string; suggestions: string[] };
-  pacing: { observation: string; suggestions: string[] };
-  dialogue: { observation: string; suggestions: string[] } | null;
-  character: { observation: string; suggestions: string[] };
-  emotionalImpact: { observation: string; suggestions: string[] };
-  narrativePurpose: { observation: string; suggestions: string[] };
-  topSuggestions: string[];
-  rewrite: string | null;
+  observations?: Observation[];           // selection + scene
+  strengths?: string[];                   // scene + document
+  clarity?: DimensionFeedback;            // document
+  pacing?: DimensionFeedback;             // document
+  dialogue?: DimensionFeedback | null;    // document
+  character?: DimensionFeedback;          // document
+  emotionalImpact?: DimensionFeedback;    // document
+  narrativePurpose?: DimensionFeedback;   // document
+  topSuggestions: string[];               // all scopes
 }
 
 type ConsultParams = {
   text: string;
   context?: EditorialContext;
-  includeRewrite: boolean;
   scope: 'selection' | 'scene' | 'document';
 };
 
@@ -220,7 +240,6 @@ async function callProviderOnce(
         ollamaBaseUrl,
         text: params.text,
         context: params.context ?? {},
-        includeRewrite: params.includeRewrite,
         scope: params.scope,
       }),
     }
