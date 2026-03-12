@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 're
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import FormattingToolbar from './FormattingToolbar';
+import { useLocalStorageBoolean } from '@/hooks/useLocalStorageBoolean';
 
 export interface EditorHandle {
   focus: () => void;
@@ -81,6 +82,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({
   const scrollRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef<HTMLDivElement>(null);
   const [titleValue, setTitleValue] = useState(documentTitle || '');
+  const [spellcheckEnabled] = useLocalStorageBoolean('minstrel-spellcheck', true);
 
   // Sync title when document changes
   useEffect(() => {
@@ -102,10 +104,22 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({
     editorProps: {
       attributes: {
         class: 'page-editor',
-        spellcheck: 'false',
+        spellcheck: spellcheckEnabled ? 'true' : 'false',
       },
     },
   });
+
+  // Update spellcheck when the setting changes (useEditor config isn't reactive)
+  useEffect(() => {
+    editor?.setOptions({
+      editorProps: {
+        attributes: {
+          class: 'page-editor',
+          spellcheck: spellcheckEnabled ? 'true' : 'false',
+        },
+      },
+    });
+  }, [editor, spellcheckEnabled]);
 
   // ── Typewriter scroll: keep cursor at 60% of viewport in focus mode ──
   useEffect(() => {

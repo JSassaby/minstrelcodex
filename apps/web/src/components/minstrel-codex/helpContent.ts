@@ -645,6 +645,9 @@ export const HELP_TREE: HelpFolder[] = [
 
 <h3>Tone</h3>
 <p>The editor speaks directly but kindly — like a professional human editor, not a bot. It won't rewrite your work. It won't correct grammar pedantically. The goal is insight, not interference. Context fields (genre, audience, scene purpose) actively shape the feedback — a thriller and a literary novel should get different observations on the same passage.</p>
+
+<h3>Spellcheck</h3>
+<p>The editor includes browser-native spellcheck, which underlines misspelled words as you type using your system's built-in dictionary. It is enabled by default and can be toggled off in <strong>Settings → System → Spellcheck</strong>. Right-clicking an underlined word shows spelling suggestions from your browser.</p>
 `,
       },
       {

@@ -4,7 +4,7 @@ import { ThemeMode, THEMES } from '@/lib/themes';
 import type { AppColors, Language, PinConfig } from '@minstrelcodex/core';
 import AccessibilitySection from './AccessibilitySection';
 import type { AccessibilitySettings } from '@/hooks/useAccessibility';
-import { X, ChevronDown, Check, Palette, Globe, Shield, HardDrive, Cpu, Eye, Keyboard, Sparkles } from 'lucide-react';
+import { X, ChevronDown, Check, Palette, Globe, Shield, HardDrive, Cpu, Eye, Keyboard, Sparkles, SpellCheck } from 'lucide-react';
 
 // Color presets
 const TEXT_PRESETS = ['#33ff33','#00ff00','#ffffff','#4db8ff','#00e5e5','#ffff00','#ffb000','#ff6b9d','#ff5555','#e6e6e6'];
@@ -255,6 +255,51 @@ function EditorModuleToggle() {
           Add your AI provider key in Profile → Providers to get started.
         </div>
       )}
+    </div>
+  );
+}
+
+function SpellcheckToggle() {
+  const [enabled, setEnabled] = useState(() =>
+    localStorage.getItem('minstrel-spellcheck') !== 'false'
+  );
+
+  const toggle = () => {
+    const next = !enabled;
+    localStorage.setItem('minstrel-spellcheck', String(next));
+    setEnabled(next);
+    window.dispatchEvent(
+      new StorageEvent('storage', { key: 'minstrel-spellcheck', newValue: String(next) })
+    );
+  };
+
+  return (
+    <div style={{ padding: '10px 0 10px 12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+        <SpellCheck size={14} strokeWidth={1.6} style={{ opacity: 0.6, flexShrink: 0 }} />
+        <span style={{ fontSize: '13px', fontFamily: uiFont, flex: 1, color: 'var(--terminal-text)' }}>
+          Spellcheck
+        </span>
+        <button
+          onClick={toggle}
+          style={{
+            width: '36px', height: '20px',
+            background: enabled ? 'var(--terminal-accent)' : '#1a2540',
+            border: 'none', cursor: 'pointer', position: 'relative',
+            transition: 'background 0.2s', flexShrink: 0,
+          }}
+        >
+          <span style={{
+            position: 'absolute', top: '3px',
+            left: enabled ? '18px' : '3px',
+            width: '14px', height: '14px',
+            background: '#fff', transition: 'left 0.2s', display: 'block',
+          }} />
+        </button>
+      </div>
+      <div style={{ fontSize: '11px', fontFamily: uiFont, color: '#888', lineHeight: 1.55 }}>
+        Browser-native spellcheck underlines misspelled words as you type.
+      </div>
     </div>
   );
 }
@@ -1029,6 +1074,7 @@ export default function SettingsPanel({
           <div>
             <SectionLabel>Editor Module</SectionLabel>
             <EditorModuleToggle />
+            <SpellcheckToggle />
             <div style={{ height: '16px' }} />
             <SectionLabel>Tools & Actions</SectionLabel>
             <GlassCard focused={focusedItemIdx === 0} onClick={() => { onOpenTypingChallenge(); setFocusedItemIdx(0); }}>
