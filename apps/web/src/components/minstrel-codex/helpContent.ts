@@ -642,6 +642,7 @@ export const HELP_TREE: HelpFolder[] = [
 
 <h3>Spellcheck</h3>
 <p>The editor includes browser-native spellcheck, which underlines misspelled words as you type using your system's built-in dictionary. It is enabled by default and can be toggled off in <strong>Settings → Language → Spellcheck</strong>. Right-clicking an underlined word shows spelling suggestions from your browser.</p>
+<p>Spellcheck uses the language set in <strong>Settings → Language</strong> to select the correct dictionary — for example, selecting <em>English (UK)</em> enables UK spelling, and <em>Afrikaans</em> enables Afrikaans dictionary support. Changing the language in Settings updates the editor immediately without a reload.</p>
 `,
       },
       {

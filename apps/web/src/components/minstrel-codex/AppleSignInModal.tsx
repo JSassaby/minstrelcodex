@@ -34,7 +34,7 @@ export default function AppleSignInModal({ visible, onClose }: AppleSignInModalP
     <ModalShell visible={visible} title="🍎 Apple Sign In" onClose={onClose} width="420px">
       <div style={{ minHeight: '140px' }}>
         {error && (
-          <div style={{ padding: '10px 14px', marginBottom: '14px', borderRadius: '9px', border: '1px solid rgba(224,92,92,0.4)', background: 'rgba(224,92,92,0.08)', fontSize: '13px', fontFamily: uiFont, color: '#e05c5c' }}>
+          <div style={{ padding: '10px 14px', marginBottom: '14px', border: '1px solid rgba(224,92,92,0.4)', background: 'rgba(224,92,92,0.08)', fontSize: '13px', fontFamily: uiFont, color: '#e05c5c' }}>
             ⚠ {error}
           </div>
         )}

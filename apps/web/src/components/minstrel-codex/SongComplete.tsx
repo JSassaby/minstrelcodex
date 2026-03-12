@@ -97,7 +97,6 @@ export default function SongComplete({
           width: '90vw',
           padding: '32px 28px',
           textAlign: 'center',
-          boxShadow: '0 0 60px var(--terminal-glow), 0 0 120px var(--terminal-glow)',
           transform: phase === 'enter' ? 'scale(0.9) translateY(20px)' : 'scale(1) translateY(0)',
           transition: 'transform 0.5s cubic-bezier(.16,1,.3,1), opacity 0.5s ease',
           opacity,
@@ -149,7 +148,6 @@ export default function SongComplete({
               height: '100%',
               width: `${progress}%`,
               background: 'var(--terminal-accent)',
-              boxShadow: '0 0 8px var(--terminal-glow)',
               transition: 'width 1s cubic-bezier(.16,1,.3,1)',
             }} />
           </div>

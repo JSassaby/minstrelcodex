@@ -15,7 +15,6 @@ function newId() {
 
 const pillBtn = (active: boolean): React.CSSProperties => ({
   padding: '4px 12px',
-  borderRadius: '6px',
   border: active ? '1.5px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
   background: active ? 'var(--terminal-accent)' : 'transparent',
   color: active ? 'var(--terminal-bg)' : 'var(--terminal-text)',
@@ -153,7 +152,7 @@ export default function NotesPanel({ visible, projectId, onClose }: NotesPanelPr
           style={{
             width: '100%', background: 'var(--terminal-surface)', border: '1px solid var(--terminal-border)',
             color: 'var(--terminal-text)', padding: '5px 9px', fontSize: '12px', fontFamily: uiFont,
-            outline: 'none', borderRadius: '5px', boxSizing: 'border-box',
+            outline: 'none', boxSizing: 'border-box',
           }}
         />
       </div>

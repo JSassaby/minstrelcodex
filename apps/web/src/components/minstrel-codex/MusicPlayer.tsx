@@ -79,7 +79,6 @@ export default function MusicPlayer({
           style={{
             background: 'transparent',
             border: '1px solid var(--terminal-border)',
-            borderRadius: '6px',
             color: 'var(--terminal-text)',
             opacity: 0.45,
             cursor: 'pointer',
@@ -116,7 +115,6 @@ export default function MusicPlayer({
             style={{
               background: 'var(--terminal-accent)',
               border: 'none',
-              borderRadius: '50%',
               width: '30px',
               height: '30px',
               display: 'flex',
@@ -143,7 +141,6 @@ export default function MusicPlayer({
             style={{
               background: 'transparent',
               border: '1px solid var(--terminal-border)',
-              borderRadius: '6px',
               width: '26px',
               height: '26px',
               display: 'flex',
@@ -230,7 +227,6 @@ export default function MusicPlayer({
                     }}
                     style={{
                       padding: '9px 12px',
-                      borderRadius: '8px',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
@@ -250,7 +246,6 @@ export default function MusicPlayer({
                     <span style={{
                       width: '22px',
                       height: '22px',
-                      borderRadius: '50%',
                       background: isActive ? 'var(--terminal-accent)' : 'var(--terminal-border)',
                       display: 'flex',
                       alignItems: 'center',
@@ -326,7 +321,6 @@ export default function MusicPlayer({
           style={{
             width: '100%',
             padding: '8px 12px',
-            borderRadius: '8px',
             border: '1px dashed var(--terminal-border)',
             background: 'transparent',
             color: 'var(--terminal-text)',

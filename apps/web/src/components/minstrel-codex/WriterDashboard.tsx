@@ -161,7 +161,7 @@ export default function WriterDashboard({ visible, profile, unlockedChronicles =
         </div>
         <div
           onClick={onClose}
-          style={{ cursor: 'pointer', opacity: 0.5, padding: '4px', borderRadius: '4px', transition: 'opacity 0.15s' }}
+          style={{ cursor: 'pointer', opacity: 0.5, padding: '4px', transition: 'opacity 0.15s' }}
           onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
           onMouseLeave={e => (e.currentTarget.style.opacity = '0.5')}
         >

@@ -4,6 +4,30 @@ import StarterKit from '@tiptap/starter-kit';
 import FormattingToolbar from './FormattingToolbar';
 import { useLocalStorageBoolean } from '@/hooks/useLocalStorageBoolean';
 
+/** Map a stored language code to a BCP 47 lang attribute value. */
+function toLangCode(lang: string | null): string {
+  switch (lang) {
+    case 'en-GB': return 'en-GB';
+    case 'en-US': return 'en-US';
+    case 'af':    return 'af';
+    default:      return 'en-GB';
+  }
+}
+
+/** Reactive hook that reads a string from localStorage and re-renders on change. */
+function useLocalStorageString(key: string, defaultValue: string): string {
+  const [value, setValue] = useState(() => localStorage.getItem(key) ?? defaultValue);
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key !== key) return;
+      setValue(e.newValue ?? defaultValue);
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, [key, defaultValue]);
+  return value;
+}
+
 export interface EditorHandle {
   focus: () => void;
   getHTML: () => string;
@@ -82,6 +106,8 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({
   const pageRef = useRef<HTMLDivElement>(null);
   const [titleValue, setTitleValue] = useState(documentTitle || '');
   const [spellcheckEnabled] = useLocalStorageBoolean('minstrel-spellcheck', true);
+  const language = useLocalStorageString('pw-language', 'en-GB');
+  const langCode = toLangCode(language);
 
   // Sync title when document changes
   useEffect(() => {
@@ -104,21 +130,30 @@ const Editor = forwardRef<EditorHandle, EditorProps>(({
       attributes: {
         class: 'page-editor',
         spellcheck: spellcheckEnabled ? 'true' : 'false',
+        lang: langCode,
       },
     },
   });
 
-  // Update spellcheck when the setting changes (useEditor config isn't reactive)
+  // Update spellcheck + lang when settings change (useEditor config isn't reactive)
   useEffect(() => {
-    editor?.setOptions({
+    if (!editor) return;
+    editor.setOptions({
       editorProps: {
         attributes: {
           class: 'page-editor',
           spellcheck: spellcheckEnabled ? 'true' : 'false',
+          lang: langCode,
         },
       },
     });
-  }, [editor, spellcheckEnabled]);
+    // Also update the live DOM element directly so the browser picks up changes immediately
+    const editorEl = editor.view.dom as HTMLElement;
+    if (editorEl) {
+      editorEl.setAttribute('spellcheck', spellcheckEnabled ? 'true' : 'false');
+      editorEl.setAttribute('lang', langCode);
+    }
+  }, [editor, spellcheckEnabled, langCode]);
 
   // ── Typewriter scroll: keep cursor at 60% of viewport in focus mode ──
   useEffect(() => {

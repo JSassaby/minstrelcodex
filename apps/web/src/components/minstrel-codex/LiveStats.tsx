@@ -16,14 +16,12 @@ export default function LiveStats({ visible, wpm, chars }: LiveStatsProps) {
         bottom: '52px',
         right: '20px',
         border: '1px solid var(--terminal-border)',
-        borderRadius: '12px',
         background: 'var(--terminal-surface)',
         padding: '12px 16px',
         fontSize: '13px',
         zIndex: 500,
         fontFamily: uiFont,
         color: 'var(--terminal-text)',
-        boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
         minWidth: '120px',
       }}
     >

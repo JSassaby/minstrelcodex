@@ -81,10 +81,8 @@ export default function StorageMenu({
           transform: 'translateX(-50%)',
           background: 'var(--terminal-bg)',
           border: '1px solid var(--terminal-border)',
-          borderRadius: '14px',
           minWidth: '300px',
           zIndex: 600,
-          boxShadow: '0 16px 48px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.1)',
           fontFamily: uiFont,
           overflow: 'hidden',
           padding: '6px',
@@ -128,7 +126,6 @@ export default function StorageMenu({
               onClick={(e) => { e.stopPropagation(); item.action(); onClose(); }}
               style={{
                 padding: '8px 12px',
-                borderRadius: '9px',
                 cursor: 'pointer',
                 background: isActive ? 'var(--terminal-accent)' : 'transparent',
                 color: isActive ? 'var(--terminal-bg)' : item.danger ? '#e05c5c' : 'var(--terminal-text)',

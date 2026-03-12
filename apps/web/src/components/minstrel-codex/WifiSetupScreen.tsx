@@ -21,8 +21,6 @@ const CARD: React.CSSProperties = {
   maxWidth: '480px',
   background: '#faf9f6',
   padding: '48px',
-  boxShadow: '0 4px 40px rgba(0,0,0,0.55), 0 1px 6px rgba(0,0,0,0.35)',
-  borderRadius: '2px',
   boxSizing: 'border-box',
 };
 
@@ -38,7 +36,6 @@ function SignalBars({ signal }: { signal: number }) {
             height: `${5 + i * 3}px`,
             background: i < bars ? '#2a2a2a' : '#d0cdc8',
             display: 'inline-block',
-            borderRadius: '1px',
           }}
         />
       ))}
@@ -166,7 +163,7 @@ export default function WifiSetupScreen({ onComplete, onSkip }: Props) {
             </button>
           </div>
         ) : (
-          <div style={{ border: '1px solid #e0ddd8', borderRadius: '4px', overflow: 'hidden', marginBottom: '8px' }}>
+          <div style={{ border: '1px solid #e0ddd8', overflow: 'hidden', marginBottom: '8px' }}>
             {networks.map((net, i) => {
               const isSelected = i === selectedIdx;
               return (
@@ -215,7 +212,7 @@ export default function WifiSetupScreen({ onComplete, onSkip }: Props) {
                               style={{
                                 flex: 1, background: '#fff', border: '1px solid #d0cdc8',
                                 padding: '8px 12px', fontSize: '14px', outline: 'none',
-                                borderRadius: '3px', fontFamily: uiFont, color: '#1a1a1a',
+                                fontFamily: uiFont, color: '#1a1a1a',
                               }}
                               onKeyDown={e => { if (e.key === 'Enter') connect(); }}
                             />
@@ -225,7 +222,7 @@ export default function WifiSetupScreen({ onComplete, onSkip }: Props) {
                             style={{
                               background: '#00c47a', border: 'none', color: '#111',
                               padding: '8px 18px', fontSize: '13px', fontWeight: '700',
-                              cursor: 'pointer', borderRadius: '3px', fontFamily: uiFont,
+                              cursor: 'pointer', fontFamily: uiFont,
                               whiteSpace: 'nowrap',
                             }}
                           >

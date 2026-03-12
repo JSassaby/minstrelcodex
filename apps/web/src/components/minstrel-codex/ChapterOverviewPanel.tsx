@@ -123,7 +123,7 @@ export default function ChapterOverviewPanel({
               style={{
                 flex: 1, background: 'var(--terminal-surface)', border: '1px solid var(--terminal-accent)',
                 color: 'var(--terminal-text)', padding: '4px 8px', fontSize: '12px',
-                fontFamily: uiFont, outline: 'none', borderRadius: '4px',
+                fontFamily: uiFont, outline: 'none',
               }}
             />
           </div>
@@ -148,8 +148,7 @@ export default function ChapterOverviewPanel({
               height: '100%',
               width: `${Math.min(100, (grandTotal / wordCountTarget) * 100)}%`,
               background: 'var(--terminal-accent)',
-              borderRadius: '2px',
-              transition: 'width 0.3s ease',
+                            transition: 'width 0.3s ease',
             }} />
           </div>
           <div style={{ fontSize: '10px', opacity: 0.45, marginTop: '4px' }}>

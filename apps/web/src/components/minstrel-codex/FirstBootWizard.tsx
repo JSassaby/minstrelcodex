@@ -13,8 +13,6 @@ const CARD: React.CSSProperties = {
   maxWidth: '480px',
   background: '#faf9f6',
   padding: '48px',
-  boxShadow: '0 4px 40px rgba(0,0,0,0.55), 0 1px 6px rgba(0,0,0,0.35)',
-  borderRadius: '2px',
   boxSizing: 'border-box',
 };
 
@@ -26,7 +24,6 @@ const PRIMARY_BTN: React.CSSProperties = {
   fontSize: '14px',
   fontWeight: '700',
   cursor: 'pointer',
-  borderRadius: '3px',
   fontFamily: uiFont,
 };
 

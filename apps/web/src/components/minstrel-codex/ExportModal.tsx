@@ -210,7 +210,7 @@ export default function ExportModal({ visible, onClose, fileStructure, getFolder
         </div>
         <div style={{
           maxHeight: '240px', overflowY: 'auto',
-          border: '1px solid var(--terminal-border)', borderRadius: '10px',
+          border: '1px solid var(--terminal-border)',
           overflow: 'hidden',
         }}>
           {treeItems.length === 0 && (
@@ -265,7 +265,7 @@ export default function ExportModal({ visible, onClose, fileStructure, getFolder
               key={f.key}
               onClick={() => setFormat(f.key)}
               style={{
-                padding: '8px 18px', borderRadius: '8px',
+                padding: '8px 18px',
                 border: format === f.key ? '1.5px solid var(--terminal-accent)' : '1px solid var(--terminal-border)',
                 background: format === f.key ? 'var(--terminal-accent)' : 'var(--terminal-surface)',
                 color: format === f.key ? 'var(--terminal-bg)' : 'var(--terminal-text)',

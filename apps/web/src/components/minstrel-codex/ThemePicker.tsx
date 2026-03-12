@@ -79,12 +79,10 @@ function MiniEditor({ theme }: { theme: ThemeDefinition }) {
               height: line.text ? `${line.size}px` : '6px',
               width: line.text ? `${60 + (i * 7) % 35}%` : '0',
               background: line.text ? theme.colors.text : 'transparent',
-              borderRadius: '2px',
               opacity: line.bold ? 1 : (line.opacity ?? 0.75),
               fontWeight: line.bold ? 700 : 400,
               transform: line.bold ? 'scaleX(0.55)' : 'scaleX(1)',
               transformOrigin: 'left',
-              boxShadow: theme.effects.textGlow ? `0 0 6px ${theme.colors.glow}` : 'none',
             }}
           />
         ))}
@@ -92,7 +90,6 @@ function MiniEditor({ theme }: { theme: ThemeDefinition }) {
         <div style={{
           width: '8px', height: 13,
           background: theme.colors.accent,
-          borderRadius: '1px',
           opacity: 0.85,
           animation: 'picker-cursor-blink 1.1s step-end infinite',
           marginTop: '4px',
