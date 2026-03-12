@@ -655,25 +655,34 @@ export const HELP_TREE: HelpFolder[] = [
         title: 'AI Providers',
         content: `
 <h2>AI Providers</h2>
-<p>The Editor Module uses your own AI provider key. You choose which AI service you already use — Minstrel Codex never provides or resells AI access.</p>
+<p>The Editor Module uses your own AI provider key. You choose which AI service to use — Minstrel Codex never provides or resells AI access.</p>
+
+<h3>Before you paste a key: how API billing works</h3>
+<p>A quick heads-up so there are no surprises. Provider API keys are <strong>separate from subscriptions</strong> like Claude.ai Pro or ChatGPT Plus. Those subscriptions give you access to the chat interfaces — they don't cover API usage. API calls are billed independently, based on the amount of text processed.</p>
+<p>In practice, editorial feedback is inexpensive. A single session reviewing a 1,000-word scene costs a fraction of a cent. A $5–10 credit top-up on any paid provider will cover hundreds of editing sessions.</p>
+<p><strong>If you'd rather not add a credit card at all</strong>, Gemini and Mistral both have genuinely free API tiers — no billing required to get started. Ollama is completely free and runs locally on your machine.</p>
 
 <h3>Supported Providers</h3>
 <table>
-<tr><td><strong>Claude (Anthropic)</strong></td><td>Recommended for literary feedback. Nuanced, context-aware, excellent for long-form writing. Get a key at console.anthropic.com.</td></tr>
-<tr><td><strong>ChatGPT (OpenAI)</strong></td><td>Widely used, strong general editorial feedback. Get a key at platform.openai.com/api-keys.</td></tr>
-<tr><td><strong>Gemini (Google)</strong></td><td>Fast and capable, good for shorter selections. Get a key at aistudio.google.com.</td></tr>
-<tr><td><strong>Ollama (local)</strong></td><td>Fully offline — no API key required. Requires Ollama installed and running locally at http://localhost:11434. Your writing never leaves your machine.</td></tr>
+<tr><td><strong>Claude (Anthropic)</strong></td><td>Recommended for literary feedback — nuanced, context-aware, excellent for long-form prose. Get a key at <strong>console.anthropic.com → API Keys</strong>. Requires a separate credit balance at console.anthropic.com/billing (not covered by a Claude.ai subscription).</td></tr>
+<tr><td><strong>ChatGPT (OpenAI)</strong></td><td>Widely used, strong general editorial feedback. Get a key at <strong>platform.openai.com → API Keys</strong>. Requires a separate credit balance (not covered by a ChatGPT Plus subscription).</td></tr>
+<tr><td><strong>Gemini (Google)</strong></td><td>Fast and capable, good for shorter selections. Get a free key at <strong>aistudio.google.com → Get API Key</strong>. Has a free tier — no billing required to start.</td></tr>
+<tr><td><strong>Mistral</strong></td><td>Efficient and precise, good value for editorial work. Get a free key at <strong>console.mistral.ai → API Keys</strong>. Has a free tier — no billing required to start.</td></tr>
+<tr><td><strong>Ollama (local)</strong></td><td>Fully offline — no API key, no cost, no data leaving your machine. Requires Ollama installed and running locally at http://localhost:11434.</td></tr>
 </table>
+
+<h3>Where to start</h3>
+<p>If you're not sure which provider to use: <strong>Gemini or Mistral</strong> are the easiest entry points — free tier, no credit card, just create an account and generate a key. If you want the best literary feedback and are happy to add a small credit balance, Claude is the recommendation.</p>
 
 <h3>Adding Keys</h3>
 <p>Go to <strong>Profile → Providers</strong>. For each cloud provider, paste your API key into the input field and click Save. For Ollama, enter the base URL and the model name you have pulled (e.g. <code>mistral</code>, <code>llama3</code>).</p>
 <p>When you save the first key, that provider is automatically set as the active provider. You don't need to click "Set as active" unless you want to switch to a different provider.</p>
 
 <h3>Switching Providers</h3>
-<p>You can add keys for multiple providers and switch between them at any time using the "Set as active" button in Profile → Providers. The active provider is shown immediately — a teal dot and "Active" label appears next to it. The active provider is also shown in the Editor Panel footer.</p>
+<p>You can add keys for multiple providers and switch between them at any time using the "Set as active" button in Profile → Providers. The active provider is shown with a teal dot and "Active" label, and is also shown in the Editor Panel footer.</p>
 
 <h3>Security</h3>
-<p>API keys are stored in your browser's localStorage. If you are signed in to Minstrel Codex, keys are also synced to your encrypted profile in Supabase. Keys are never logged, never sent to Minstrel servers, and are only used to make the editorial feedback request directly from your browser to the provider's API via the Supabase edge function.</p>
+<p>API keys are stored in your browser's localStorage. If you are signed in to Minstrel Codex, keys are also synced to your encrypted profile in Supabase. Keys are never logged, never sent to Minstrel servers, and are only used to make the editorial feedback request directly from your browser to the provider's API.</p>
 
 <h3>Ollama: Fully Offline Writing Feedback</h3>
 <p>If you install Ollama on your computer, you can get editorial feedback with no internet connection and no API costs. Run <code>ollama pull mistral</code> (or any model you prefer) and enter the model name in Profile → Providers. The Editor Module will route all requests through your local Ollama instance.</p>
