@@ -309,7 +309,7 @@ export default function MenuBar({
               return (
                 <>
                   <span style={{
-                    width: '20px', height: '20px', borderRadius: '50%',
+                    width: '20px', height: '20px',
                     background: nameToColor(name), display: 'flex',
                     alignItems: 'center', justifyContent: 'center',
                     fontSize: '10px', fontWeight: 600, color: '#fff', flexShrink: 0,

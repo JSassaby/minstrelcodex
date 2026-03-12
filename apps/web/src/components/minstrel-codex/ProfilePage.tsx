@@ -333,7 +333,7 @@ function AccountProfile({
       {/* Avatar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '18px', marginBottom: '28px' }}>
         <div style={{
-          width: '64px', height: '64px', borderRadius: '50%',
+          width: '64px', height: '64px',
           background: nameToColor(name), display: 'flex', alignItems: 'center',
           justifyContent: 'center', fontSize: '24px', fontWeight: 600, color: '#fff', flexShrink: 0,
         }}>{initials}</div>
