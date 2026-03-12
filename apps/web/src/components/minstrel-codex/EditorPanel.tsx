@@ -400,43 +400,43 @@ export default function EditorPanel({ visible, text, scope, onClose, onOpenProvi
 
               {feedback.clarity && (
                 <CollapsibleSection title="Clarity & Language">
-                  <Prose>{feedback.clarity.observation}</Prose>
-                  <Bullets items={feedback.clarity.suggestions ?? []} />
+                  <Prose>{feedback.clarity?.observation ?? ''}</Prose>
+                  <Bullets items={feedback.clarity?.suggestions ?? []} />
                 </CollapsibleSection>
               )}
 
               {feedback.pacing && (
                 <CollapsibleSection title="Pacing & Tension">
-                  <Prose>{feedback.pacing.observation}</Prose>
-                  <Bullets items={feedback.pacing.suggestions ?? []} />
+                  <Prose>{feedback.pacing?.observation ?? ''}</Prose>
+                  <Bullets items={feedback.pacing?.suggestions ?? []} />
                 </CollapsibleSection>
               )}
 
               {feedback.dialogue && (
                 <CollapsibleSection title="Dialogue">
-                  <Prose>{feedback.dialogue.observation}</Prose>
-                  <Bullets items={feedback.dialogue.suggestions ?? []} />
+                  <Prose>{feedback.dialogue?.observation ?? ''}</Prose>
+                  <Bullets items={feedback.dialogue?.suggestions ?? []} />
                 </CollapsibleSection>
               )}
 
               {feedback.character && (
                 <CollapsibleSection title="Character & Consistency">
-                  <Prose>{feedback.character.observation}</Prose>
-                  <Bullets items={feedback.character.suggestions ?? []} />
+                  <Prose>{feedback.character?.observation ?? ''}</Prose>
+                  <Bullets items={feedback.character?.suggestions ?? []} />
                 </CollapsibleSection>
               )}
 
               {feedback.emotionalImpact && (
                 <CollapsibleSection title="Emotional Impact">
-                  <Prose>{feedback.emotionalImpact.observation}</Prose>
-                  <Bullets items={feedback.emotionalImpact.suggestions ?? []} />
+                  <Prose>{feedback.emotionalImpact?.observation ?? ''}</Prose>
+                  <Bullets items={feedback.emotionalImpact?.suggestions ?? []} />
                 </CollapsibleSection>
               )}
 
               {feedback.narrativePurpose && (
                 <CollapsibleSection title="Narrative Purpose">
-                  <Prose>{feedback.narrativePurpose.observation}</Prose>
-                  <Bullets items={feedback.narrativePurpose.suggestions ?? []} />
+                  <Prose>{feedback.narrativePurpose?.observation ?? ''}</Prose>
+                  <Bullets items={feedback.narrativePurpose?.suggestions ?? []} />
                 </CollapsibleSection>
               )}
 
