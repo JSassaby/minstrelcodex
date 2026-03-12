@@ -260,20 +260,31 @@ Deno.serve(async (req: Request) => {
         if (!fileName || content === undefined) {
           return jsonErr('fileName and content required', 400);
         }
+
+        const isUpdate = !!fileId;
+        const effectiveParent = parentId && parentId !== 'root' ? (parentId as string) : null;
+
+        // For new files: parents can be set in the metadata body (POST).
+        // For updates: parents MUST NOT be in the body — Google rejects it.
+        // If the file needs to move to a different parent, use addParents query param.
         const metadata: Record<string, unknown> = {
           name: fileName,
           mimeType: mimeType || 'text/plain',
         };
-        if (parentId && parentId !== 'root') metadata.parents = [parentId];
+        if (!isUpdate && effectiveParent) metadata.parents = [effectiveParent];
 
         const multipartBody =
           `--boundary\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(metadata)}\r\n` +
           `--boundary\r\nContent-Type: ${mimeType || 'text/plain'}\r\n\r\n${content}\r\n--boundary--`;
 
-        const uploadUrl = fileId
+        let uploadUrl = isUpdate
           ? `${UPLOAD_API}/files/${fileId}?uploadType=multipart`
           : `${UPLOAD_API}/files?uploadType=multipart`;
-        const method = fileId ? 'PATCH' : 'POST';
+        // For updates, pass addParents as a query param (body field is forbidden)
+        if (isUpdate && effectiveParent) {
+          uploadUrl += `&addParents=${encodeURIComponent(effectiveParent)}`;
+        }
+        const method = isUpdate ? 'PATCH' : 'POST';
 
         const res = await driveRequest(uploadUrl, {
           method,
