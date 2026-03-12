@@ -7,6 +7,7 @@ const corsHeaders = {
 
 const DRIVE_API = 'https://www.googleapis.com/drive/v3';
 const UPLOAD_API = 'https://www.googleapis.com/upload/drive/v3';
+const FETCH_TIMEOUT = 30_000;
 
 // Validate Google Drive IDs (alphanumeric, hyphens, underscores, or 'root')
 function isValidDriveId(id: string | undefined | null): boolean {
@@ -20,13 +21,40 @@ function isValidName(name: string | undefined | null): boolean {
   return name.length <= 255 && !/[\/\\\x00-\x1f]/.test(name);
 }
 
+async function refreshAccessToken(refreshToken: string): Promise<string | null> {
+  const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
+  const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET');
+  if (!clientId || !clientSecret) return null;
+  try {
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token',
+      }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return (data.access_token as string) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { action, googleToken, fileId, folderId, fileName, folderName, content, mimeType, parentId } = await req.json();
+    const {
+      action, googleToken, refreshToken,
+      fileId, folderId, fileName, folderName, content, mimeType, parentId,
+    } = await req.json();
 
     if (!googleToken) {
       return new Response(JSON.stringify({ error: 'Google access token required' }), {
@@ -55,9 +83,53 @@ serve(async (req) => {
       }
     }
 
-    const authHeaders = {
-      'Authorization': `Bearer ${googleToken}`,
-    };
+    // Mutable token state for this request — updated if refresh occurs
+    let currentToken = googleToken as string;
+    let newAccessToken: string | undefined;
+
+    // Wrapper around fetch that adds Authorization, enforces a timeout,
+    // and retries once after refreshing the token on a 401 from Google.
+    async function driveRequest(url: string, options: RequestInit = {}): Promise<Response> {
+      const doFetch = (token: string) =>
+        fetch(url, {
+          ...options,
+          headers: {
+            ...(options.headers as Record<string, string> | undefined),
+            'Authorization': `Bearer ${token}`,
+          },
+          signal: AbortSignal.timeout(FETCH_TIMEOUT),
+        });
+
+      let res = await doFetch(currentToken);
+
+      if (res.status === 401 && refreshToken) {
+        const fresh = await refreshAccessToken(refreshToken as string);
+        if (fresh) {
+          currentToken = fresh;
+          newAccessToken = fresh;
+          res = await doFetch(currentToken);
+        }
+      }
+
+      return res;
+    }
+
+    // Build a success JSON response, embedding newAccessToken when the token was refreshed.
+    function jsonOk(data: unknown): Response {
+      const payload = newAccessToken
+        ? { ...(data as object), newAccessToken }
+        : data;
+      return new Response(JSON.stringify(payload), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    function jsonErr(message: string, status: number): Response {
+      return new Response(JSON.stringify({ error: message }), {
+        status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     switch (action) {
       case 'list': {
@@ -69,135 +141,87 @@ serve(async (req) => {
         do {
           let url = `${DRIVE_API}/files?q=${q}&fields=${fields}&orderBy=folder,name&pageSize=1000`;
           if (pageToken) url += `&pageToken=${encodeURIComponent(pageToken)}`;
-          const res = await fetch(url, { headers: authHeaders });
+          const res = await driveRequest(url);
           const data = await res.json();
           if (!res.ok) {
-            return new Response(JSON.stringify({ error: data.error?.message || 'Failed to list files' }), {
-              status: res.status,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+            return jsonErr(data.error?.message || 'Failed to list files', res.status);
           }
           allFiles.push(...(data.files || []));
           pageToken = data.nextPageToken;
         } while (pageToken);
-        return new Response(JSON.stringify({ files: allFiles }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return jsonOk({ files: allFiles });
       }
 
       case 'find-or-create-folder': {
-        // Find existing folder by name under parentId, or create it
-        if (!folderName) {
-          return new Response(JSON.stringify({ error: 'folderName required' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
+        if (!folderName) return jsonErr('folderName required', 400);
         const parent = parentId || 'root';
-        // Search for existing folder with this name under parent
         const searchQ = encodeURIComponent(
           `'${parent}' in parents and name = '${folderName.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`
         );
-        const searchRes = await fetch(
-          `${DRIVE_API}/files?q=${searchQ}&fields=${encodeURIComponent('files(id,name)')}&pageSize=1`,
-          { headers: authHeaders }
+        const searchRes = await driveRequest(
+          `${DRIVE_API}/files?q=${searchQ}&fields=${encodeURIComponent('files(id,name)')}&pageSize=1`
         );
         const searchData = await searchRes.json();
         if (searchRes.ok && searchData.files?.length > 0) {
-          // Found existing folder
-          return new Response(JSON.stringify({ folder: searchData.files[0] }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return jsonOk({ folder: searchData.files[0] });
         }
-        // Create new folder
         const metadata: Record<string, unknown> = {
           name: folderName,
           mimeType: 'application/vnd.google-apps.folder',
           parents: [parent],
         };
-        const res = await fetch(`${DRIVE_API}/files`, {
+        const res = await driveRequest(`${DRIVE_API}/files`, {
           method: 'POST',
-          headers: { ...authHeaders, 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(metadata),
         });
         const data = await res.json();
-        if (!res.ok) {
-          return new Response(JSON.stringify({ error: data.error?.message || 'Failed to create folder' }), {
-            status: res.status,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        return new Response(JSON.stringify({ folder: data }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        if (!res.ok) return jsonErr(data.error?.message || 'Failed to create folder', res.status);
+        return jsonOk({ folder: data });
       }
 
       case 'create-folder': {
-        if (!folderName) {
-          return new Response(JSON.stringify({ error: 'folderName required' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
+        if (!folderName) return jsonErr('folderName required', 400);
         const metadata: Record<string, unknown> = {
           name: folderName,
           mimeType: 'application/vnd.google-apps.folder',
         };
         if (parentId) metadata.parents = [parentId];
-        const res = await fetch(`${DRIVE_API}/files`, {
+        const res = await driveRequest(`${DRIVE_API}/files`, {
           method: 'POST',
-          headers: { ...authHeaders, 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(metadata),
         });
         const data = await res.json();
-        if (!res.ok) {
-          return new Response(JSON.stringify({ error: data.error?.message || 'Failed to create folder' }), {
-            status: res.status,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        return new Response(JSON.stringify({ folder: data }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        if (!res.ok) return jsonErr(data.error?.message || 'Failed to create folder', res.status);
+        return jsonOk({ folder: data });
       }
 
       case 'download': {
-        if (!fileId) {
-          return new Response(JSON.stringify({ error: 'fileId required' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        const metaRes = await fetch(`${DRIVE_API}/files/${fileId}?fields=mimeType,name`, {
-          headers: authHeaders,
-        });
+        if (!fileId) return jsonErr('fileId required', 400);
+        const metaRes = await driveRequest(`${DRIVE_API}/files/${fileId}?fields=mimeType,name`);
         const meta = await metaRes.json();
+        if (!metaRes.ok) return jsonErr(meta.error?.message || 'Failed to get file metadata', metaRes.status);
 
         let fileContent: string;
         if (meta.mimeType === 'application/vnd.google-apps.document') {
-          const exportRes = await fetch(
-            `${DRIVE_API}/files/${fileId}/export?mimeType=text/html`,
-            { headers: authHeaders }
+          const exportRes = await driveRequest(
+            `${DRIVE_API}/files/${fileId}/export?mimeType=text/html`
           );
+          if (!exportRes.ok) return jsonErr('Failed to export document', exportRes.status);
           fileContent = await exportRes.text();
         } else {
-          const dlRes = await fetch(`${DRIVE_API}/files/${fileId}?alt=media`, {
-            headers: authHeaders,
-          });
+          const dlRes = await driveRequest(`${DRIVE_API}/files/${fileId}?alt=media`);
+          if (!dlRes.ok) return jsonErr('Failed to download file', dlRes.status);
           fileContent = await dlRes.text();
         }
 
-        return new Response(JSON.stringify({ content: fileContent, name: meta.name }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return jsonOk({ content: fileContent, name: meta.name });
       }
 
       case 'upload': {
         if (!fileName || content === undefined) {
-          return new Response(JSON.stringify({ error: 'fileName and content required' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return jsonErr('fileName and content required', 400);
         }
 
         const metadata: Record<string, unknown> = {
@@ -206,84 +230,56 @@ serve(async (req) => {
         };
         if (parentId) metadata.parents = [parentId];
 
+        const multipartBody = `--boundary\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(metadata)}\r\n--boundary\r\nContent-Type: ${mimeType || 'text/html'}\r\n\r\n${content}\r\n--boundary--`;
+
         if (fileId) {
-          const res = await fetch(`${UPLOAD_API}/files/${fileId}?uploadType=multipart`, {
+          const res = await driveRequest(`${UPLOAD_API}/files/${fileId}?uploadType=multipart`, {
             method: 'PATCH',
-            headers: {
-              ...authHeaders,
-              'Content-Type': 'multipart/related; boundary=boundary',
-            },
-            body: `--boundary\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(metadata)}\r\n--boundary\r\nContent-Type: ${mimeType || 'text/html'}\r\n\r\n${content}\r\n--boundary--`,
+            headers: { 'Content-Type': 'multipart/related; boundary=boundary' },
+            body: multipartBody,
           });
           const data = await res.json();
-          if (!res.ok) {
-            return new Response(JSON.stringify({ error: data.error?.message || 'Upload failed' }), {
-              status: res.status,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
-          return new Response(JSON.stringify({ file: data }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          if (!res.ok) return jsonErr(data.error?.message || 'Upload failed', res.status);
+          return jsonOk({ file: data });
         }
 
-        const res = await fetch(`${UPLOAD_API}/files?uploadType=multipart`, {
+        const res = await driveRequest(`${UPLOAD_API}/files?uploadType=multipart`, {
           method: 'POST',
-          headers: {
-            ...authHeaders,
-            'Content-Type': 'multipart/related; boundary=boundary',
-          },
-          body: `--boundary\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(metadata)}\r\n--boundary\r\nContent-Type: ${mimeType || 'text/html'}\r\n\r\n${content}\r\n--boundary--`,
+          headers: { 'Content-Type': 'multipart/related; boundary=boundary' },
+          body: multipartBody,
         });
         const data = await res.json();
-        if (!res.ok) {
-          return new Response(JSON.stringify({ error: data.error?.message || 'Upload failed' }), {
-            status: res.status,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        return new Response(JSON.stringify({ file: data }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        if (!res.ok) return jsonErr(data.error?.message || 'Upload failed', res.status);
+        return jsonOk({ file: data });
       }
 
       case 'trash': {
-        if (!fileId) {
-          return new Response(JSON.stringify({ error: 'fileId required' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        // Move to trash (recoverable by user in Drive)
-        const res = await fetch(`${DRIVE_API}/files/${fileId}`, {
+        if (!fileId) return jsonErr('fileId required', 400);
+        const res = await driveRequest(`${DRIVE_API}/files/${fileId}`, {
           method: 'PATCH',
-          headers: { ...authHeaders, 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ trashed: true }),
         });
         if (!res.ok) {
           const data = await res.json();
-          return new Response(JSON.stringify({ error: data.error?.message || 'Trash failed' }), {
-            status: res.status,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return jsonErr(data.error?.message || 'Trash failed', res.status);
         }
-        return new Response(JSON.stringify({ success: true }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return jsonOk({ success: true });
       }
 
       default:
-        return new Response(JSON.stringify({ error: `Unknown action: ${action}` }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return jsonErr(`Unknown action: ${action}`, 400);
     }
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
     console.error('Google Drive error:', msg);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    const isTimeout = msg.includes('timed out') || msg.includes('AbortError');
+    return new Response(
+      JSON.stringify({ error: isTimeout ? 'Request timed out' : 'Internal server error' }),
+      {
+        status: isTimeout ? 504 : 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   }
 });

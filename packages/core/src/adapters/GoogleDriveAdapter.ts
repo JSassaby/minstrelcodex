@@ -26,7 +26,8 @@ export class GoogleDriveAdapter implements CloudAdapter {
   private folderIdCache: Map<string, string> = new Map();
   private listed = false;
 
-  constructor(token: string | null, folderId = 'root') {
+  // _getSupabaseToken is accepted but unused — edge function uses verify_jwt=false
+  constructor(token: string | null, folderId = 'root', _getSupabaseToken?: unknown) {
     this.token = token;
     this.requestedFolderId = folderId;
   }
@@ -36,13 +37,33 @@ export class GoogleDriveAdapter implements CloudAdapter {
   }
 
   private async edgeFetch(body: Record<string, unknown>): Promise<Response> {
+    const storedRefresh = localStorage.getItem('mc-drive-refresh-token');
     const res = await fetch(FUNCTION_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...body, googleToken: this.token }),
+      body: JSON.stringify({
+        ...body,
+        googleToken: this.token,
+        ...(storedRefresh ? { refreshToken: storedRefresh } : {}),
+      }),
+      signal: AbortSignal.timeout(60_000),
     });
     if (res.status === 401) throw new TokenExpiredError();
-    return res;
+    if (!res.ok) return res;
+
+    // Parse the body once. If the edge function refreshed the token,
+    // update localStorage and this instance so subsequent calls use the new token.
+    const data = await res.json();
+    if (data.newAccessToken) {
+      this.token = data.newAccessToken as string;
+      localStorage.setItem('mc-drive-access-token', data.newAccessToken as string);
+      window.dispatchEvent(new Event('mc-google-token-changed'));
+      delete data.newAccessToken;
+    }
+    return new Response(JSON.stringify(data), {
+      status: res.status,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   /** Ensure the "Minstrel Codex" app folder exists on Drive and cache its ID */
