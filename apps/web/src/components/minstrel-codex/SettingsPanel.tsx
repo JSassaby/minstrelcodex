@@ -4,7 +4,7 @@ import { ThemeMode, THEMES } from '@/lib/themes';
 import type { AppColors, Language, PinConfig } from '@minstrelcodex/core';
 import AccessibilitySection from './AccessibilitySection';
 import type { AccessibilitySettings } from '@/hooks/useAccessibility';
-import { X, ChevronDown, Check, Palette, Globe, Shield, HardDrive, Cpu, Eye, Keyboard } from 'lucide-react';
+import { X, ChevronDown, Check, Palette, Globe, Shield, HardDrive, Cpu, Eye, Keyboard, Sparkles } from 'lucide-react';
 
 // Color presets
 const TEXT_PRESETS = ['#33ff33','#00ff00','#ffffff','#4db8ff','#00e5e5','#ffff00','#ffb000','#ff6b9d','#ff5555','#e6e6e6'];
@@ -218,8 +218,15 @@ function EditorModuleToggle() {
   };
 
   return (
-    <div style={{ padding: '12px 0' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+    <div style={{
+      padding: '12px 0 12px 12px',
+      borderLeft: '2px solid #4ecdc4',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+        <Sparkles size={16} color="#4ecdc4" style={{ flexShrink: 0 }} />
+        <span style={{ fontSize: '13px', fontFamily: uiFont, fontWeight: 600, color: 'var(--terminal-text)', flex: 1 }}>
+          AI Editorial Feedback
+        </span>
         <button
           onClick={toggle}
           style={{
@@ -236,22 +243,18 @@ function EditorModuleToggle() {
             background: '#fff', transition: 'left 0.2s', display: 'block',
           }} />
         </button>
-        <span style={{ fontSize: '13px', fontFamily: uiFont, color: 'var(--terminal-text)', opacity: 0.85 }}>
-          AI Editorial Feedback
-        </span>
+      </div>
+      <div style={{ fontSize: '11px', fontFamily: uiFont, color: '#888', lineHeight: 1.55 }}>
+        Consult an AI editor for feedback on your writing. Never interrupts your flow — only runs when you ask.
       </div>
       {enabled && !hasKey && (
         <div style={{
-          fontSize: '12px', fontFamily: uiFont, color: '#888',
-          borderLeft: '2px solid var(--terminal-accent)', paddingLeft: '10px',
-          lineHeight: 1.55,
+          fontSize: '11px', fontFamily: uiFont, color: '#888',
+          marginTop: '6px', lineHeight: 1.55,
         }}>
-          Add your AI provider key in your Profile → Providers to get started.
+          Add your AI provider key in Profile → Providers to get started.
         </div>
       )}
-      <div style={{ fontSize: '11px', fontFamily: uiFont, color: '#555', marginTop: '6px', lineHeight: 1.55 }}>
-        Consult an AI editor for feedback on your writing. Never interrupts your flow — only runs when you ask.
-      </div>
     </div>
   );
 }
