@@ -1905,10 +1905,13 @@ export default function MinstrelCodex() {
           style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', marginRight: editorPanelOpen ? '340px' : 0, transition: 'margin-right 0.2s' }}
           onClick={() => setFileBrowserFocused(false)}
           onContextMenu={editorModuleEnabled ? (e) => {
-            e.preventDefault();
             const sel = window.getSelection();
             const hasSel = !!(sel && !sel.isCollapsed && sel.toString().trim());
-            setCtxMenu({ x: e.clientX, y: e.clientY, hasSelection: hasSel });
+            // Only intercept the context menu when text is selected.
+            // Without a selection, let the browser show its native menu (spellcheck suggestions etc.).
+            if (!hasSel) return;
+            e.preventDefault();
+            setCtxMenu({ x: e.clientX, y: e.clientY, hasSelection: true });
           } : undefined}
         >
           {activeHelpPageId && helpPanelOpen ? (

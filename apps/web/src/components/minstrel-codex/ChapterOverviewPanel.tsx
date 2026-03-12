@@ -143,7 +143,7 @@ export default function ChapterOverviewPanel({
             <span>{grandTotal.toLocaleString()} written</span>
             <span>{Math.round((grandTotal / wordCountTarget) * 100)}%</span>
           </div>
-          <div style={{ height: '4px', background: 'var(--terminal-surface)', borderRadius: '2px', overflow: 'hidden' }}>
+          <div style={{ height: '4px', background: 'var(--terminal-surface)', overflow: 'hidden' }}>
             <div style={{
               height: '100%',
               width: `${Math.min(100, (grandTotal / wordCountTarget) * 100)}%`,

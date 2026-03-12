@@ -609,7 +609,7 @@ export const HELP_TREE: HelpFolder[] = [
 <h3>Three Ways to Request Feedback</h3>
 <ol>
 <li><strong>Select text</strong> — Highlight any passage in the editor. A small floating "✦ Consult Editor" button appears just above your selection. Click it to review just that passage.</li>
-<li><strong>Right-click</strong> — Right-click anywhere in the editor area to open the context menu. When the Editor Module is enabled, you'll see "✦ Consult Editor — Selection" (only if text is selected) and "✦ Consult Editor — Full Document".</li>
+<li><strong>Right-click selected text</strong> — When the Editor Module is enabled, right-clicking while text is selected opens the AI editor context menu with "✦ Consult Editor — Selection" and "✦ Consult Editor — Full Document". Right-clicking without a selection shows the browser's native menu instead, including spellcheck suggestions for any underlined word.</li>
 <li><strong>Keyboard shortcut</strong> — Press <kbd>Ctrl+Shift+E</kbd> to immediately open the Editor Panel for a full document review.</li>
 </ol>
 
