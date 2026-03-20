@@ -32,7 +32,7 @@ const PHRASES = [
 const uiFont = 'var(--font-ui)';
 
 const COL_HEADER: React.CSSProperties = {
-  fontSize: '10px',
+  fontSize: 'clamp(10px, 1vw, 13px)',
   fontFamily: uiFont,
   fontWeight: 600,
   letterSpacing: '0.15em',
@@ -124,7 +124,7 @@ export default function Scriptorium({
 
   function statusLabel(text: string): React.ReactElement {
     return (
-      <div style={{ fontSize: '11px', color: 'var(--terminal-text)', marginBottom: '2px', fontFamily: uiFont }}>
+      <div style={{ fontSize: 'clamp(13px, 1.2vw, 16px)', color: 'var(--terminal-text)', marginBottom: '2px', fontFamily: uiFont }}>
         {text}
       </div>
     );
@@ -132,7 +132,7 @@ export default function Scriptorium({
 
   function statusValue(active: boolean, text: string): React.ReactElement {
     return (
-      <div style={{ fontSize: '10px', color: active ? 'var(--terminal-accent)' : 'var(--terminal-muted)', fontFamily: uiFont }}>
+      <div style={{ fontSize: 'clamp(11px, 1vw, 14px)', color: active ? 'var(--terminal-accent)' : 'var(--terminal-muted)', fontFamily: uiFont }}>
         {text}
       </div>
     );
@@ -215,7 +215,7 @@ export default function Scriptorium({
                 background: 'transparent',
                 border: '1px solid var(--terminal-accent)',
                 color: 'var(--terminal-accent)',
-                fontSize: '10px',
+                fontSize: 'clamp(11px, 1vw, 13px)',
                 padding: '3px 8px',
                 cursor: 'pointer',
                 fontFamily: uiFont,
@@ -261,21 +261,21 @@ export default function Scriptorium({
         <img
           src={minstrelWordmark}
           alt="Minstrel Codex"
-          style={{ height: '40px', width: 'auto', objectFit: 'contain', marginBottom: '40px' }}
+          style={{ height: 'clamp(40px, 5vh, 64px)', width: 'auto', objectFit: 'contain', marginBottom: '40px' }}
         />
 
         {/* Renown label */}
-        <div style={{ fontSize: '10px', color: 'var(--terminal-muted)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '4px', fontFamily: uiFont }}>
+        <div style={{ fontSize: 'clamp(10px, 1.2vw, 13px)', color: 'var(--terminal-muted)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '4px', fontFamily: uiFont }}>
           Renown
         </div>
 
         {/* Renown total */}
-        <div style={{ fontSize: '30px', fontWeight: 700, color: 'var(--terminal-accent)', fontFamily: uiFont, marginBottom: '6px' }}>
+        <div style={{ fontSize: 'clamp(30px, 4vw, 52px)', fontWeight: 700, color: 'var(--terminal-accent)', fontFamily: uiFont, marginBottom: '6px' }}>
           {profile.renown.toLocaleString()}
         </div>
 
         {/* Level badge */}
-        <div style={{ fontSize: '18px', color: 'var(--terminal-accent)', fontFamily: uiFont, marginBottom: '36px' }}>
+        <div style={{ fontSize: 'clamp(18px, 2vw, 28px)', color: 'var(--terminal-accent)', fontFamily: uiFont, marginBottom: 'clamp(24px, 3vh, 48px)' }}>
           Lv {level} · {profile.title}
         </div>
 
@@ -299,14 +299,14 @@ export default function Scriptorium({
               style={{
                 flex: 1,
                 textAlign: 'center',
-                padding: '16px 8px',
+                padding: 'clamp(16px, 2vh, 28px) 8px',
                 borderRight: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none',
               }}
             >
-              <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--terminal-text)', fontFamily: uiFont, marginBottom: '4px' }}>
+              <div style={{ fontSize: 'clamp(20px, 2.2vw, 32px)', fontWeight: 700, color: 'var(--terminal-text)', fontFamily: uiFont, marginBottom: '4px' }}>
                 {value}
               </div>
-              <div style={{ fontSize: '9px', color: 'var(--terminal-muted)', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: uiFont }}>
+              <div style={{ fontSize: 'clamp(9px, 0.9vw, 12px)', color: 'var(--terminal-muted)', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: uiFont }}>
                 {label}
               </div>
             </div>
@@ -316,11 +316,11 @@ export default function Scriptorium({
         {/* Progress bar */}
         <div style={{ width: '100%', maxWidth: '420px', marginBottom: '32px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <div style={{ fontSize: '10px', color: 'var(--terminal-muted)', fontFamily: uiFont }}>
+            <div style={{ fontSize: 'clamp(10px, 1vw, 13px)', color: 'var(--terminal-muted)', fontFamily: uiFont }}>
               Level {level}
             </div>
             {xpForNext !== null && (
-              <div style={{ fontSize: '10px', color: 'var(--terminal-muted)', fontFamily: uiFont }}>
+              <div style={{ fontSize: 'clamp(10px, 1vw, 13px)', color: 'var(--terminal-muted)', fontFamily: uiFont }}>
                 {(profile.renown - xpForCurrent).toLocaleString()} / {(xpForNext - xpForCurrent).toLocaleString()} to Lv {level + 1}
               </div>
             )}
@@ -345,11 +345,11 @@ export default function Scriptorium({
           style={{
             maxWidth: '420px',
             textAlign: 'center',
-            fontSize: '13px',
+            fontSize: 'clamp(13px, 1.4vw, 18px)',
             fontStyle: 'italic',
             color: 'var(--terminal-muted)',
             lineHeight: 1.7,
-            minHeight: '48px',
+            minHeight: 'clamp(48px, 6vh, 72px)',
             opacity: phraseVisible ? 1 : 0,
             transition: 'opacity 0.4s ease',
             fontFamily: uiFont,
@@ -364,11 +364,11 @@ export default function Scriptorium({
           style={{
             width: '100%',
             maxWidth: '420px',
-            padding: '18px',
+            padding: 'clamp(16px, 2.2vh, 28px)',
             background: 'var(--terminal-accent)',
             color: 'var(--terminal-bg)',
             border: 'none',
-            fontSize: '16px',
+            fontSize: 'clamp(16px, 1.6vw, 22px)',
             fontWeight: 700,
             fontFamily: uiFont,
             cursor: 'pointer',
@@ -409,7 +409,7 @@ export default function Scriptorium({
               >
                 <div
                   style={{
-                    fontSize: '12px',
+                    fontSize: 'clamp(13px, 1.3vw, 17px)',
                     color: 'var(--terminal-text)',
                     fontFamily: uiFont,
                     marginBottom: '6px',
@@ -420,7 +420,7 @@ export default function Scriptorium({
                 >
                   {displayName(recentFiles[0].filename)}
                 </div>
-                <div style={{ fontSize: '10px', color: 'var(--terminal-accent)', fontFamily: uiFont }}>
+                <div style={{ fontSize: 'clamp(10px, 0.9vw, 12px)', color: 'var(--terminal-accent)', fontFamily: uiFont }}>
                   {recentFiles[0].wordCount.toLocaleString()}w
                 </div>
               </div>
@@ -445,7 +445,7 @@ export default function Scriptorium({
                 >
                   <div
                     style={{
-                      fontSize: '11px',
+                      fontSize: 'clamp(12px, 1.2vw, 15px)',
                       color: 'var(--terminal-text)',
                       fontFamily: uiFont,
                       overflow: 'hidden',
@@ -457,7 +457,7 @@ export default function Scriptorium({
                   >
                     {displayName(f.filename)}
                   </div>
-                  <div style={{ fontSize: '10px', color: 'var(--terminal-muted)', fontFamily: uiFont, flexShrink: 0 }}>
+                  <div style={{ fontSize: 'clamp(10px, 0.9vw, 12px)', color: 'var(--terminal-muted)', fontFamily: uiFont, flexShrink: 0 }}>
                     {f.wordCount.toLocaleString()}w
                   </div>
                 </div>
@@ -473,11 +473,11 @@ export default function Scriptorium({
             onClick={onNewNovel}
             style={{
               width: '100%',
-              padding: '9px 12px',
+              padding: 'clamp(10px, 1.5vh, 16px) 16px',
               background: 'transparent',
               border: '1px solid rgba(255,255,255,0.15)',
               color: 'var(--terminal-text)',
-              fontSize: '11px',
+              fontSize: 'clamp(12px, 1.2vw, 15px)',
               fontFamily: uiFont,
               cursor: 'pointer',
               textAlign: 'left',
@@ -491,11 +491,11 @@ export default function Scriptorium({
             onClick={onNewFile}
             style={{
               width: '100%',
-              padding: '9px 12px',
+              padding: 'clamp(10px, 1.5vh, 16px) 16px',
               background: 'transparent',
               border: '1px solid rgba(255,255,255,0.15)',
               color: 'var(--terminal-text)',
-              fontSize: '11px',
+              fontSize: 'clamp(12px, 1.2vw, 15px)',
               fontFamily: uiFont,
               cursor: 'pointer',
               textAlign: 'left',
