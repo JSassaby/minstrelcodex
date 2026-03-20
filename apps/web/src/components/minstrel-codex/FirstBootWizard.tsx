@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { DESIGN_TOKENS as DT } from '@minstrelcodex/core';
 
 interface Props {
   onComplete: (title: string, chapterCount: number) => void;
@@ -11,26 +12,27 @@ const serifFont = "Georgia, 'Times New Roman', serif";
 const CARD: React.CSSProperties = {
   width: '100%',
   maxWidth: '480px',
-  background: '#faf9f6',
+  background: 'var(--terminal-surface, #0d1526)',
   padding: '48px',
   boxSizing: 'border-box',
 };
 
 const PRIMARY_BTN: React.CSSProperties = {
-  background: '#00c47a',
+  background: 'var(--terminal-accent, #00d4c8)',
   border: 'none',
-  color: '#111',
+  color: 'var(--terminal-bg, #080e1e)',
   padding: '12px 28px',
   fontSize: '14px',
   fontWeight: '700',
   cursor: 'pointer',
   fontFamily: uiFont,
+  borderRadius: DT.BORDER_RADIUS.button,
 };
 
 const SKIP_BTN: React.CSSProperties = {
   background: 'none',
   border: 'none',
-  color: '#aaa',
+  color: 'var(--terminal-muted, #6b7a99)',
   cursor: 'pointer',
   fontSize: '12px',
   fontFamily: uiFont,
@@ -41,12 +43,12 @@ const UNDERLINE_INPUT: React.CSSProperties = {
   width: '100%',
   boxSizing: 'border-box',
   border: 'none',
-  borderBottom: '2px solid #d0cdc8',
+  borderBottom: '2px solid var(--terminal-accent, #00d4c8)',
   background: 'transparent',
   outline: 'none',
   fontFamily: serifFont,
   fontSize: '22px',
-  color: '#1a1a1a',
+  color: 'var(--terminal-text, #e8e8e8)',
   padding: '8px 0',
   marginBottom: '40px',
 };
@@ -92,7 +94,7 @@ export default function FirstBootWizard({ onComplete, onSkip }: Props) {
       style={{
         position: 'fixed',
         inset: 0,
-        background: '#1c1c1e',
+        background: 'var(--terminal-bg, #080e1e)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -102,16 +104,16 @@ export default function FirstBootWizard({ onComplete, onSkip }: Props) {
     >
       <div style={CARD}>
         {/* Branding + step indicator */}
-        <div style={{ fontFamily: uiFont, fontSize: '11px', fontWeight: '600', letterSpacing: '0.15em', color: '#00c47a', marginBottom: '32px', textTransform: 'uppercase' }}>
+        <div style={{ fontFamily: uiFont, fontSize: '11px', fontWeight: '600', letterSpacing: '0.15em', color: 'var(--terminal-accent, #00d4c8)', marginBottom: '32px', textTransform: 'uppercase' }}>
           Minstrel Codex · {step} of 2
         </div>
 
         {step === 1 ? (
           <>
-            <div style={{ fontFamily: serifFont, fontSize: '26px', fontWeight: '400', color: '#1a1a1a', marginBottom: '6px' }}>
+            <div style={{ fontFamily: serifFont, fontSize: '26px', fontWeight: '400', color: 'var(--terminal-text, #e8e8e8)', marginBottom: '6px' }}>
               What are you writing?
             </div>
-            <div style={{ fontFamily: uiFont, fontSize: '13px', color: '#999', marginBottom: '32px' }}>
+            <div style={{ fontFamily: uiFont, fontSize: '13px', color: 'var(--terminal-muted, #6b7a99)', marginBottom: '32px' }}>
               Give your novel a name.
             </div>
 
@@ -131,13 +133,13 @@ export default function FirstBootWizard({ onComplete, onSkip }: Props) {
           </>
         ) : (
           <>
-            <div style={{ fontFamily: serifFont, fontSize: '26px', fontWeight: '400', color: '#1a1a1a', marginBottom: '6px' }}>
+            <div style={{ fontFamily: serifFont, fontSize: '26px', fontWeight: '400', color: 'var(--terminal-text, #e8e8e8)', marginBottom: '6px' }}>
               Set up your chapters
             </div>
-            <div style={{ fontFamily: uiFont, fontSize: '13px', color: '#999', marginBottom: '4px' }}>
+            <div style={{ fontFamily: uiFont, fontSize: '13px', color: 'var(--terminal-muted, #6b7a99)', marginBottom: '4px' }}>
               How many chapters are you planning?
             </div>
-            <div style={{ fontFamily: uiFont, fontSize: '12px', color: '#bbb', marginBottom: '28px' }}>
+            <div style={{ fontFamily: uiFont, fontSize: '12px', color: 'var(--terminal-muted, #6b7a99)', marginBottom: '28px' }}>
               We'll create them for you. You can always add more.
             </div>
 
