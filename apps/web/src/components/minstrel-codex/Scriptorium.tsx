@@ -7,6 +7,8 @@ interface Props {
   onEnter: () => void;
   onOpenFile: (filename: string) => void;
   recentFiles: Array<{ filename: string; wordCount: number }>;
+  onMusicPlay: () => void;
+  musicPlaying: boolean;
 }
 
 const PHRASES = [
@@ -45,7 +47,7 @@ const SECTION_LABEL: React.CSSProperties = {
   marginBottom: '8px',
 };
 
-export default function Scriptorium({ profile, onEnter, onOpenFile, recentFiles }: Props) {
+export default function Scriptorium({ profile, onEnter, onOpenFile, recentFiles, onMusicPlay, musicPlaying }: Props) {
   const [phraseIdx, setPhraseIdx] = useState(0);
   const [phraseVisible, setPhraseVisible] = useState(true);
   const [totalWords, setTotalWords] = useState(0);
@@ -188,8 +190,8 @@ export default function Scriptorium({ profile, onEnter, onOpenFile, recentFiles 
         </div>
 
         {/* Music */}
-        <div style={statusRow(false)}>
-          <div style={dot(false)} />
+        <div style={statusRow(musicPlaying)}>
+          <div style={dot(musicPlaying)} />
           <div
             style={{
               flex: 1,
@@ -204,7 +206,7 @@ export default function Scriptorium({ profile, onEnter, onOpenFile, recentFiles 
               {statusValue(false, 'Entertainment menu')}
             </div>
             <button
-              onClick={onEnter}
+              onClick={onMusicPlay}
               style={{
                 background: 'transparent',
                 border: '1px solid var(--terminal-accent)',
@@ -216,7 +218,7 @@ export default function Scriptorium({ profile, onEnter, onOpenFile, recentFiles 
                 flexShrink: 0,
               }}
             >
-              ▶ Play
+              {musicPlaying ? '⏸ Pause' : '▶ Play'}
             </button>
           </div>
         </div>

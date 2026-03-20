@@ -1732,6 +1732,8 @@ export default function MinstrelCodex() {
             setScriptoriumOpen(false);
           }}
           recentFiles={scriptoriumRecentFiles}
+          onMusicPlay={() => musicPlayer.resume()}
+          musicPlaying={musicPlayer.playing}
         />
       )}
 
