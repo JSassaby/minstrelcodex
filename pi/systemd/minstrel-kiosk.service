@@ -1,0 +1,28 @@
+[Unit]
+Description=Minstrel Codex Kiosk Display
+After=minstrel-server.service graphical.target
+Wants=minstrel-server.service
+
+[Service]
+Type=simple
+User=pi
+Environment=DISPLAY=:0
+ExecStartPre=/bin/sleep 4
+ExecStart=/usr/bin/chromium-browser \
+  --kiosk \
+  --no-first-run \
+  --disable-infobars \
+  --disable-session-crashed-bubble \
+  --disable-restore-session-state \
+  --noerrdialogs \
+  --disable-translate \
+  --disable-features=TranslateUI \
+  --check-for-update-interval=31536000 \
+  http://localhost:3000
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=graphical.target

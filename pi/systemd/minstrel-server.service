@@ -1,0 +1,16 @@
+[Unit]
+Description=Minstrel Codex Static File Server
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/minstrelcodex
+ExecStart=/usr/bin/npx serve -s apps/web/dist -l 3000
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
