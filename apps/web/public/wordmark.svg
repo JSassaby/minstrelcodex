@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 373.17 97.78">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #c49a6c;
+      }
+
+      .cls-2 {
+        font-size: 72px;
+      }
+
+      .cls-2, .cls-3 {
+        fill: #fff;
+        font-family: STIXTwoText, 'STIX Two Text';
+        font-variation-settings: 'wght' 400;
+      }
+
+      .cls-3 {
+        font-size: 24px;
+      }
+
+      .cls-4 {
+        fill: #0e1627;
+        stroke: #231f20;
+        stroke-miterlimit: 10;
+        stroke-width: .25px;
+      }
+
+      .cls-5 {
+        letter-spacing: 0em;
+      }
+
+      .cls-6 {
+        letter-spacing: 0em;
+      }
+    </style>
+  </defs>
+  <rect class="cls-4" width="373.17" height="97.78"/>
+  <text class="cls-2" transform="translate(7.99 57.24)"><tspan x="0" y="0">MIN</tspan><tspan class="cls-5" x="143.57" y="0">S</tspan><tspan x="179.13" y="0">TREL</tspan></text>
+  <text class="cls-3" transform="translate(145.58 90.81)"><tspan class="cls-6" x="0" y="0">C</tspan><tspan x="15.84" y="0">ODE</tspan><tspan class="cls-6" x="66.07" y="0">X</tspan></text>
+  <polygon class="cls-1" points="136.82 82.22 74.2 87.99 74.1 77.64 136.82 82.22"/>
+  <polygon class="cls-1" points="236.35 82.22 298.97 87.99 299.07 77.64 236.35 82.22"/>
+</svg>
