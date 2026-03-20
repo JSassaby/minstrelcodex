@@ -276,7 +276,6 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
             animationIterationCount: '1, infinite',
             animationDirection: 'normal, alternate',
             animationFillMode: 'both, both',
-            filter: 'brightness(0) invert(1)',
           }}
         />
         <div className="picker-title" style={{ fontSize: '28px', fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: '8px', textTransform: 'uppercase', marginBottom: '8px' }}>

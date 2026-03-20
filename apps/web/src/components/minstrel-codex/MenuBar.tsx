@@ -385,8 +385,7 @@ const MenuBar = forwardRef<MenuBarHandle, MenuBarProps>(function MenuBar({
               width: '20px',
               height: '20px',
               objectFit: 'contain',
-              filter: 'brightness(0) invert(1)',
-              opacity: 0.85,
+              opacity: 1,
             }}
           />
           <span style={{

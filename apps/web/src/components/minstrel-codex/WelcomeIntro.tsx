@@ -64,7 +64,7 @@ export default function WelcomeIntro({ isSignedIn = false }: WelcomeIntroProps) 
             <img
               src={minstrelLogo}
               alt="Minstrel Codex"
-              style={{ maxHeight: '80px', display: 'inline-block', filter: 'brightness(0) invert(1)' }}
+              style={{ maxHeight: '80px', display: 'inline-block' }}
             />
           </div>
 

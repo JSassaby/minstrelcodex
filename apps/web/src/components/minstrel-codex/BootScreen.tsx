@@ -72,7 +72,7 @@ export default function BootScreen({ language, onComplete }: BootScreenProps) {
           height: 'auto',
           objectFit: 'contain',
           marginBottom: '32px',
-          filter: 'brightness(0) invert(1)',
+
         }}
       />
       <div>
