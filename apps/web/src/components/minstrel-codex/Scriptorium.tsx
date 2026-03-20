@@ -253,8 +253,7 @@ export default function Scriptorium({
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
-          padding: '48px 40px 32px',
+          padding: '64px 40px 40px',
           overflowY: 'auto',
         }}
       >
