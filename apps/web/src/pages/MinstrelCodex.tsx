@@ -1223,6 +1223,8 @@ export default function MinstrelCodex() {
         return;
       }
 
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey) menuBarRef.current?.closeMenu();
+
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'Enter' || e.key === '\r')) {
         e.preventDefault();
         editorRef.current?.insertSceneBreak();
