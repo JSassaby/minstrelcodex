@@ -580,7 +580,14 @@ export const HELP_TREE: HelpFolder[] = [
 </ul>
 
 <h3>Music Library</h3>
-<p>Tracks are stored locally in a dedicated IndexedDB database (<code>pw-music-db</code>) so they play without an internet connection once loaded. The player supports ambient, lo-fi, and classical genres designed to enhance concentration without distraction.</p>
+<p>Four ambient tracks are included with Minstrel Codex — original compositions created for the app:</p>
+<ul>
+<li><strong>Minstrel Lofi I</strong> — Lo-fi ambient</li>
+<li><strong>Minstrel Lofi II</strong> — Lo-fi ambient</li>
+<li><strong>The Wandering Storyteller (Female)</strong> — Narrative ambient</li>
+<li><strong>The Wandering Storyteller (Male)</strong> — Narrative ambient</li>
+</ul>
+<p>Three generated noise tracks (White, Brown, Pink) are also available and require no files. User-uploaded MP3s are stored in a local IndexedDB database (<code>pw-music-db</code>) and play without an internet connection.</p>
 
 <h3>Tips</h3>
 <ul>

@@ -1,0 +1,3 @@
+# Place MP3 files here.
+# They will be served from /music/<filename> at runtime.
+# Files are not committed to git — copy them manually to this directory.

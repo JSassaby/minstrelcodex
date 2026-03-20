@@ -59,6 +59,10 @@ const BUILT_IN_TRACKS: MusicTrack[] = [
   { id: 'noise-white', name: 'White Noise', category: 'ambient', src: 'generated:white' },
   { id: 'noise-brown', name: 'Brown Noise', category: 'ambient', src: 'generated:brown' },
   { id: 'noise-pink', name: 'Pink Noise', category: 'ambient', src: 'generated:pink' },
+  { id: 'suno-lofi-1', name: 'Minstrel Lofi I', category: 'ambient', src: '/music/MinstrelCodex%20Lofi%201.mp3' },
+  { id: 'suno-lofi-2', name: 'Minstrel Lofi II', category: 'ambient', src: '/music/MinstrelCodex%20Lofi%202.mp3' },
+  { id: 'suno-storyteller-female', name: 'The Wandering Storyteller (Female)', category: 'ambient', src: '/music/The%20Wandering%20Storyteller%20Female.mp3' },
+  { id: 'suno-storyteller-male', name: 'The Wandering Storyteller (Male)', category: 'ambient', src: '/music/The%20Wandering%20Storyteller%20Male.mp3' },
 ];
 
 // ── IndexedDB helpers ────────────────────────────────────────────────────
