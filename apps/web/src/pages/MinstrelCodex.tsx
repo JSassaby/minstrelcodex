@@ -1732,8 +1732,17 @@ export default function MinstrelCodex() {
             setScriptoriumOpen(false);
           }}
           recentFiles={scriptoriumRecentFiles}
-          onMusicPlay={() => musicPlayer.resume()}
+          onMusicPlay={() => {
+            if (musicPlayer.currentTrackId) {
+              musicPlayer.togglePlayPause();
+            } else if (musicPlayer.tracks.length > 0) {
+              musicPlayer.play(musicPlayer.tracks[0].id);
+            }
+          }}
           musicPlaying={musicPlayer.playing}
+          onOpenSettings={() => { setScriptoriumOpen(false); executeAction('opensettings'); }}
+          onNewNovel={() => { setScriptoriumOpen(false); setTimeout(() => executeAction('newnovel'), 100); }}
+          onNewFile={() => { setScriptoriumOpen(false); setTimeout(() => executeAction('new'), 100); }}
         />
       )}
 

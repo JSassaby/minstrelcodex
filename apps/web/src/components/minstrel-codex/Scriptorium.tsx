@@ -9,6 +9,9 @@ interface Props {
   recentFiles: Array<{ filename: string; wordCount: number }>;
   onMusicPlay: () => void;
   musicPlaying: boolean;
+  onOpenSettings: () => void;
+  onNewNovel: () => void;
+  onNewFile: () => void;
 }
 
 const PHRASES = [
@@ -47,7 +50,13 @@ const SECTION_LABEL: React.CSSProperties = {
   marginBottom: '8px',
 };
 
-export default function Scriptorium({ profile, onEnter, onOpenFile, recentFiles, onMusicPlay, musicPlaying }: Props) {
+const displayName = (filename: string) => filename.split('/').pop() || filename;
+
+export default function Scriptorium({
+  profile, onEnter, onOpenFile, recentFiles,
+  onMusicPlay, musicPlaying,
+  onOpenSettings, onNewNovel, onNewFile,
+}: Props) {
   const [phraseIdx, setPhraseIdx] = useState(0);
   const [phraseVisible, setPhraseVisible] = useState(true);
   const [totalWords, setTotalWords] = useState(0);
@@ -83,7 +92,7 @@ export default function Scriptorium({ profile, onEnter, onOpenFile, recentFiles,
   const aiEnabled = localStorage.getItem('minstrel-editor-enabled') === 'true';
   const spellcheckOn = localStorage.getItem('minstrel-spellcheck') !== 'false';
 
-  const { level, title, xpForCurrent, xpForNext } = getLevelForXP(profile.renown);
+  const { level, xpForCurrent, xpForNext } = getLevelForXP(profile.renown);
 
   let progressPct = 0;
   if (xpForNext !== null && xpForNext > xpForCurrent) {
@@ -129,17 +138,12 @@ export default function Scriptorium({ profile, onEnter, onOpenFile, recentFiles,
     );
   }
 
-  function fileDisplayName(filename: string): string {
-    const base = filename.split('/').pop() || filename;
-    return base.includes('.') ? base.slice(0, base.lastIndexOf('.')) : base;
-  }
-
   return (
     <div
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 8000, // below boot (9999) and above editor
+        zIndex: 8000,
         background: 'var(--terminal-bg)',
         display: 'flex',
         fontFamily: uiFont,
@@ -226,7 +230,7 @@ export default function Scriptorium({ profile, onEnter, onOpenFile, recentFiles,
         <div style={{ flex: 1 }} />
 
         <button
-          onClick={onEnter}
+          onClick={onOpenSettings}
           style={{
             background: 'none',
             border: 'none',
@@ -249,6 +253,7 @@ export default function Scriptorium({ profile, onEnter, onOpenFile, recentFiles,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          justifyContent: 'center',
           padding: '48px 40px 32px',
           overflowY: 'auto',
         }}
@@ -272,7 +277,7 @@ export default function Scriptorium({ profile, onEnter, onOpenFile, recentFiles,
 
         {/* Level badge */}
         <div style={{ fontSize: '18px', color: 'var(--terminal-accent)', fontFamily: uiFont, marginBottom: '36px' }}>
-          Lv {level} · {title}
+          Lv {level} · {profile.title}
         </div>
 
         {/* Stats row */}
@@ -348,16 +353,13 @@ export default function Scriptorium({ profile, onEnter, onOpenFile, recentFiles,
             minHeight: '48px',
             opacity: phraseVisible ? 1 : 0,
             transition: 'opacity 0.4s ease',
-            marginBottom: '40px',
             fontFamily: uiFont,
           }}
         >
           "{PHRASES[phraseIdx]}"
         </div>
 
-        <div style={{ flex: 1 }} />
-
-        {/* Enter button */}
+        {/* Enter button — pushed to bottom via marginTop: auto */}
         <button
           onClick={onEnter}
           style={{
@@ -373,6 +375,7 @@ export default function Scriptorium({ profile, onEnter, onOpenFile, recentFiles,
             cursor: 'pointer',
             letterSpacing: '0.06em',
             textTransform: 'uppercase',
+            marginTop: 'auto',
           }}
         >
           Enter the Codex →
@@ -416,10 +419,10 @@ export default function Scriptorium({ profile, onEnter, onOpenFile, recentFiles,
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  {fileDisplayName(recentFiles[0].filename)}
+                  {displayName(recentFiles[0].filename)}
                 </div>
                 <div style={{ fontSize: '10px', color: 'var(--terminal-accent)', fontFamily: uiFont }}>
-                  {recentFiles[0].wordCount.toLocaleString()} words
+                  {recentFiles[0].wordCount.toLocaleString()}w
                 </div>
               </div>
             </>
@@ -453,10 +456,10 @@ export default function Scriptorium({ profile, onEnter, onOpenFile, recentFiles,
                       marginRight: '8px',
                     }}
                   >
-                    {fileDisplayName(f.filename)}
+                    {displayName(f.filename)}
                   </div>
                   <div style={{ fontSize: '10px', color: 'var(--terminal-muted)', fontFamily: uiFont, flexShrink: 0 }}>
-                    {f.wordCount.toLocaleString()}
+                    {f.wordCount.toLocaleString()}w
                   </div>
                 </div>
               ))}
@@ -465,10 +468,10 @@ export default function Scriptorium({ profile, onEnter, onOpenFile, recentFiles,
         </div>
 
         {/* Quick Actions */}
-        <div style={{ paddingTop: '20px' }}>
+        <div style={{ paddingTop: '16px' }}>
           <div style={SECTION_LABEL}>Quick Actions</div>
           <button
-            onClick={onEnter}
+            onClick={onNewNovel}
             style={{
               width: '100%',
               padding: '9px 12px',
@@ -486,7 +489,7 @@ export default function Scriptorium({ profile, onEnter, onOpenFile, recentFiles,
             New Novel
           </button>
           <button
-            onClick={onEnter}
+            onClick={onNewFile}
             style={{
               width: '100%',
               padding: '9px 12px',
