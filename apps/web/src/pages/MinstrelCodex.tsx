@@ -233,6 +233,13 @@ export default function MinstrelCodex() {
   const [selectionText, setSelectionText] = useState('');
   const [selectionRect, setSelectionRect] = useState<DOMRect | null>(null);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; hasSelection: boolean } | null>(null);
+
+  const openEditorPanel = (text: string, scope: 'selection' | 'scene' | 'document') => {
+    menuBarRef.current?.closeMenu();
+    setEditorPanelText(text);
+    setEditorPanelScope(scope);
+    setEditorPanelOpen(true);
+  };
   const getSupabaseToken = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     return session?.access_token ?? null;
@@ -1318,9 +1325,7 @@ export default function MinstrelCodex() {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'E' || e.key === 'e')) {
         if (editorModuleEnabled) {
           e.preventDefault();
-          setEditorPanelText(editorContent);
-          setEditorPanelScope('document');
-          setEditorPanelOpen(true);
+          openEditorPanel(editorContent, 'document');
         }
         return;
       }
@@ -1735,11 +1740,7 @@ export default function MinstrelCodex() {
           }}
           user={auth.user}
           onOpenProfile={() => setProfilePageOpen(true)}
-          onEditorClick={() => {
-            setEditorPanelText(editorContent);
-            setEditorPanelScope('document');
-            setEditorPanelOpen(true);
-          }}
+          onEditorClick={() => openEditorPanel(editorContent, 'document')}
         />
       )}
 
@@ -2029,11 +2030,7 @@ export default function MinstrelCodex() {
           onSprintTogglePause={() => setSprintPaused(prev => !prev)}
           onStatsClick={() => setStatsModalOpen(true)}
           editorModuleEnabled={editorModuleEnabled}
-          onEditorClick={() => {
-            setEditorPanelText(editorContent);
-            setEditorPanelScope('document');
-            setEditorPanelOpen(true);
-          }}
+          onEditorClick={() => openEditorPanel(editorContent, 'document')}
         />
       )}
 
@@ -2419,10 +2416,7 @@ export default function MinstrelCodex() {
             <button
               onClick={() => {
                 setCtxMenu(null);
-                const sel = window.getSelection()?.toString().trim() ?? '';
-                setEditorPanelText(sel);
-                setEditorPanelScope('selection');
-                setEditorPanelOpen(true);
+                openEditorPanel(window.getSelection()?.toString().trim() ?? '', 'selection');
               }}
               style={{
                 display: 'block', width: '100%', padding: '8px 14px',
@@ -2439,9 +2433,7 @@ export default function MinstrelCodex() {
           <button
             onClick={() => {
               setCtxMenu(null);
-              setEditorPanelText(editorContent);
-              setEditorPanelScope('document');
-              setEditorPanelOpen(true);
+              openEditorPanel(editorContent, 'document');
             }}
             style={{
               display: 'block', width: '100%', padding: '8px 14px',
@@ -2480,9 +2472,7 @@ export default function MinstrelCodex() {
           <button
             onMouseDown={(e) => {
               e.preventDefault();
-              setEditorPanelText(selectionText);
-              setEditorPanelScope('selection');
-              setEditorPanelOpen(true);
+              openEditorPanel(selectionText, 'selection');
             }}
             style={{
               background: 'transparent', border: 'none', cursor: 'pointer',
