@@ -72,7 +72,7 @@ export default function BootScreen({ language, onComplete }: BootScreenProps) {
           height: 'auto',
           objectFit: 'contain',
           marginBottom: '32px',
-          filter: 'drop-shadow(0 0 12px var(--terminal-glow))',
+          filter: 'brightness(0) invert(1)',
         }}
       />
       <div>

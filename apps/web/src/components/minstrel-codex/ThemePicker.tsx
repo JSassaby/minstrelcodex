@@ -198,11 +198,11 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
           50% { opacity: 0; }
         }
         @keyframes picker-logo-enter {
-          0%   { opacity: 0; transform: scale(0.5); filter: drop-shadow(0 0 0 transparent); }
-          40%  { opacity: 1; transform: scale(1.12); filter: drop-shadow(0 0 60px rgba(255,255,255,0.5)) drop-shadow(0 0 120px rgba(255,255,255,0.25)); }
-          60%  { transform: scale(0.97); filter: drop-shadow(0 0 32px rgba(255,255,255,0.15)); }
+          0%   { opacity: 0; transform: scale(0.5); filter: brightness(0) invert(1) drop-shadow(0 0 0 transparent); }
+          40%  { opacity: 1; transform: scale(1.12); filter: brightness(0) invert(1) drop-shadow(0 0 60px rgba(255,255,255,0.5)) drop-shadow(0 0 120px rgba(255,255,255,0.25)); }
+          60%  { transform: scale(0.97); filter: brightness(0) invert(1) drop-shadow(0 0 32px rgba(255,255,255,0.15)); }
           80%  { transform: scale(1.03); }
-          100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 32px rgba(255,255,255,0.12)) drop-shadow(0 0 80px rgba(255,255,255,0.06)); }
+          100% { opacity: 1; transform: scale(1); filter: brightness(0) invert(1) drop-shadow(0 0 32px rgba(255,255,255,0.12)) drop-shadow(0 0 80px rgba(255,255,255,0.06)); }
         }
         @keyframes picker-flash-burst {
           0%   { opacity: 0; transform: scale(0.3); }
@@ -235,8 +235,8 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
         .picker-card:nth-child(3) { animation-delay: 0.9s; }
         .picker-fade { animation: picker-fade-in 0.5s ease 0.7s both; }
         @keyframes picker-logo-glow {
-          from { filter: drop-shadow(0 0 32px rgba(255,255,255,0.12)) drop-shadow(0 0 80px rgba(255,255,255,0.06)); }
-          to   { filter: drop-shadow(0 0 40px rgba(255,255,255,0.18)) drop-shadow(0 0 100px rgba(255,255,255,0.1)); }
+          from { filter: brightness(0) invert(1) drop-shadow(0 0 32px rgba(255,255,255,0.12)) drop-shadow(0 0 80px rgba(255,255,255,0.06)); }
+          to   { filter: brightness(0) invert(1) drop-shadow(0 0 40px rgba(255,255,255,0.18)) drop-shadow(0 0 100px rgba(255,255,255,0.1)); }
         }
         .colour-swatch { transition: transform 0.15s; }
         .colour-swatch:hover { transform: scale(1.06); }
@@ -276,6 +276,7 @@ export default function ThemePicker({ onSelect }: ThemePickerProps) {
             animationIterationCount: '1, infinite',
             animationDirection: 'normal, alternate',
             animationFillMode: 'both, both',
+            filter: 'brightness(0) invert(1)',
           }}
         />
         <div className="picker-title" style={{ fontSize: '28px', fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: '8px', textTransform: 'uppercase', marginBottom: '8px' }}>
