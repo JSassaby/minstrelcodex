@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import BootScreen from '@/components/minstrel-codex/BootScreen';
 import Editor from '@/components/minstrel-codex/Editor';
 import type { EditorHandle } from '@/components/minstrel-codex/Editor';
-import MenuBar, { MENUS, getSubmenuItems } from '@/components/minstrel-codex/MenuBar';
+import MenuBar, { MENUS, getSubmenuItems, type MenuBarHandle } from '@/components/minstrel-codex/MenuBar';
 import StatusBar from '@/components/minstrel-codex/StatusBar';
 import FileBrowser from '@/components/minstrel-codex/FileBrowser';
 import HelpText from '@/components/minstrel-codex/HelpText';
@@ -246,6 +246,7 @@ export default function MinstrelCodex() {
     onRemotePaths: (paths) => { fileStructure.mergeRemotePaths(paths); },
   });
   const editorRef = useRef<EditorHandle>(null);
+  const menuBarRef = useRef<MenuBarHandle>(null);
   const musicPlayer = useMusicPlayer();
   const a11y = useAccessibility();
 
@@ -884,7 +885,7 @@ export default function MinstrelCodex() {
 
   // Execute menu action
   const executeAction = useCallback((action: string) => {
-    
+    menuBarRef.current?.closeMenu();
     if (action.startsWith('lang-')) {
       const lang = action.replace('lang-', '') as Language;
       setLanguage(lang);
@@ -1716,6 +1717,7 @@ export default function MinstrelCodex() {
       )}
       {!focusMode && (
         <MenuBar
+          ref={menuBarRef}
           language={language}
           visible={menuOpen}
           menuIndex={menuIndex}

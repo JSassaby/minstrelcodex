@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { useLocalStorageBoolean } from '@/hooks/useLocalStorageBoolean';
 import { createPortal } from 'react-dom';
 import {
@@ -103,11 +103,15 @@ function nameToColor(str: string): string {
   return `hsl(${hue}, 55%, 38%)`;
 }
 
-export default function MenuBar({
+export interface MenuBarHandle {
+  closeMenu: () => void;
+}
+
+const MenuBar = forwardRef<MenuBarHandle, MenuBarProps>(function MenuBar({
   language, visible, menuIndex, submenuOpen, submenuIndex,
   filename, onAction, onMenuStateChange,
   user, onOpenProfile, onEditorClick,
-}: MenuBarProps) {
+}, ref) {
   const [editorEnabled] = useLocalStorageBoolean('minstrel-editor-enabled', false);
   const isRaspberryPi = localStorage.getItem('minstrel-device-type') === 'raspberry-pi';
   const visibleMenus = MENUS.filter((m): m is MenuKey => m !== 'network' || isRaspberryPi);
@@ -115,6 +119,14 @@ export default function MenuBar({
   const [hoverSubIdx, setHoverSubIdx] = useState<number | null>(null);
   const [mouseActive, setMouseActive] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    closeMenu: () => {
+      setHoverMenuIdx(null);
+      setHoverSubIdx(null);
+      setMouseActive(false);
+    },
+  }));
   const dropdownRef = useRef<HTMLDivElement>(null);
   const menuItemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -478,6 +490,7 @@ export default function MenuBar({
       })()}
     </div>
   );
-}
+});
 
+export default MenuBar;
 export { getSubmenuItems };
