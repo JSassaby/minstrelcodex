@@ -44,6 +44,7 @@ import SongComplete from '@/components/minstrel-codex/SongComplete';
 import WriterDashboard from '@/components/minstrel-codex/WriterDashboard';
 import ChronicleLedger from '@/components/minstrel-codex/ChronicleLedger';
 import WelcomeIntro from '@/components/minstrel-codex/WelcomeIntro';
+import Scriptorium from '@/components/minstrel-codex/Scriptorium';
 import ImportModal from '@/components/minstrel-codex/ImportModal';
 import MilestoneNotifier, { emitMilestones } from '@/components/minstrel-codex/MilestoneNotifier';
 import { detectStreakMilestones, detectLevelUp } from '@/components/minstrel-codex/milestoneDetection';
@@ -115,6 +116,10 @@ export default function MinstrelCodex() {
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [chronicleLedgerOpen, setChronicleLedgerOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
+
+  // Scriptorium — shown after boot, before editor
+  const [scriptoriumOpen, setScriptoriumOpen] = useState(true);
+  const [scriptoriumRecentFiles, setScriptoriumRecentFiles] = useState<Array<{ filename: string; wordCount: number }>>([]);
 
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -359,6 +364,23 @@ export default function MinstrelCodex() {
 
   // Check streak on load
   useEffect(() => { if (profileLoaded) checkStreak(); }, [profileLoaded]);
+
+  // Load recent files for Scriptorium on mount
+  useEffect(() => {
+    (async () => {
+      const recent = await db.recentFiles.orderBy('order').limit(8).toArray();
+      const withCounts = await Promise.all(
+        recent.map(async (r) => {
+          const doc = await db.documents.get(r.filename);
+          const wordCount = doc
+            ? doc.content.trim().split(/\s+/).filter(Boolean).length
+            : 0;
+          return { filename: r.filename, wordCount };
+        })
+      );
+      setScriptoriumRecentFiles(withCounts);
+    })();
+  }, []);
 
    // Storage menu removed
   const [_storageMenuOpen, _setStorageMenuOpen] = useState(false); // kept for compat
@@ -1700,6 +1722,19 @@ export default function MinstrelCodex() {
 
   return (
     <div className="minstrel-ui" style={{ height: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
+      {scriptoriumOpen && (
+        <Scriptorium
+          profile={profile}
+          onEnter={() => setScriptoriumOpen(false)}
+          onOpenFile={(filename) => {
+            const content = docStorage.loadDocument(filename);
+            if (content !== null) { setEditorContent(content); editorRef.current?.setContent(content); }
+            setScriptoriumOpen(false);
+          }}
+          recentFiles={scriptoriumRecentFiles}
+        />
+      )}
+
       {/* Reading guide overlay */}
       {a11y.settings.readingGuide && <ReadingGuide opacity={a11y.settings.readingGuideOpacity} />}
 
