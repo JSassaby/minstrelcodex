@@ -9,6 +9,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import minstrelLogo from '@/assets/minstrel-logo.svg';
+import minstrelLockup from '@/assets/minstrel-logo-lockup.svg';
 import { t } from '@/lib/languages';
 
 interface MenuBarProps {
@@ -377,28 +378,16 @@ const MenuBar = forwardRef<MenuBarHandle, MenuBarProps>(function MenuBar({
           height: '16px',
           background: 'rgba(0, 212, 200, 0.1)',
         }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
           <img
-            src={minstrelLogo}
+            src={minstrelLockup}
             alt="Minstrel Codex"
             style={{
-              width: '20px',
-              height: '20px',
+              height: '28px',
+              width: 'auto',
               objectFit: 'contain',
-              opacity: 1,
             }}
           />
-          <span style={{
-            fontSize: '10px',
-            fontFamily: uiFont,
-            fontWeight: '600',
-            opacity: 1,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            color: 'var(--terminal-text)',
-          }}>
-            Minstrel
-          </span>
         </div>
       </div>
 
