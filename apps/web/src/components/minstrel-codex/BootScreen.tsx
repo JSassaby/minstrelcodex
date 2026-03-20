@@ -67,23 +67,14 @@ export default function BootScreen({ language, onComplete }: BootScreenProps) {
         src={minstrelLogo}
         alt="Minstrel"
         style={{
-          width: '120px',
-          height: '120px',
+          width: '480px',
+          maxWidth: '80vw',
+          height: 'auto',
           objectFit: 'contain',
-          marginBottom: '16px',
+          marginBottom: '32px',
           filter: 'drop-shadow(0 0 12px var(--terminal-glow))',
         }}
       />
-      <div
-        style={{
-          fontSize: '32px',
-          marginBottom: '20px',
-          textShadow: '0 0 10px var(--terminal-glow)',
-          fontFamily: 'var(--font-display)',
-        }}
-      >
-        MINSTREL CODEX
-      </div>
       <div>
         {lines.map((line, i) => (
           <div
