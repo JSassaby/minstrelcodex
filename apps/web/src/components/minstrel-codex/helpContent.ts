@@ -50,13 +50,14 @@ export const HELP_TREE: HelpFolder[] = [
 </ul>
 
 <h3>Interface Overview</h3>
-<p>The interface is composed of four zones:</p>
+<p>The interface is composed of five zones:</p>
 <ul>
-<li><strong>Menu Bar</strong> (top) — Access all commands, settings, and tools.</li>
+<li><strong>Menu Bar</strong> (top) — FILE, ENTERTAINMENT, and SETTINGS menus give access to all commands. The SETTINGS item opens the settings panel directly.</li>
 <li><strong>Sidebar</strong> (left) — File browser, help, notes, and chapter overview panels live here. Only one sidebar can be open at a time.</li>
 <li><strong>Editor</strong> (centre) — Your writing canvas. Supports rich text formatting, headings, and scene breaks.</li>
 <li><strong>Status Bar</strong> (bottom) — Shows word count, save status, battery, Wi-Fi, and your current writing session stats.</li>
 <li><strong>Editor Panel</strong> (right) — Optional AI editorial feedback panel. Opens alongside the editor when you request feedback. Enable it in Settings → Language.</li>
+<li><strong>Scriptorium</strong> (launch screen) — The writer's home screen that appears on every app load, showing your stats, recent files, and system status.</li>
 </ul>
 `,
       },
@@ -70,11 +71,11 @@ export const HELP_TREE: HelpFolder[] = [
 <h3>Menu Bar</h3>
 <p>The menu bar sits at the very top of the screen. It contains these menus:</p>
 <ul>
-<li><strong>FILE</strong> — Create, open, save, export, and manage your documents and novel projects. Access the file browser, Google Drive sync, and version snapshots.</li>
-<li><strong>ENTERTAINMENT</strong> — Opens the Writer Dashboard, ambient music player, or Typing Challenge. On Raspberry Pi devices a NETWORK menu also appears.</li>
-<li><strong>SETTINGS</strong> — Opens the settings panel where you can customise themes, fonts, language, accessibility, security, and storage options.</li>
-<li><strong>HELP</strong> — Opens this help panel.</li>
+<li><strong>FILE</strong> — Create, open, save, export, import, and manage documents and novel projects. Access the file browser, version snapshots, and Google Drive sync.</li>
+<li><strong>ENTERTAINMENT</strong> — Writer Dashboard (Ctrl+Shift+U), ambient music player, and Typing Challenge.</li>
+<li><strong>SETTINGS</strong> — Opens the settings panel directly (no submenu).</li>
 </ul>
+<p>The EDIT menu no longer exists. Help is accessed via the ? icon in the nav bar.</p>
 
 <h3>Editor Area</h3>
 <p>The central editor is a rich-text writing surface powered by TipTap. It supports:</p>
@@ -107,6 +108,22 @@ export const HELP_TREE: HelpFolder[] = [
 <li><strong>Chapter Overview</strong> — Novel project chapter navigation</li>
 <li><strong>Notes Panel</strong> — Character and place notes for your project</li>
 </ul>
+`,
+      },
+      {
+        id: 'scriptorium',
+        title: 'The Scriptorium',
+        content: `
+<h2>The Scriptorium</h2>
+<p>The Scriptorium is your writer's home screen — it appears every time Minstrel Codex loads, after the boot sequence. It gives you an at-a-glance view of your writing life before you begin your session.</p>
+<h3>Three Columns</h3>
+<p><strong>System Status (left)</strong> — Shows the live status of your key settings: Google Drive connection, AI Editor, Spellcheck, and Music Player. Click "Open Settings →" to go directly to the settings panel.</p>
+<p><strong>Writer Identity (centre)</strong> — Your Renown total, current Level and title, Words Written, Sessions, and Streak. A progress bar shows how far you are from the next level. A rotating motivational phrase sits below.</p>
+<p><strong>Your Work (right)</strong> — Your most recent document in a "Continue Writing" card, followed by recent files with word counts. Quick Actions at the bottom let you start a New Novel or New File directly.</p>
+<h3>Entering the Editor</h3>
+<p>Click any file in the Recent Files list to open it directly in the editor. Click "Continue Writing" to resume your last document. Click "ENTER THE CODEX →" to go to the editor without opening a specific file. Use "New Novel" or "New File" to start fresh.</p>
+<h3>Music from the Scriptorium</h3>
+<p>The Music row in System Status has a Play button that starts ambient music directly from the Scriptorium — you don't need to enter the editor first.</p>
 `,
       },
     ],
@@ -144,6 +161,10 @@ export const HELP_TREE: HelpFolder[] = [
 <tr><td><kbd>ESC</kbd></td><td>Open or close the menu bar</td></tr>
 <tr><td><kbd>Ctrl + Shift + B</kbd></td><td>Toggle the file browser sidebar</td></tr>
 <tr><td><kbd>Ctrl + Shift + U</kbd></td><td>Open the Writer Dashboard (also accessible from the ENTERTAINMENT menu)</td></tr>
+<tr><td><kbd>Ctrl + Shift + C</kbd></td><td>Open Chronicle Ledger (unlocks at Level 6)</td></tr>
+<tr><td><kbd>Ctrl + Shift + E</kbd></td><td>Toggle AI Editor panel</td></tr>
+<tr><td><kbd>Ctrl + Shift + N</kbd></td><td>New Novel Wizard</td></tr>
+<tr><td><kbd>Ctrl + Shift + G</kbd></td><td>Google Drive sync panel</td></tr>
 <tr><td><kbd>F11</kbd></td><td>Toggle Focus mode — hides all interface chrome for distraction-free writing. Press <kbd>Esc</kbd> to exit.</td></tr>
 <tr><td><kbd>Ctrl + P</kbd></td><td>Print current document</td></tr>
 </table>
@@ -446,10 +467,10 @@ export const HELP_TREE: HelpFolder[] = [
 
 <h3>Connecting Google Drive</h3>
 <ol>
-<li>Open the Google Drive panel and click <strong>Connect to Google Drive</strong>.</li>
-<li>A device pairing screen appears with a URL and a short code.</li>
-<li>Open the URL on any device, sign in to your Google account, and enter the code.</li>
-<li>Once authorised, the status bar shows <strong>✓ Connected to Google Drive</strong>.</li>
+<li>Open Settings → Storage, or go to Profile → Sync tab.</li>
+<li>Click <strong>Connect to Google Drive</strong>.</li>
+<li>You will be redirected to Google's sign-in page. Sign in and grant permission.</li>
+<li>Once authorised the status changes to <strong>✓ Connected</strong>.</li>
 </ol>
 
 <h3>Backup Destination</h3>
@@ -594,6 +615,32 @@ export const HELP_TREE: HelpFolder[] = [
 
 <h3>Daily Writing Stats</h3>
 <p>Your daily word counts are logged to help you maintain writing habits. These feed into the streak and Renown systems.</p>
+`,
+      },
+      {
+        id: 'ai-editor',
+        title: 'AI Editorial Feedback',
+        content: `
+<h2>AI Editorial Feedback</h2>
+<p>The AI Editor provides on-demand editorial feedback on your writing. It never interrupts your flow — it only runs when you explicitly request it. Powered by your choice of AI provider: Claude (Anthropic), OpenAI, Gemini, or a local Ollama model.</p>
+<h3>Enabling the AI Editor</h3>
+<ol>
+  <li>Open your Profile (click your name in the nav bar) → Providers tab</li>
+  <li>Toggle "AI Editorial Feedback" to on</li>
+  <li>Add an API key for at least one provider (Claude, OpenAI, Gemini, or Ollama)</li>
+  <li>The ✦ AI EDITOR indicator appears in the nav bar when enabled</li>
+</ol>
+<h3>Using the AI Editor</h3>
+<p>Click the ✦ AI EDITOR pill in the nav bar, or press <kbd>Ctrl+Shift+E</kbd>, or right-click selected text and choose "Consult Editor". The Editor's Counsel panel opens on the right side of the screen.</p>
+<p>Choose your scope — Selection, Scene, or Document — then click "Request Editorial Feedback". The AI analyses your writing across seven dimensions: clarity, pacing, voice, structure, tension, dialogue, and prose style.</p>
+<h3>Providers</h3>
+<ul>
+  <li><strong>Claude (Anthropic)</strong> — Recommended. Strong literary sensibility and nuanced prose feedback.</li>
+  <li><strong>OpenAI</strong> — GPT-4 class models. Reliable and widely used.</li>
+  <li><strong>Gemini</strong> — Google's model. Good for longer documents.</li>
+  <li><strong>Ollama</strong> — Run a local model entirely offline. No API key required, no data leaves your device.</li>
+</ul>
+<p>API keys are stored locally on your device and never shared. You can add multiple providers and the editor will automatically fall back to the next available provider if one fails.</p>
 `,
       },
       {
@@ -935,11 +982,36 @@ Contains: The Bard's Legend (lifetime stats) · Chronicles grid · This Week cha
 <p>Independent of the theme, you can customise:</p>
 <ul>
 <li><strong>Editor font</strong> — Choose from a selection of writing-optimised fonts</li>
-<li><strong>Font size</strong> — Increase or decrease with <kbd>Ctrl + +</kbd> and <kbd>Ctrl + -</kbd></li>
+<li><strong>Font size</strong> — Increase or decrease with <kbd>Ctrl + +</kbd> and <kbd>Ctrl + -</kbd>. Font size can also be adjusted using the A− and A+ buttons in the formatting toolbar above the editor.</li>
 </ul>
 
 <h3>Language</h3>
 <p>Minstrel Codex supports 30+ languages for the interface. Change your language in Settings → Language. The language setting also affects spell-check and voice dictation.</p>
+`,
+      },
+    ],
+  },
+  {
+    id: 'profile-account',
+    title: 'Profile & Account',
+    children: [
+      {
+        id: 'profile-overview',
+        title: 'Your Profile',
+        content: `
+<h2>Your Profile</h2>
+<p>Click your name in the nav bar to open your Profile panel. This is your account hub — sign in, manage settings, connect providers, and configure sync.</p>
+<h3>Tabs</h3>
+<ul>
+  <li><strong>Account</strong> — Your display name, email, and sign out option. Sign in with Google or email/password to enable cloud sync across devices.</li>
+  <li><strong>Preferences</strong> — Personal writing preferences synced to your account.</li>
+  <li><strong>Providers</strong> — Enable the AI Editor and add API keys for Claude, OpenAI, Gemini, or Ollama.</li>
+  <li><strong>Sync</strong> — Configure Google Drive sync settings and view last sync time.</li>
+  <li><strong>Security</strong> — Change your password or manage authentication.</li>
+  <li><strong>About</strong> — App version and credits.</li>
+</ul>
+<h3>Signing In</h3>
+<p>Signing in is optional. Without an account, all your data is stored locally and all features work. Signing in adds cross-device sync via Google Drive and saves your preferences to the cloud.</p>
 `,
       },
     ],
